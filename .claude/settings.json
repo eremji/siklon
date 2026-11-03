@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)", "Bash(npm run typecheck)", "Bash(npm test)", "Bash(npm run test:e2e)",
+      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)", "Bash(git branch:*)",
+      "Bash(gh issue view:*)", "Bash(gh pr view:*)", "Bash(gh pr checks:*)"
+    ],
+    "ask": [
+      "Bash(git commit:*)", "Bash(git push:*)", "Bash(gh pr create:*)",
+      "Bash(git switch:*)", "Bash(git pull:*)", "Bash(git checkout:*)",
+      "Bash(npm install:*)", "Bash(npm i:*)", "Bash(npx:*)", "Bash(gh api:*)",
+      "Edit(./.github/workflows/**)", "Edit(./package.json)"
+    ],
+    "deny": [
+      "Bash(git commit --no-verify:*)", "Bash(git commit -n:*)", "Bash(HUSKY=0:*)",
+      "Bash(git -c:*)", "Bash(git config:*)",
+      "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git push origin main:*)",
+      "Bash(git reset --hard:*)", "Bash(git clean:*)", "Bash(rm -rf:*)",
+      "Bash(gh pr merge:*)", "Bash(gh repo edit:*)", "Bash(gh repo delete:*)",
+      "Bash(gh secret:*)", "Bash(gh variable:*)", "Bash(gh workflow run:*)", "Bash(gh auth:*)",
+      "Bash(gh issue edit:*)", "Bash(gh issue close:*)", "Bash(gh issue delete:*)", "Bash(gh label:*)",
+      "Bash(curl:*)", "Bash(wget:*)",
+      "Read(./.env)", "Read(./.env.local)", "Read(./.env.*.local)", "Read(./**/*.pem)",
+      "Edit(./.husky/**)", "Edit(./.claude/settings.json)", "Edit(./.claude/hooks/**)", "Edit(./commitlint.config.mjs)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh" } ] }
+    ]
+  }
+}
