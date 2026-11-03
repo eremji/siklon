@@ -39,3 +39,5 @@ test, test:e2e).
 - Rayons, îles et flux Météo-France : utiliser les constantes de la
   section « Constantes et référentiels » de SPEC.md
   (`RADIUS_IMPACT_KM`, `RADIUS_WATCH_KM`), jamais de valeur en dur.
+- Interface : suivre DESIGN.md (jetons de couleur clair/sombre, typo,
+  règles des couleurs de vigilance) ; aucune couleur hors jetons.
