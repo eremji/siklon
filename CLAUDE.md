@@ -36,3 +36,6 @@ test, test:e2e).
   (ignoré par git) et dans les variables d'environnement Vercel.
 - Tester le parsing NHC/HURDAT2 avec des fixtures locales, jamais
   en appelant le réseau dans les tests.
+- Rayons, îles et flux Météo-France : utiliser les constantes de la
+  section « Constantes et référentiels » de SPEC.md
+  (`RADIUS_IMPACT_KM`, `RADIUS_WATCH_KM`), jamais de valeur en dur.
