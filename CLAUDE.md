@@ -20,6 +20,7 @@ Application web de suivi des cyclones tropicaux pour les Antilles.
 Le projet n'est pas encore généré : mettre cette section à jour avec les
 scripts réels de `package.json` dès leur création (dev, build, lint,
 test, test:e2e).
+- Scaffold Next.js : générer dans un dossier temporaire puis fusionner le package.json existant (garder commitlint/husky), ne jamais écraser.
 
 ## Règles de travail
 - Toujours répondre en français.
@@ -41,3 +42,11 @@ test, test:e2e).
   (`RADIUS_IMPACT_KM`, `RADIUS_WATCH_KM`), jamais de valeur en dur.
 - Interface : suivre DESIGN.md (jetons de couleur clair/sombre, typo,
   règles des couleurs de vigilance) ; aucune couleur hors jetons.
+
+## Workflow
+- 1 user story = 1 issue (template « User story ») ; pas de code sans issue.
+- Branche depuis `main` : `feat/<n°>-<slug>` ou `fix/<n°>-<slug>` (ex. `feat/3-delai-avant-passage`).
+- Commits en Conventional Commits, en français : `feat:`, `fix:`, `test:`, `chore:`, `docs:`, `refactor:` (vérifié par commitlint).
+- Chaque PR contient « Closes #<n°> » et suit le template de PR.
+- Jamais de commit direct sur `main` ; jamais de merge si la CI est rouge.
+- Procédures détaillées : `/start-us <n°>` pour démarrer une US, `/ship` pour livrer.
