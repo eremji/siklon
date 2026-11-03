@@ -144,14 +144,73 @@ les informations.
 - Les libellés officiels (vigilance, watches/warnings) sont traduits
   sans perdre le terme d'origine.
 
-## Exigences transverses
-- Fraîcheur : le flux NHC est interrogé au moins toutes les 15 minutes ;
-  le fichier de contrôle de la vigilance Météo-France toutes les minutes.
-- Mention visible sur chaque page : « Siklon ne remplace pas les consignes
-  officielles. Suivez les autorités locales. »
-- Données personnelles conformes au RGPD : consentement explicite pour les
-  notifications, suppression du compte possible, aucun secret dans le code.
-- Performance : première page utile en moins de 3 s sur une connexion 3G.
+### US-11 : Avoir des données à jour
+En tant que visiteur, je veux que les informations affichées soient les
+plus récentes publiées, afin de ne pas me préparer sur une situation
+dépassée.
+- Le flux NHC `CurrentStorms.json` est interrogé au moins toutes les
+  15 minutes.
+- Le fichier de contrôle de la vigilance Météo-France est lu chaque minute ;
+  le flux n'est téléchargé que si son checksum a changé.
+- Un changement détecté (nouvel avis, nouveau niveau de vigilance) déclenche
+  les notifications (US-07) sans attendre le cycle suivant.
+- Si une source ne répond pas, l'app continue d'afficher la dernière donnée
+  connue avec son heure, et un avertissement indique que la mise à jour a
+  échoué.
+
+### US-12 : Savoir d'où viennent les informations
+En tant que visiteur, je veux voir la source de chaque information et le
+rappel des consignes officielles, afin de savoir à qui me fier.
+- Chaque donnée affichée indique sa source (NHC, Météo-France, HURDAT2) et
+  son heure de mise à jour.
+- Chaque fiche renvoie par un lien vers la source officielle.
+- La mention « Siklon ne remplace pas les consignes officielles. Suivez
+  les autorités locales. » est visible sur chaque page.
+
+### US-13 : Maîtriser mes données personnelles
+En tant qu'utilisateur, je veux savoir quelles données Siklon garde et
+pouvoir les contrôler, afin d'utiliser l'app en confiance (RGPD).
+- Aucune notification n'est envoyée sans consentement explicite ; la
+  permission web push n'est demandée qu'après une action de l'utilisateur.
+- L'utilisateur peut télécharger ses données (îles suivies, préférences,
+  checklist) dans un fichier.
+- La suppression du compte (US-05) efface toutes ses données, y compris
+  chez le service d'envoi d'emails.
+- Une page de confidentialité, accessible sans compte, explique les données
+  collectées, leur usage et leur durée de conservation.
+- Aucun secret (clés d'API, mots de passe) n'est présent dans le code : ils
+  sont stockés dans les secrets Vercel et GitHub.
+
+### US-14 : Utiliser l'app avec une connexion faible
+En tant que visiteur pendant un cyclone, je veux que l'app s'affiche
+rapidement même avec un réseau dégradé, afin d'obtenir l'information
+quand j'en ai besoin.
+- La première page utile s'affiche en moins de 3 s sur une connexion 3G.
+- Si la carte interactive ne se charge pas, une carte simplifiée s'affiche
+  à la place (voir DESIGN.md).
+- Les informations essentielles (niveau de vigilance, délai avant passage)
+  s'affichent avant la carte.
+
+### US-15 : Utiliser l'app quelles que soient mes capacités
+En tant que visiteur malvoyant, daltonien ou utilisant un lecteur d'écran,
+je veux pouvoir lire et utiliser toute l'app, afin de recevoir les mêmes
+informations que tout le monde.
+- Tous les textes respectent un contraste AA (4,5:1), les éléments
+  graphiques 3:1.
+- Les zones tactiles font au moins 44 px ; le corps du texte au moins 16 px.
+- Toutes les actions sont utilisables au clavier et au lecteur d'écran
+  (libellés sur les boutons, champs et icônes).
+- Aucune information ne repose sur la couleur seule : chaque niveau de
+  vigilance est aussi écrit en toutes lettres.
+
+### US-16 : Utiliser l'app en mode sombre
+En tant que visiteur, je veux un affichage sombre la nuit ou pendant une
+coupure de courant, afin de ménager mes yeux et ma batterie.
+- Le thème suit le réglage du téléphone (clair ou sombre).
+- Un bouton permet de forcer le thème clair ou sombre ; le choix est
+  conservé.
+- En mode sombre, tous les contrastes restent AA et l'en-tête de la page
+  île garde la couleur de la vigilance en cours (voir DESIGN.md).
 
 ## Constantes et référentiels
 Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.

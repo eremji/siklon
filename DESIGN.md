@@ -1,4 +1,4 @@
-# Kaz Siklòn : design
+# Siklon : design
 
 Direction retenue : **C · Lagon**. Identité chaleureuse et antillaise,
 lisible en situation d'urgence, en thème clair et sombre.
@@ -15,7 +15,7 @@ https://claude.ai/artifact/WCMhoUPMui2udnV8ssPisv
 - Sur la page d'une île en alerte, l'en-tête prend la couleur de la
   vigilance en cours à la place de la couleur de marque.
 - Chaque écran affiche la source et l'heure de mise à jour des données,
-  et la mention « Kaz Siklòn ne remplace pas les consignes officielles ».
+  et la mention « Siklon ne remplace pas les consignes officielles ».
 
 ## Jetons de couleur
 
