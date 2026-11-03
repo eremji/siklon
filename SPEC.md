@@ -15,7 +15,7 @@ consulter l'historique des cyclones passés près de chez eux.
 | Alertes | Vigilance Météo-France (vert, jaune, orange, rouge, violet, gris) pour Guadeloupe, Martinique, Saint-Martin et Saint-Barthélemy ; watches/warnings NHC pour les autres îles |
 | Comptes | Oui : inscription, îles suivies, préférences de notification, checklist personnelle |
 | Authentification | Compte Google ou email + mot de passe, via la bibliothèque Better Auth |
-| Notifications | Web push, email |
+| Notifications | Web push (canal principal des alertes), email via Brevo (authentification et complément des alertes) |
 | Langues | Français et anglais |
 | Cible | Mobile d'abord, utilisable avec une connexion faible |
 
@@ -100,7 +100,10 @@ est menacée, afin de ne rien manquer même sans ouvrir l'app.
 - Une notification est envoyée quand un système entre dans le rayon de
   menace d'une île suivie (US-03), et à chaque changement de niveau
   d'alerte de cette île (US-06).
-- L'utilisateur choisit ses canaux : web push, email, ou les deux.
+- L'utilisateur choisit ses canaux : web push, email, ou les deux. Le web
+  push est proposé en premier comme canal recommandé pour les alertes.
+- Si le quota d'envoi d'emails est atteint, les emails d'authentification
+  restent prioritaires sur les emails d'alerte, et l'échec est journalisé.
 - Une même alerte n'est pas envoyée deux fois par le même canal.
 - Chaque notification contient le lien vers la fiche concernée et la
   source officielle.
@@ -212,7 +215,12 @@ affinées plus tard sans changer le reste de la spec.
   service externe, l'email + mot de passe (hachage, confirmation de
   l'adresse, réinitialisation), la connexion Google et la limitation des
   tentatives ; ses tables vivent dans notre Postgres.
-
-## Questions ouvertes
-- Service d'envoi des emails (confirmation d'adresse, réinitialisation
-  du mot de passe, notifications) : dépendance à valider avant ajout.
+- Envoi d'emails : Brevo, offre gratuite (300 emails/jour, sans limite
+  de durée). Entreprise française, données hébergées dans l'UE. Clé
+  stockée dans les secrets Vercel et GitHub sous `BREVO_API_KEY`.
+- Limite connue : un cyclone peut déclencher 5 alertes (entrée dans le
+  rayon, puis changements de vigilance) par utilisateur suivant une île ;
+  au-delà d'environ 60 utilisateurs par île, le quota gratuit ne suffit
+  plus. D'où le web push comme canal principal, et le passage au plan
+  payant Brevo (Starter, environ 9 $/mois, sans limite quotidienne)
+  avant d'atteindre ce seuil.
