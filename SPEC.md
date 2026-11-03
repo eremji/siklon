@@ -14,7 +14,8 @@ consulter l'historique des cyclones passés près de chez eux.
 | Historique | HURDAT2 (trajectoire, vents, pression toutes les 6 h), importé dans Postgres |
 | Alertes | Vigilance Météo-France (vert, jaune, orange, rouge, violet, gris) pour Guadeloupe, Martinique, Saint-Martin et Saint-Barthélemy ; watches/warnings NHC pour les autres îles |
 | Comptes | Oui : inscription, îles suivies, préférences de notification, checklist personnelle |
-| Notifications | Web push, email, SMS |
+| Authentification | Compte Google ou email + mot de passe, via la bibliothèque Better Auth |
+| Notifications | Web push, email |
 | Langues | Français et anglais |
 | Cible | Mobile d'abord, utilisable avec une connexion faible |
 
@@ -71,8 +72,13 @@ En tant que visiteur, je veux voir la liste des cyclones passés près d'une
 ### US-05 : Créer un compte et suivre des îles
 En tant que visiteur, je veux créer un compte et choisir les îles que je
 suis, afin de recevoir des informations ciblées.
-- L'inscription et la connexion se font avec un compte Google, Apple ou
-  Facebook ; aucun mot de passe n'est géré par Siklon.
+- L'inscription et la connexion se font avec un compte Google, ou avec
+  un email et un mot de passe.
+- Avec email et mot de passe : l'adresse est confirmée par un lien envoyé
+  par email avant toute notification ; le mot de passe fait au moins
+  12 caractères, n'est jamais stocké en clair, et peut être réinitialisé
+  par un lien envoyé par email.
+- Les tentatives de connexion répétées sont limitées.
 - L'utilisateur choisit sa langue (FR ou EN) à l'inscription.
 - L'utilisateur peut suivre une ou plusieurs îles et les retirer.
 - L'utilisateur peut supprimer son compte et toutes ses données.
@@ -94,8 +100,7 @@ est menacée, afin de ne rien manquer même sans ouvrir l'app.
 - Une notification est envoyée quand un système entre dans le rayon de
   menace d'une île suivie (US-03), et à chaque changement de niveau
   d'alerte de cette île (US-06).
-- L'utilisateur choisit ses canaux : web push, email, SMS (un numéro de
-  téléphone n'est demandé que si le SMS est activé).
+- L'utilisateur choisit ses canaux : web push, email, ou les deux.
 - Une même alerte n'est pas envoyée deux fois par le même canal.
 - Chaque notification contient le lien vers la fiche concernée et la
   source officielle.
@@ -167,8 +172,9 @@ entre le centre du système et le point de référence de l'île.
   flux uniquement quand son checksum change.
 
 ### Îles et points de référence
-Un point par île : sa ville principale. Coordonnées à 0,01° près, à
-vérifier contre GeoNames avant de les figer dans les fixtures.
+Un point par île : sa ville principale. Coordonnées à 0,01° près
+(environ 1 km), retenues telles quelles pour la V1 ; elles pourront être
+affinées plus tard sans changer le reste de la spec.
 
 | Île | Point de référence | Lat | Lon | Source d'alerte |
 |---|---|---|---|---|
@@ -188,6 +194,8 @@ vérifier contre GeoNames avant de les figer dans les fixtures.
 
 ## Hors périmètre V1
 - Dégâts, nombre de blessés et de morts des cyclones historiques (V2).
+- Notifications par SMS.
+- Connexion avec Apple ou Facebook.
 - Plusieurs points de référence par île, ou distance au trait de côte.
   Limite connue : Cuba mesure environ 1 250 km, un cyclone peut frapper
   Santiago sans approcher La Havane.
@@ -199,10 +207,12 @@ vérifier contre GeoNames avant de les figer dans les fixtures.
 - Langues autres que le français et l'anglais (créole, espagnol).
 - Mode hors ligne complet.
 
+## Choix techniques
+- Authentification : Better Auth. Bibliothèque TypeScript qui gère, sans
+  service externe, l'email + mot de passe (hachage, confirmation de
+  l'adresse, réinitialisation), la connexion Google et la limitation des
+  tentatives ; ses tables vivent dans notre Postgres.
+
 ## Questions ouvertes
-- Service d'envoi des SMS (coût, couverture des Antilles).
-- Service d'envoi des emails et bibliothèque d'authentification
-  (Google, Apple, Facebook) : dépendances à valider avant ajout.
-- Comptes Apple avec « Masquer mon email » et comptes Facebook sans email :
-  vérifier que les notifications par email restent possibles.
-- Vérification des coordonnées des îles contre GeoNames.
+- Service d'envoi des emails (confirmation d'adresse, réinitialisation
+  du mot de passe, notifications) : dépendance à valider avant ajout.
