@@ -1,0 +1,94 @@
+{
+  "activeStorms": [
+    {
+      "id": "al112026",
+      "binNumber": "AT1",
+      "name": "Kyle",
+      "classification": "HU",
+      "intensity": "120",
+      "pressure": "948",
+      "latitude": "16.8N",
+      "longitude": "58.2W",
+      "latitudeNumeric": 16.8,
+      "longitudeNumeric": -58.2,
+      "movementDir": 285,
+      "movementSpeed": 12,
+      "lastUpdate": "2026-09-10T15:00:00.000Z",
+      "publicAdvisory": {
+        "advNum": "14",
+        "issuance": "2026-09-10T15:00:00.000Z",
+        "fileUpdateTime": "2026-09-10T14:52:31.000Z",
+        "url": "https://www.nhc.noaa.gov/text/MIATCPAT1.shtml"
+      },
+      "trackCone": {
+        "advNum": "014",
+        "issuance": "2026-09-10T15:00:00.000Z",
+        "zipFile": "https://www.nhc.noaa.gov/gis/forecast/archive/al112026_5day_014.zip",
+        "kmzFile": "https://www.nhc.noaa.gov/storm_graphics/api/AL112026_014adv_CONE.kmz"
+      }
+    },
+    {
+      "id": "al122026",
+      "binNumber": "AT2",
+      "name": "Leah",
+      "classification": "TS",
+      "intensity": "45",
+      "pressure": "1002",
+      "latitude": "12.4N",
+      "longitude": "41.0W",
+      "latitudeNumeric": 12.4,
+      "longitudeNumeric": -41.0,
+      "movementDir": 275,
+      "movementSpeed": 15,
+      "lastUpdate": "2026-09-10T15:00:00.000Z",
+      "publicAdvisory": {
+        "advNum": "3",
+        "issuance": "2026-09-10T15:00:00.000Z",
+        "fileUpdateTime": "2026-09-10T14:49:02.000Z",
+        "url": "https://www.nhc.noaa.gov/text/MIATCPAT2.shtml"
+      }
+    },
+    {
+      "id": "al132026",
+      "binNumber": "AT3",
+      "name": "Thirteen",
+      "classification": "TD",
+      "intensity": "30",
+      "pressure": "1008",
+      "latitude": "24.1N",
+      "longitude": "86.5W",
+      "latitudeNumeric": 24.1,
+      "longitudeNumeric": -86.5,
+      "movementDir": 340,
+      "movementSpeed": 6,
+      "lastUpdate": "2026-09-10T12:00:00.000Z",
+      "publicAdvisory": {
+        "advNum": "1A",
+        "issuance": "2026-09-10T12:00:00.000Z",
+        "fileUpdateTime": "2026-09-10T11:55:40.000Z",
+        "url": "https://www.nhc.noaa.gov/text/MIATCPAT3.shtml"
+      }
+    },
+    {
+      "id": "ep182026",
+      "binNumber": "EP1",
+      "name": "Sergio",
+      "classification": "TS",
+      "intensity": "50",
+      "pressure": "998",
+      "latitude": "15.2N",
+      "longitude": "108.4W",
+      "latitudeNumeric": 15.2,
+      "longitudeNumeric": -108.4,
+      "movementDir": 290,
+      "movementSpeed": 10,
+      "lastUpdate": "2026-09-10T15:00:00.000Z",
+      "publicAdvisory": {
+        "advNum": "7",
+        "issuance": "2026-09-10T15:00:00.000Z",
+        "fileUpdateTime": "2026-09-10T14:50:00.000Z",
+        "url": "https://www.nhc.noaa.gov/text/MIATCPEP1.shtml"
+      }
+    }
+  ]
+}
