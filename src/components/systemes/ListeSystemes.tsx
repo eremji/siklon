@@ -1,18 +1,10 @@
 import type { EtatFlux } from "@/lib/nhc/client";
 import { avisLePlusRecent, formaterHeureAntilles } from "@/lib/nhc/fraicheur";
-import { type Classification, type SystemeActif, categorieSaffirSimpson, libelleType } from "@/lib/nhc/systemes";
+import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { AlerteObsolescence } from "./AlerteObsolescence";
+import { Pastille } from "./Pastille";
 
 const URL_NHC = "https://www.nhc.noaa.gov/";
-
-const ABREVIATIONS: Record<Classification, string> = {
-  TD: "DT",
-  STD: "DS",
-  TS: "TT",
-  STS: "TS",
-  HU: "",
-  PTC: "CP",
-};
 
 function LienNhc() {
   return (
@@ -22,31 +14,10 @@ function LienNhc() {
   );
 }
 
-function Pastille({ systeme }: { systeme: SystemeActif }) {
-  const categorie = systeme.classification === "HU" ? categorieSaffirSimpson(systeme.ventKt) : null;
-  const ouragan = systeme.classification === "HU";
-  return (
-    <span
-      aria-hidden="true"
-      className={`flex size-[46px] shrink-0 items-center justify-center rounded-full border-2 bg-surface text-lg font-bold ${
-        ouragan ? "border-danger text-danger-text" : "border-accent text-accent"
-      }`}
-    >
-      {categorie ?? ABREVIATIONS[systeme.classification]}
-    </span>
-  );
-}
-
 function Source({ systemes, luLe }: { systemes: SystemeActif[]; luLe: string }) {
   const dernierAvis = avisLePlusRecent(systemes.map((systeme) => systeme.avis.emisLe));
   const heure = dernierAvis ? `dernier avis le ${formaterHeureAntilles(dernierAvis)}` : `flux lu le ${formaterHeureAntilles(luLe)}`;
   return <p className="text-sm text-muted">Source : NHC, {heure} (heure des Antilles françaises).</p>;
-}
-
-function description(systeme: SystemeActif): string {
-  const type = libelleType(systeme.classification);
-  const categorie = systeme.classification === "HU" ? categorieSaffirSimpson(systeme.ventKt) : null;
-  return categorie ? `${type} de catégorie ${categorie}` : type;
 }
 
 export function ListeSystemes({ flux }: { flux: EtatFlux }) {
@@ -79,7 +50,7 @@ export function ListeSystemes({ flux }: { flux: EtatFlux }) {
               <Pastille systeme={systeme} />
               <div className="flex flex-col">
                 <span className="text-lg font-bold">{systeme.nom}</span>
-                <span className="text-base text-muted">{description(systeme)}</span>
+                <span className="text-base text-muted">{descriptionSysteme(systeme)}</span>
                 <span className="text-sm text-muted">
                   Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe)}
                 </span>

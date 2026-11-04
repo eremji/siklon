@@ -50,6 +50,12 @@ export function categorieSaffirSimpson(ventKt: number): 1 | 2 | 3 | 4 | 5 | null
   return index === -1 ? null : ((5 - index) as 1 | 2 | 3 | 4 | 5);
 }
 
+export function descriptionSysteme(systeme: SystemeActif): string {
+  const type = libelleType(systeme.classification);
+  const categorie = systeme.classification === "HU" ? categorieSaffirSimpson(systeme.ventKt) : null;
+  return categorie ? `${type} de catégorie ${categorie}` : type;
+}
+
 const MAX_SYSTEMES = 50;
 const ID = /^[a-z]{2}\d{6}$/;
 const EMPLACEMENT = /^(AT|EP|CP)[1-5]$/;
