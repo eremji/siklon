@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EtatFlux } from "@/lib/nhc/client";
 import type { SystemeActif } from "@/lib/nhc/systemes";
 import { ListeSystemes } from "./ListeSystemes";
@@ -65,6 +65,58 @@ describe("ListeSystemes", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("2 systèmes n'ont pas pu être affichés.");
     expect(screen.getByRole("link", { name: /nhc\.noaa\.gov/ })).toBeInTheDocument();
+  });
+
+  it("affiche le numéro et l'heure de l'avis de chaque système", () => {
+    render(<ListeSystemes flux={ok([systeme({})])} />);
+
+    expect(screen.getByRole("listitem")).toHaveTextContent("Avis n° 14 du 10 septembre à 11 h 00");
+  });
+
+  it("cite la source et l'heure du dernier avis NHC", () => {
+    render(
+      <ListeSystemes
+        flux={ok([
+          systeme({ avis: { numero: "13", emisLe: "2026-09-10T09:00:00.000Z" } }),
+          systeme({ id: "al122026", nom: "Leah", avis: { numero: "3", emisLe: "2026-09-10T15:00:00.000Z" } }),
+        ])}
+      />,
+    );
+
+    expect(
+      screen.getByText("Source : NHC, dernier avis le 10 septembre à 11 h 00 (heure des Antilles françaises)."),
+    ).toBeInTheDocument();
+  });
+
+  it("cite la source et l'heure de lecture du flux quand aucun système n'est actif", () => {
+    render(<ListeSystemes flux={ok([])} />);
+
+    expect(
+      screen.getByText("Source : NHC, flux lu le 10 septembre à 12 h 00 (heure des Antilles françaises)."),
+    ).toBeInTheDocument();
+  });
+
+  describe("obsolescence", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("signale le système dont l'avis a plus de 6 h, et lui seul", () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-09-10T19:00:00.000Z"));
+      render(
+        <ListeSystemes
+          flux={ok([
+            systeme({ avis: { numero: "13", emisLe: "2026-09-10T09:00:00.000Z" } }),
+            systeme({ id: "al122026", nom: "Leah", avis: { numero: "3", emisLe: "2026-09-10T15:00:00.000Z" } }),
+          ])}
+        />,
+      );
+
+      const [kyle, leah] = screen.getAllByRole("listitem");
+      expect(kyle).toHaveTextContent("Données possiblement obsolètes");
+      expect(leah).not.toHaveTextContent("Données possiblement obsolètes");
+    });
   });
 
   it("signale un système écarté même quand aucun autre n'est affiché", () => {

@@ -1,5 +1,7 @@
 import type { EtatFlux } from "@/lib/nhc/client";
+import { avisLePlusRecent, formaterHeureAntilles } from "@/lib/nhc/fraicheur";
 import { type Classification, type SystemeActif, categorieSaffirSimpson, libelleType } from "@/lib/nhc/systemes";
+import { AlerteObsolescence } from "./AlerteObsolescence";
 
 const URL_NHC = "https://www.nhc.noaa.gov/";
 
@@ -33,6 +35,12 @@ function Pastille({ systeme }: { systeme: SystemeActif }) {
       {categorie ?? ABREVIATIONS[systeme.classification]}
     </span>
   );
+}
+
+function Source({ systemes, luLe }: { systemes: SystemeActif[]; luLe: string }) {
+  const dernierAvis = avisLePlusRecent(systemes.map((systeme) => systeme.avis.emisLe));
+  const heure = dernierAvis ? `dernier avis le ${formaterHeureAntilles(dernierAvis)}` : `flux lu le ${formaterHeureAntilles(luLe)}`;
+  return <p className="text-sm text-muted">Source : NHC, {heure} (heure des Antilles françaises).</p>;
 }
 
 function description(systeme: SystemeActif): string {
@@ -72,11 +80,16 @@ export function ListeSystemes({ flux }: { flux: EtatFlux }) {
               <div className="flex flex-col">
                 <span className="text-lg font-bold">{systeme.nom}</span>
                 <span className="text-base text-muted">{description(systeme)}</span>
+                <span className="text-sm text-muted">
+                  Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe)}
+                </span>
+                <AlerteObsolescence emisLe={systeme.avis.emisLe} />
               </div>
             </li>
           ))}
         </ul>
       )}
+      <Source systemes={systemes} luLe={flux.luLe} />
     </div>
   );
 }

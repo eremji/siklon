@@ -37,3 +37,19 @@ test("la carte signale un flux NHC indisponible sans dire qu'aucun système n'es
   ).toBeVisible();
   await expect(page.getByText(/Aucun système actif/)).toHaveCount(0);
 });
+
+test("la carte affiche l'heure du dernier avis NHC et signale un avis de plus de 6 h", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await fixtureNhc(context, baseURL, "actifs");
+  // Fixture : avis de Kyle à 15 h UTC, de Thirteen à 12 h UTC ; il est 19 h UTC.
+  await page.clock.setFixedTime(new Date("2026-09-10T19:00:00.000Z"));
+  await page.goto("/");
+
+  await expect(page.getByText("Source : NHC, dernier avis le 10 septembre à 11 h 00")).toBeVisible();
+  const systemes = page.getByRole("list", { name: "Systèmes actifs" }).getByRole("listitem");
+  await expect(systemes.filter({ hasText: "Thirteen" })).toContainText("Données possiblement obsolètes");
+  await expect(systemes.filter({ hasText: "Kyle" })).not.toContainText("Données possiblement obsolètes");
+});
