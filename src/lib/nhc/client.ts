@@ -1,3 +1,4 @@
+import { raisonEchec } from "./journal";
 import { type SystemeActif, lireCurrentStorms } from "./systemes";
 
 // Seul domaine interrogé pour les systèmes actifs (liste blanche).
@@ -23,10 +24,7 @@ export async function chargerSystemesActifs({ maintenant = () => new Date() }: O
     const { systemes, rejetes } = lireCurrentStorms(await reponse.json());
     return { etat: "ok", systemes, rejetes, luLe: maintenant().toISOString() };
   } catch (erreur) {
-    // Le message d'une SyntaxError cite la réponse reçue : seul son type est journalisé.
-    const raison =
-      erreur instanceof SyntaxError ? "JSON invalide" : erreur instanceof Error ? `${erreur.name}: ${erreur.message}` : "inconnue";
-    console.warn("[nhc] flux CurrentStorms indisponible", { raison });
+    console.warn("[nhc] flux CurrentStorms indisponible", { raison: raisonEchec(erreur) });
     return { etat: "indisponible", luLe: maintenant().toISOString() };
   }
 }
