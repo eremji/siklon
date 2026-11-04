@@ -43,3 +43,10 @@ next-env.d.ts
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# secrets et réglages locaux
+*.key
+*.p12
+*.pfx
+*service-account*.json
+.claude/settings.local.json
