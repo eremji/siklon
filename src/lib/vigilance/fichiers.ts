@@ -1,14 +1,11 @@
-// Fichier du flux vigilance outre-mer de chaque île française (SPEC.md, « Flux vigilance Météo-France »).
-// Les identifiants d'île suivent le segment d'URL ; à aligner sur le référentiel des îles (US-04).
-const FICHIERS = new Map<string, string>([
-  ["guadeloupe", "CDPV85TFFR"],
-  ["martinique", "CDPV85TFFF"],
-  ["saint-martin", "CDPV85TFFJ"],
-  ["saint-barthelemy", "CDPV85TFFJ"],
-]);
+// Fichier du flux vigilance outre-mer de chaque île française, lu dans le référentiel des îles.
+import { ILES, trouverIle, type FichierVigilance } from "@/lib/iles";
 
-export const ILES_VIGILANCE: readonly string[] = [...FICHIERS.keys()];
+export const ILES_VIGILANCE: readonly string[] = ILES.filter((ile) => ile.alerte.source === "meteo-france").map(
+  (ile) => ile.slug,
+);
 
-export function fichierVigilance(ile: string): string | undefined {
-  return FICHIERS.get(ile);
+export function fichierVigilance(slug: string): FichierVigilance | undefined {
+  const alerte = trouverIle(slug)?.alerte;
+  return alerte?.source === "meteo-france" ? alerte.fichier : undefined;
 }
