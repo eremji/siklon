@@ -17,10 +17,11 @@ Application web de suivi des cyclones tropicaux pour les Antilles.
 - Déploiement sur Vercel
 
 ## Commandes
-Le projet n'est pas encore généré : mettre cette section à jour avec les
-scripts réels de `package.json` dès leur création (dev, build, lint,
-test, test:e2e).
-- Scaffold Next.js : générer dans un dossier temporaire puis fusionner le package.json existant (garder commitlint/husky), ne jamais écraser.
+- `npm run dev` : serveur de développement (http://localhost:3000).
+- `npm run lint` · `npm run typecheck` · `npm test` (Vitest) · `npm run test:e2e` (Playwright).
+- `npm run build` puis `npm run start` : version de production en local.
+- Tests e2e : installer le navigateur une fois avec `npx playwright install chromium`.
+- Next.js 16 : lire la doc de `node_modules/next/dist/docs/` avant d'utiliser une API (voir AGENTS.md).
 
 ## Règles de travail
 - Toujours répondre en français.
