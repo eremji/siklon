@@ -24,10 +24,13 @@ disable-model-invocation: true
    livrer partiellement (la PR le dira).
 4. **Committer** les changements restants en Conventional Commits, en français (`feat:`,
    `fix:`, `test:`, `chore:`, `docs:`, `refactor:`), un commit par changement logique.
-   Montrer `git status` et les messages proposés avant de committer. Le hook commitlint
-   doit passer ; ne jamais utiliser `--no-verify`.
-5. **Pousser** : `git push -u origin <branche>`.
-6. **Ouvrir la PR** avec `gh pr create` en remplissant `.github/pull_request_template.md` :
-   `Closes #<n°>`, résumé, critères cochés selon l'étape 3, tests, captures d'écran si
-   l'interface change (sinon supprimer la section). Titre au format Conventional Commits.
+   Montrer `git status` et les messages proposés, puis **attendre un « oui » explicite**
+   avant de committer. Le hook commitlint doit passer ; ne jamais le contourner.
+5. **Préparer la PR** : écrire le texte dans un fichier temporaire hors du dépôt, en
+   remplissant `.github/pull_request_template.md` : `Closes #<n°>`, résumé, critères
+   cochés selon l'étape 3, tests, captures d'écran si l'interface change (sinon supprimer
+   la section). Titre au format Conventional Commits. Montrer le titre et le texte, puis
+   **attendre un « oui » explicite** avant de pousser.
+6. **Pousser et ouvrir la PR** : `git push -u origin <branche>`, puis
+   `gh pr create --title "<titre>" --body-file <fichier>`.
 7. **Donner le lien de la PR** et l'état des vérifications. Ne pas merger.
