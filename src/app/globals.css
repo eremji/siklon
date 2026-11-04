@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/* Jetons Lagon : voir DESIGN.md */
+:root {
+  color-scheme: light;
+  --bg: #F2F7F6;
+  --surface: #FFFFFF;
+  --soft: #E3F0EE;
+  --text: #10292E;
+  --text-2: #3E5A60;
+  --header: #0E5E6F;
+  --header-text: #FFFFFF;
+  --accent: #0E5E6F;
+  --on-accent: #FFFFFF;
+  --field: #6B8287;
+  --map-sea: #CFE7E4;
+  --map-land: #3F6B4F;
+  --map-land-hi: #1F3D2B;
+  --danger: #B91C1C;
+  --danger-text: #B91C1C;
+  --danger-soft: #FDECEC;
+  --vig-jaune: #FACC15;
+  --vig-orange: #EA7A00;
+  --vig-rouge: #B91C1C;
+  --vig-violet: #6B21A8;
+  --vig-gris: #4B5563;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0B1F24;
+    --surface: #12303A;
+    --soft: #1A3E48;
+    --text: #E6F2F0;
+    --text-2: #A9C4C2;
+    --header: #12303A;
+    --header-text: #E6F2F0;
+    --accent: #5EC4C9;
+    --on-accent: #0B1F24;
+    --field: #6E9096;
+    --map-sea: #0E2830;
+    --map-land: #6B8F7A;
+    --map-land-hi: #C9DDD6;
+    --danger: #DC2626;
+    --danger-text: #F87171;
+    --danger-soft: #3A1A1F;
+    --vig-rouge: #DC2626;
+    --vig-violet: #9333EA;
+    --vig-gris: #64748B;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0B1F24;
+  --surface: #12303A;
+  --soft: #1A3E48;
+  --text: #E6F2F0;
+  --text-2: #A9C4C2;
+  --header: #12303A;
+  --header-text: #E6F2F0;
+  --accent: #5EC4C9;
+  --on-accent: #0B1F24;
+  --field: #6E9096;
+  --map-sea: #0E2830;
+  --map-land: #6B8F7A;
+  --map-land-hi: #C9DDD6;
+  --danger: #DC2626;
+  --danger-text: #F87171;
+  --danger-soft: #3A1A1F;
+  --vig-rouge: #DC2626;
+  --vig-violet: #9333EA;
+  --vig-gris: #64748B;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-soft: var(--soft);
+  --color-foreground: var(--text);
+  --color-muted: var(--text-2);
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-text);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-field: var(--field);
+  --color-sea: var(--map-sea);
+  --color-land: var(--map-land);
+  --color-land-strong: var(--map-land-hi);
+  --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
+  --color-danger-soft: var(--danger-soft);
+  --color-vig-jaune: var(--vig-jaune);
+  --color-vig-orange: var(--vig-orange);
+  --color-vig-rouge: var(--vig-rouge);
+  --color-vig-violet: var(--vig-violet);
+  --color-vig-gris: var(--vig-gris);
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}

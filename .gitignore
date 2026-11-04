@@ -44,6 +44,12 @@ next-env.d.ts
 !.vscode/extensions.json
 .idea
 
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # secrets et réglages locaux
 *.key
 *.p12

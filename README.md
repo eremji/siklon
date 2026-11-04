@@ -10,14 +10,15 @@ historique des cyclones passés.
 
 ## État du projet
 
-Le projet est en phase de cadrage : la spécification, le design et les user
-stories sont prêts, le code de l'application n'est pas encore écrit.
+La spécification, le design et les user stories sont prêts, et le socle
+technique (Next.js, tests, CI) est en place. Les fonctionnalités arrivent user
+story par user story.
 
 - [SPEC.md](SPEC.md) : périmètre de la V1, user stories et critères
   d'acceptation, constantes (rayons, îles de référence).
 - [DESIGN.md](DESIGN.md) : direction visuelle, jetons de couleur clair et
   sombre, typographie, règles d'accessibilité.
-- [Issues](https://github.com/eremji/siklon/issues?q=label%3A%22user+story%22) :
+- [Issues](https://github.com/eremji/siklon/issues?q=label%3Auser-story) :
   une issue par user story, avec ses critères en cases à cocher.
 
 ## Sources de données
@@ -31,7 +32,8 @@ stories sont prêts, le code de l'application n'est pas encore écrit.
 
 ## Stack
 
-- [Next.js](https://nextjs.org/) et TypeScript
+- [Next.js](https://nextjs.org/) 16 et TypeScript
+- [Tailwind CSS](https://tailwindcss.com/) 4, avec les jetons de couleur de DESIGN.md
 - PostgreSQL
 - [Better Auth](https://www.better-auth.com/) : connexion Google ou email et
   mot de passe
@@ -43,31 +45,34 @@ stories sont prêts, le code de l'application n'est pas encore écrit.
 
 ## Lancer le projet en local
 
-> Ces étapes s'appliqueront une fois l'application Next.js générée. Les
-> scripts exacts seront ceux de `package.json`.
-
-Prérequis : Node.js 20 ou plus récent, PostgreSQL, git.
+Prérequis : git et Node.js 26, la version fixée par `.nvmrc`. Avec
+[fnm](https://github.com/Schniz/fnm), `fnm install` puis `fnm use` dans le dossier
+suffisent.
 
 ```bash
 git clone https://github.com/eremji/siklon.git
 cd siklon
-npm install
-cp .env.example .env.local   # puis renseigner les valeurs
+npm install                  # installe aussi le hook de commit (husky)
 npm run dev                  # http://localhost:3000
 ```
 
-Tests :
+Vérifications, les mêmes que la CI :
 
 ```bash
-npm test           # tests unitaires et d'intégration (Vitest)
-npm run test:e2e   # tests de bout en bout (Playwright)
+npm run lint                 # ESLint
+npm run typecheck            # TypeScript
+npm test                     # tests unitaires et d'intégration (Vitest)
+npx playwright install chromium   # une seule fois
+npm run test:e2e             # tests de bout en bout et accessibilité (Playwright, axe)
+npm run build                # build de production
 ```
 
 ### Variables d'environnement
 
 Les secrets ne sont jamais committés : ils vont dans `.env.local` (ignoré par
 git) en local, et dans les variables d'environnement Vercel en production.
-`.env.example` listera toutes les variables attendues, sans leurs valeurs,
+Aucune variable n'est encore nécessaire. `.env.example` arrivera avec la
+première, et listera toutes les variables attendues, sans leurs valeurs,
 notamment :
 
 | Variable | Usage |
