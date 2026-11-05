@@ -17,7 +17,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "maplibre-gl": "5.24.0",
+    "maplibre-gl": "6.4.1",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0"
