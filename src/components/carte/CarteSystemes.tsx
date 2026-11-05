@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { emprise } from "@/lib/carte/emprise";
 import { type CouleursCarte, JETONS_CARTE, styleCarte } from "@/lib/carte/style";
+import type { Prevision } from "@/lib/nhc/previsions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { Pastille } from "@/components/systemes/Pastille";
 
@@ -23,8 +24,9 @@ interface Ancre {
 
 function lireCouleurs(): CouleursCarte {
   const style = getComputedStyle(document.documentElement);
-  const lire = (jeton: string) => style.getPropertyValue(jeton).trim();
-  return { mer: lire(JETONS_CARTE.mer), terre: lire(JETONS_CARTE.terre), frontiere: lire(JETONS_CARTE.frontiere) };
+  return Object.fromEntries(
+    Object.entries(JETONS_CARTE).map(([couleur, jeton]) => [couleur, style.getPropertyValue(jeton).trim()]),
+  ) as unknown as CouleursCarte;
 }
 
 // Le thème suit le téléphone : les couleurs de la carte suivent les jetons.
@@ -37,7 +39,23 @@ function repeindre(carte: CarteMapLibre) {
   }
 }
 
-export function CarteSystemes({ systemes }: { systemes: SystemeActif[] }) {
+// Positions à montrer : chaque système et les points de sa trajectoire prévue.
+function pointsAMontrer(systemes: SystemeActif[], previsions: Prevision[]) {
+  const trajectoires = previsions.flatMap((p) => p.trajectoire.flat()).map(([longitude, latitude]) => ({ longitude, latitude }));
+  return [...systemes, ...trajectoires];
+}
+
+// Valeur par défaut stable : un nouvel objet relancerait l'effet à chaque rendu.
+const AUCUNE_PREVISION: Record<string, Prevision> = {};
+
+export function CarteSystemes({
+  systemes,
+  previsions = AUCUNE_PREVISION,
+}: {
+  systemes: SystemeActif[];
+  // Prévisions disponibles, par identifiant de système.
+  previsions?: Record<string, Prevision>;
+}) {
   const conteneur = useRef<HTMLDivElement>(null);
   const [ancres, setAncres] = useState<Ancre[]>([]);
   const [echec, setEchec] = useState(false);
@@ -48,14 +66,16 @@ export function CarteSystemes({ systemes }: { systemes: SystemeActif[] }) {
     const theme = window.matchMedia?.("(prefers-color-scheme: dark)");
     const surTheme = () => carte && repeindre(carte);
 
+    const liste = Object.values(previsions);
+
     // MapLibre n'est chargé que dans le navigateur, après l'affichage de la liste.
     import("maplibre-gl")
       .then(({ Map, Marker }) => {
         if (annule || !conteneur.current) return;
         carte = new Map({
           container: conteneur.current,
-          style: styleCarte(lireCouleurs()),
-          bounds: emprise(systemes),
+          style: styleCarte(lireCouleurs(), liste),
+          bounds: emprise(pointsAMontrer(systemes, liste)),
           // Place pour la pastille et, à droite, pour le nom du système.
           fitBoundsOptions: { padding: { top: 32, bottom: 32, left: 32, right: 96 } },
           attributionControl: { compact: true },
@@ -81,7 +101,7 @@ export function CarteSystemes({ systemes }: { systemes: SystemeActif[] }) {
       theme?.removeEventListener("change", surTheme);
       carte?.remove();
     };
-  }, [systemes]);
+  }, [systemes, previsions]);
 
   return (
     <div role="region" aria-label="Carte des systèmes actifs" className="relative">

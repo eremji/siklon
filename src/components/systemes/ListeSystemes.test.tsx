@@ -73,6 +73,19 @@ describe("ListeSystemes", () => {
     expect(screen.getByRole("listitem")).toHaveTextContent("Avis n° 14 du 10 septembre à 11 h 00");
   });
 
+  it("indique pour chaque système si la trajectoire et le cône sont disponibles", () => {
+    render(
+      <ListeSystemes
+        flux={ok([systeme({}), systeme({ id: "al122026", nom: "Leah", classification: "TS", ventKt: 45 })])}
+        previsions={{ al112026: { avis: "14", trajectoire: [], cone: [] } }}
+      />,
+    );
+
+    const [kyle, leah] = screen.getAllByRole("listitem");
+    expect(kyle).toHaveTextContent("Trajectoire et cône prévus : avis n° 14");
+    expect(leah).toHaveTextContent("Trajectoire et cône non disponibles pour le moment");
+  });
+
   it("cite la source et l'heure du dernier avis NHC", () => {
     render(
       <ListeSystemes

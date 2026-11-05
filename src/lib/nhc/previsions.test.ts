@@ -5,6 +5,7 @@ import {
   PrevisionInvalideError,
   URL_SERVICE_PREVISIONS,
   chargerPrevision,
+  chargerPrevisions,
   couchesPrevision,
   lireCone,
   lireTrajectoire,
@@ -155,5 +156,17 @@ describe("chargerPrevision", () => {
 
     expect(await chargerPrevision("AT1")).toBeNull();
     expect(warn).toHaveBeenCalled();
+  });
+
+  it("charge les prévisions de chaque système, rattachées à son identifiant", async () => {
+    repondre({ 7: trajectoire, 8: cone, 33: VIDE, 34: VIDE });
+
+    const previsions = await chargerPrevisions([
+      { id: "al112026", emplacement: "AT1" },
+      { id: "al122026", emplacement: "AT2" },
+    ]);
+
+    expect(Object.keys(previsions)).toEqual(["al112026"]);
+    expect(previsions.al112026.avis).toBe("14");
   });
 });

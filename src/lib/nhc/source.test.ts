@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { etatFixture, fixtureDemandee } from "./source";
+import { etatFixture, fixtureDemandee, previsionsFixture } from "./source";
 
 describe("fixtureDemandee", () => {
   it("n'utilise jamais de fixture sans activation explicite", () => {
@@ -29,5 +29,16 @@ describe("etatFixture", () => {
     expect(actifs.etat === "ok" && actifs.systemes.map((s) => s.nom)).toEqual(["Kyle", "Leah", "Thirteen"]);
     expect(etatFixture("vide", luLe)).toEqual({ etat: "ok", systemes: [], rejetes: 0, luLe });
     expect(etatFixture("indisponible", luLe)).toEqual({ etat: "indisponible", luLe });
+  });
+});
+
+describe("previsionsFixture", () => {
+  it("fournit la trajectoire et le cône de Kyle avec la fixture « actifs », rien sinon", () => {
+    const actifs = previsionsFixture("actifs");
+    expect(Object.keys(actifs)).toEqual(["al112026"]);
+    expect(actifs.al112026).toMatchObject({ avis: "14" });
+    expect(actifs.al112026.cone).toHaveLength(1);
+    expect(actifs.al112026.trajectoire).toHaveLength(1);
+    expect(previsionsFixture("vide")).toEqual({});
   });
 });

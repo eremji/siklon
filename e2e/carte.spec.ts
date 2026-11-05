@@ -83,3 +83,16 @@ test.describe("sur un écran de 360 px", () => {
     expect(largeur).toBeLessThanOrEqual(360);
   });
 });
+
+test("la carte indique la trajectoire prévue et le cône d'incertitude publiés par le NHC", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await fixtureNhc(context, baseURL, "actifs");
+  await page.goto("/");
+
+  const systemes = page.getByRole("list", { name: "Systèmes actifs" }).getByRole("listitem");
+  await expect(systemes.filter({ hasText: "Kyle" })).toContainText("Trajectoire et cône prévus : avis n° 14");
+  await expect(systemes.filter({ hasText: "Leah" })).toContainText("Trajectoire et cône non disponibles pour le moment");
+});

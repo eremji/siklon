@@ -144,3 +144,16 @@ export async function chargerPrevision(emplacement: string): Promise<Prevision |
     return null;
   }
 }
+
+// Prévisions disponibles des systèmes actifs, par identifiant de système.
+export async function chargerPrevisions(
+  systemes: { id: string; emplacement: string }[],
+): Promise<Record<string, Prevision>> {
+  const lues = await Promise.all(systemes.map((systeme) => chargerPrevision(systeme.emplacement)));
+  return Object.fromEntries(
+    systemes.flatMap((systeme, index) => {
+      const prevision = lues[index];
+      return prevision ? [[systeme.id, prevision]] : [];
+    }),
+  );
+}

@@ -1,5 +1,6 @@
 import type { EtatFlux } from "@/lib/nhc/client";
 import { avisLePlusRecent, formaterHeureAntilles } from "@/lib/nhc/fraicheur";
+import type { Prevision } from "@/lib/nhc/previsions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { AlerteObsolescence } from "./AlerteObsolescence";
 import { Pastille } from "./Pastille";
@@ -20,7 +21,14 @@ function Source({ systemes, luLe }: { systemes: SystemeActif[]; luLe: string }) 
   return <p className="text-sm text-muted">Source : NHC, {heure} (heure des Antilles françaises).</p>;
 }
 
-export function ListeSystemes({ flux }: { flux: EtatFlux }) {
+export function ListeSystemes({
+  flux,
+  previsions = {},
+}: {
+  flux: EtatFlux;
+  // Prévisions disponibles, par identifiant de système.
+  previsions?: Record<string, Prevision>;
+}) {
   if (flux.etat === "indisponible") {
     return (
       <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
@@ -53,6 +61,11 @@ export function ListeSystemes({ flux }: { flux: EtatFlux }) {
                 <span className="text-base text-muted">{descriptionSysteme(systeme)}</span>
                 <span className="text-sm text-muted">
                   Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe)}
+                </span>
+                <span className="text-sm text-muted">
+                  {previsions[systeme.id]
+                    ? `Trajectoire et cône prévus : avis n° ${previsions[systeme.id].avis}`
+                    : "Trajectoire et cône non disponibles pour le moment"}
                 </span>
                 <AlerteObsolescence emisLe={systeme.avis.emisLe} />
               </div>
