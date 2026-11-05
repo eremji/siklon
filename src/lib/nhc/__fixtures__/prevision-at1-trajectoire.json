@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": 1,
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-58.2, 16.8],
+          [-59.9, 17.4],
+          [-61.6, 18.0],
+          [-63.3, 18.7],
+          [-66.5, 19.9],
+          [-69.8, 21.2],
+          [-72.5, 22.6],
+          [-75.0, 24.1]
+        ]
+      },
+      "properties": {
+        "objectid": 1,
+        "stormname": "KYLE",
+        "stormtype": "HU",
+        "basin": "al",
+        "advdate": "1100 AM AST Thu Sep 10 2026",
+        "advisnum": "14",
+        "fcstprd": 120,
+        "stormnum": 11,
+        "binnumber": "AT1"
+      }
+    }
+  ]
+}
