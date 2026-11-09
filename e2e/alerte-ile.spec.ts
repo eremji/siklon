@@ -18,7 +18,10 @@ test("la page d'une île française affiche la vigilance en cours, sa source et 
   await expect(entete.getByText("Vigilance orange")).toBeVisible();
   await expect(entete.getByText("Préparez-vous")).toBeVisible();
   await expect(page.getByText("Source : Météo-France, mise à jour du 9 novembre à 05 h 42")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toHaveAttribute(
+    "href",
+    "https://meteofrance.gp/fr/vigilance/guadeloupe",
+  );
   await expect(page.getByText("Siklon ne remplace pas les consignes officielles.")).toBeVisible();
 });
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { BandeauVigilance } from "./BandeauVigilance";
 
 const misAJour = "2026-11-09T09:42:00.000Z";
-const guadeloupe = { nomIle: "Guadeloupe" };
+const guadeloupe = { nomIle: "Guadeloupe", fichier: "CDPV85TFFR" } as const;
 
 describe("BandeauVigilance", () => {
   it.each([
@@ -38,7 +38,15 @@ describe("BandeauVigilance", () => {
     expect(screen.getByText("Source : Météo-France, mise à jour du 9 novembre à 05 h 42 (heure des Antilles françaises).")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toHaveAttribute(
       "href",
-      "https://vigilance.meteofrance.fr/fr",
+      "https://meteofrance.gp/fr/vigilance/guadeloupe",
+    );
+  });
+
+  it("renvoie vers la page de vigilance outre-mer de l'île, pas vers celle de l'Hexagone", () => {
+    render(<BandeauVigilance nomIle="Martinique" fichier="CDPV85TFFF" etat={{ etat: "indisponible" }} />);
+    expect(screen.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toHaveAttribute(
+      "href",
+      "https://meteofrance.mq/fr/vigilance",
     );
   });
 

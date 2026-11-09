@@ -30,7 +30,7 @@ async function VigilanceIle({ ile, fichier }: { ile: Ile; fichier: FichierVigila
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
   const etat = fixture ? etatFixture(fixture) : await chargerVigilance(fichier, SOURCES_METEO_FRANCE);
-  return <BandeauVigilance nomIle={ile.nom} etat={etat} />;
+  return <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />;
 }
 
 // L'identifiant d'île vient de l'URL : il est lu sous Suspense pour garder un App Shell commun.

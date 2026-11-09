@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { fichierVigilance, ILES_VIGILANCE } from "./fichiers";
+import { fichierVigilance, ILES_VIGILANCE, pageVigilance } from "./fichiers";
+
+describe("page de vigilance Météo-France de chaque île", () => {
+  it.each([
+    ["guadeloupe", "https://meteofrance.gp/fr/vigilance/guadeloupe"],
+    ["martinique", "https://meteofrance.mq/fr/vigilance"],
+    ["saint-martin", "https://meteofrance.gp/fr/vigilance/saint-martin-saint-barthelemy"],
+    ["saint-barthelemy", "https://meteofrance.gp/fr/vigilance/saint-martin-saint-barthelemy"],
+  ])("%s renvoie vers la page outre-mer %s", (ile, url) => {
+    expect(pageVigilance(fichierVigilance(ile)!)).toBe(url);
+  });
+});
 
 describe("correspondance île → fichier Météo-France", () => {
   it.each([
