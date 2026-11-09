@@ -28,7 +28,7 @@ describe("CarteTrajectoire", () => {
 
   it("trace toute la trajectoire, point par point", () => {
     const { container } = render(<CarteTrajectoire titre="Hugo (1989)" points={points} ile={guadeloupe} />);
-    const trace = container.querySelector("polyline");
+    const trace = container.querySelector("polyline[data-trace]");
     expect(trace?.getAttribute("points")?.trim().split(/\s+/)).toHaveLength(4);
     expect(container.querySelectorAll("[data-point]")).toHaveLength(4);
   });
@@ -44,6 +44,19 @@ describe("CarteTrajectoire", () => {
     const { container } = render(<CarteTrajectoire titre="Hugo (1989)" points={points} ile={guadeloupe} />);
     expect(screen.getByText("Pointe-à-Pitre")).toBeInTheDocument();
     expect(container.querySelector("[data-rayon-impact]")).not.toBeNull();
+  });
+
+  it("dessine les terres (traits de côte Natural Earth) sous la trajectoire", () => {
+    const { container } = render(<CarteTrajectoire titre="Hugo (1989)" points={points} ile={guadeloupe} />);
+    const terres = container.querySelectorAll("path[data-cote]");
+    expect(terres.length).toBeGreaterThan(0);
+    const ordre = [...container.querySelectorAll("path[data-cote], polyline")].map((el) => el.tagName);
+    expect(ordre.at(-1)).toBe("polyline");
+  });
+
+  it("borde la trajectoire d'un liseré pour qu'elle reste visible sur les terres", () => {
+    const { container } = render(<CarteTrajectoire titre="Hugo (1989)" points={points} ile={guadeloupe} />);
+    expect(container.querySelectorAll("polyline")).toHaveLength(2);
   });
 
   it("s'affiche sans île choisie", () => {

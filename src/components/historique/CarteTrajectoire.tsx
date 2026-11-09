@@ -1,5 +1,6 @@
 import { RADIUS_IMPACT_KM } from "@/lib/constantes";
 import type { PointHurdat2 } from "@/lib/hurdat2/parseur";
+import { cotesDansCadre } from "@/lib/historique/cotes";
 import { cadrer, creerProjection, pasGrille } from "@/lib/historique/projection";
 import type { Ile } from "@/lib/iles";
 
@@ -21,6 +22,12 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
   const cadre = cadrer(reference ? [...points, reference] : points, { marge: 2, ecartMin: 8 });
   const { hauteur, projeter, kmVersUnites } = creerProjection(cadre, LARGEUR);
   const trace = points.map((p) => projeter(p)).map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`);
+  const terres = cotesDansCadre(cadre).map((anneau) =>
+    anneau.map(([lon, lat], i) => {
+      const { x, y } = projeter({ lat, lon });
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join("") + "Z",
+  );
   const ileSurCarte = reference ? projeter(reference) : null;
   const etiquetteAGauche = ileSurCarte !== null && ileSurCarte.x > LARGEUR * 0.6;
   const description = `Carte de la trajectoire de ${titre}, ${points.length} points${ile ? `, près de ${ile.nom}` : ""}`;
@@ -34,12 +41,15 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
         className="h-auto w-full rounded-2xl"
       >
         <rect width={LARGEUR} height={hauteur} fill="var(--map-sea)" />
+        {terres.map((d, i) => (
+          <path key={i} data-cote d={d} fill="var(--map-land)" />
+        ))}
         {multiples(cadre.latMin, cadre.latMax).map((lat) => {
           const { y } = projeter({ lat, lon: cadre.lonMin });
           return (
             <g key={`lat${lat}`}>
               <line x1={0} x2={LARGEUR} y1={y} y2={y} stroke="var(--field)" strokeWidth={0.5} strokeDasharray="2 4" />
-              <text x={6} y={y - 6} fontSize={TEXTE_GRILLE} fill="var(--text-2)">
+              <text x={6} y={y - 6} fontSize={TEXTE_GRILLE} fill="var(--text-2)" stroke="var(--map-sea)" strokeWidth={5} paintOrder="stroke">
                 {Math.abs(lat)}° {lat < 0 ? "S" : "N"}
               </text>
             </g>
@@ -51,14 +61,23 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
             <g key={`lon${lon}`}>
               <line x1={x} x2={x} y1={0} y2={hauteur} stroke="var(--field)" strokeWidth={0.5} strokeDasharray="2 4" />
               {x < LARGEUR - 3 * TEXTE_GRILLE && (
-                <text x={x + 6} y={hauteur - 8} fontSize={TEXTE_GRILLE} fill="var(--text-2)">
+                <text x={x + 6} y={hauteur - 8} fontSize={TEXTE_GRILLE} fill="var(--text-2)" stroke="var(--map-sea)" strokeWidth={5} paintOrder="stroke">
                   {Math.abs(lon)}° {lon < 0 ? "O" : "E"}
                 </text>
               )}
             </g>
           );
         })}
-        <polyline points={trace.join(" ")} fill="none" stroke="var(--accent)" strokeWidth={2.5} strokeLinejoin="round" />
+        {/* Liseré couleur mer sous le tracé : la trajectoire reste lisible au-dessus des terres. */}
+        <polyline points={trace.join(" ")} fill="none" stroke="var(--map-sea)" strokeWidth={6} strokeLinejoin="round" />
+        <polyline
+          data-trace
+          points={trace.join(" ")}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
         {points.map((point) => {
           const { x, y } = projeter(point);
           return point.statut === "HU" ? (
@@ -79,14 +98,14 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
               strokeWidth={1.5}
               strokeDasharray="6 4"
             />
-            <circle cx={ileSurCarte.x} cy={ileSurCarte.y} r={7} fill="var(--map-land-hi)" />
+            <circle cx={ileSurCarte.x} cy={ileSurCarte.y} r={7} fill="var(--map-land-hi)" stroke="var(--map-sea)" strokeWidth={2} />
             <text
               x={ileSurCarte.x + (etiquetteAGauche ? -12 : 12)}
               y={ileSurCarte.y - 12}
               textAnchor={etiquetteAGauche ? "end" : "start"}
               fontSize={TEXTE_ILE}
               fontWeight={700}
-              fill="var(--text)"
+              fill="var(--text)" stroke="var(--map-sea)" strokeWidth={6} paintOrder="stroke"
             >
               {reference.nom}
             </text>
