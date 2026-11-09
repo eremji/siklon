@@ -17,7 +17,7 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    // Les tests e2e lisent des fixtures locales, jamais le flux NHC réel.
-    env: { NHC_FIXTURES: "1" },
+    // Les tests e2e lisent des fixtures locales, jamais les flux NHC et Météo-France réels.
+    env: { NHC_FIXTURES: "1", VIGILANCE_FIXTURES: "1" },
   },
 });
