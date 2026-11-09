@@ -29,11 +29,14 @@ function lireCouleurs(): CouleursCarte {
   ) as unknown as CouleursCarte;
 }
 
+// MapLibre 6 type chaque propriété de peinture ; Object.entries perd ce typage.
+type EntreePeinture = [Parameters<CarteMapLibre["setPaintProperty"]>[1], Parameters<CarteMapLibre["setPaintProperty"]>[2]];
+
 // Le thème suit le téléphone : les couleurs de la carte suivent les jetons.
 function repeindre(carte: CarteMapLibre) {
   const { layers } = styleCarte(lireCouleurs());
   for (const couche of layers) {
-    for (const [propriete, valeur] of Object.entries(couche.paint)) {
+    for (const [propriete, valeur] of Object.entries(couche.paint) as EntreePeinture[]) {
       carte.setPaintProperty(couche.id, propriete, valeur);
     }
   }
