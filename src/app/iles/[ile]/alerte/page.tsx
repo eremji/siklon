@@ -10,14 +10,14 @@ import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fi
 import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
 import { chargerVigilance } from "@/lib/vigilance/vigilance";
 
-type Props = PageProps<"/iles/[id]/alerte">;
+type Props = PageProps<"/iles/[ile]/alerte">;
 
 export function generateStaticParams() {
-  return ILES.map(({ slug }) => ({ id: slug }));
+  return ILES.map(({ slug }) => ({ ile: slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const ile = trouverIle((await params).id);
+  const ile = trouverIle((await params).ile);
   return { title: ile ? `Alerte en cours : ${ile.nom} · Siklon` : "Île introuvable · Siklon" };
 }
 
@@ -35,7 +35,7 @@ async function VigilanceIle({ ile, fichier }: { ile: Ile; fichier: FichierVigila
 
 // L'identifiant d'île vient de l'URL : il est lu sous Suspense pour garder un App Shell commun.
 async function AlerteIle({ params }: Pick<Props, "params">) {
-  const ile = trouverIle((await params).id);
+  const ile = trouverIle((await params).ile);
   if (!ile) notFound();
   if (ile.alerte.source === "nhc") return <AlertesNhcAVenir nomIle={ile.nom} />;
 
