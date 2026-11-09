@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estNiveau, infoNiveau, NIVEAUX } from "./niveaux";
+import { estNiveau, infoNiveau, niveauDepuisCode, NIVEAUX } from "./niveaux";
 
 describe("niveaux de vigilance Météo-France", () => {
   it("liste les six niveaux du dispositif Antilles, du plus faible au plus fort, puis le gris", () => {
@@ -19,6 +19,21 @@ describe("niveaux de vigilance Météo-France", () => {
 
   it("seul le vert signifie qu'aucune alerte n'est en cours", () => {
     expect(NIVEAUX.filter((n) => !infoNiveau(n).alerte)).toEqual(["vert"]);
+  });
+
+  it.each([
+    [1, "vert"],
+    [2, "jaune"],
+    [3, "orange"],
+    [4, "rouge"],
+    [5, "violet"],
+    [6, "gris"],
+  ] as const)("le code couleur %i du flux correspond au niveau %s", (code, niveau) => {
+    expect(niveauDepuisCode(code)).toBe(niveau);
+  });
+
+  it.each([0, -1, 7, 1.5, "1", null, undefined])("le code couleur %j ne correspond à aucun niveau", (code) => {
+    expect(niveauDepuisCode(code)).toBeUndefined();
   });
 
   it("reconnaît les niveaux connus et rejette le reste", () => {

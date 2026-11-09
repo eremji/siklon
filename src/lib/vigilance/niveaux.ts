@@ -23,6 +23,14 @@ export function estNiveau(valeur: unknown): valeur is Niveau {
   return typeof valeur === "string" && (NIVEAUX as readonly string[]).includes(valeur);
 }
 
+/**
+ * Niveau correspondant au `max_color_id` d'un bulletin CDPV85 : 1 à 6 dans l'ordre de NIVEAUX.
+ * 1 et 2 sont confirmés par un échantillon réel ; 3 à 6 suivent l'ordre du dispositif Antilles.
+ */
+export function niveauDepuisCode(code: unknown): Niveau | undefined {
+  return Number.isInteger(code) ? NIVEAUX[(code as number) - 1] : undefined;
+}
+
 export function infoNiveau(niveau: Niveau): InfoNiveau {
   return INFOS[niveau];
 }
