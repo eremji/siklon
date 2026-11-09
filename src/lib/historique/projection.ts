@@ -39,6 +39,13 @@ export function cadrer(positions: readonly Position[], { marge = 2, ecartMin = 8
   };
 }
 
+const PAS_GRILLE = [5, 10, 20, 30];
+
+/** Pas de la grille (en degrés) pour ne pas dépasser 6 lignes, et garder des étiquettes lisibles. */
+export function pasGrille(etendue: number): number {
+  return PAS_GRILLE.find((pas) => etendue / pas <= 6) ?? PAS_GRILLE[PAS_GRILLE.length - 1];
+}
+
 export function creerProjection(cadre: Cadre, largeur: number): Projection {
   const cosMilieu = Math.cos((((cadre.latMin + cadre.latMax) / 2) * Math.PI) / 180);
   const unitesParDegreLat = largeur / ((cadre.lonMax - cadre.lonMin) * cosMilieu);

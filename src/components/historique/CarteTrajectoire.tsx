@@ -1,14 +1,17 @@
 import { RADIUS_IMPACT_KM } from "@/lib/constantes";
 import type { PointHurdat2 } from "@/lib/hurdat2/parseur";
-import { cadrer, creerProjection } from "@/lib/historique/projection";
+import { cadrer, creerProjection, pasGrille } from "@/lib/historique/projection";
 import type { Ile } from "@/lib/iles";
 
 const LARGEUR = 600;
-const PAS_GRILLE = 5;
+// Le SVG est réduit à ~360–420 px de large : 20 unités donnent un texte d'environ 12–14 px.
+const TEXTE_GRILLE = 20;
+const TEXTE_ILE = 24;
 
 const multiples = (min: number, max: number) => {
+  const pas = pasGrille(max - min);
   const valeurs: number[] = [];
-  for (let v = Math.ceil(min / PAS_GRILLE) * PAS_GRILLE; v <= max; v += PAS_GRILLE) valeurs.push(v);
+  for (let v = Math.ceil(min / pas) * pas; v <= max; v += pas) valeurs.push(v);
   return valeurs;
 };
 
@@ -18,6 +21,8 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
   const cadre = cadrer(reference ? [...points, reference] : points, { marge: 2, ecartMin: 8 });
   const { hauteur, projeter, kmVersUnites } = creerProjection(cadre, LARGEUR);
   const trace = points.map((p) => projeter(p)).map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`);
+  const ileSurCarte = reference ? projeter(reference) : null;
+  const etiquetteAGauche = ileSurCarte !== null && ileSurCarte.x > LARGEUR * 0.6;
   const description = `Carte de la trajectoire de ${titre}, ${points.length} points${ile ? `, près de ${ile.nom}` : ""}`;
 
   return (
@@ -34,7 +39,7 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
           return (
             <g key={`lat${lat}`}>
               <line x1={0} x2={LARGEUR} y1={y} y2={y} stroke="var(--field)" strokeWidth={0.5} strokeDasharray="2 4" />
-              <text x={4} y={y - 4} fontSize={13} fill="var(--text-2)">
+              <text x={6} y={y - 6} fontSize={TEXTE_GRILLE} fill="var(--text-2)">
                 {Math.abs(lat)}° {lat < 0 ? "S" : "N"}
               </text>
             </g>
@@ -45,30 +50,14 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
           return (
             <g key={`lon${lon}`}>
               <line x1={x} x2={x} y1={0} y2={hauteur} stroke="var(--field)" strokeWidth={0.5} strokeDasharray="2 4" />
-              <text x={x + 4} y={hauteur - 6} fontSize={13} fill="var(--text-2)">
-                {Math.abs(lon)}° {lon < 0 ? "O" : "E"}
-              </text>
+              {x < LARGEUR - 3 * TEXTE_GRILLE && (
+                <text x={x + 6} y={hauteur - 8} fontSize={TEXTE_GRILLE} fill="var(--text-2)">
+                  {Math.abs(lon)}° {lon < 0 ? "O" : "E"}
+                </text>
+              )}
             </g>
           );
         })}
-        {reference && (
-          <g>
-            <circle
-              data-rayon-impact
-              cx={projeter(reference).x}
-              cy={projeter(reference).y}
-              r={kmVersUnites(RADIUS_IMPACT_KM)}
-              fill="none"
-              stroke="var(--map-land-hi)"
-              strokeWidth={1.5}
-              strokeDasharray="6 4"
-            />
-            <circle cx={projeter(reference).x} cy={projeter(reference).y} r={5} fill="var(--map-land-hi)" />
-            <text x={projeter(reference).x + 9} y={projeter(reference).y + 5} fontSize={15} fontWeight={700} fill="var(--text)">
-              {reference.nom}
-            </text>
-          </g>
-        )}
         <polyline points={trace.join(" ")} fill="none" stroke="var(--accent)" strokeWidth={2.5} strokeLinejoin="round" />
         {points.map((point) => {
           const { x, y } = projeter(point);
@@ -78,6 +67,31 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
             <circle key={point.horodatage.getTime()} data-point="autre" cx={x} cy={y} r={3.5} fill="var(--text-2)" />
           );
         })}
+        {reference && ileSurCarte && (
+          <g>
+            <circle
+              data-rayon-impact
+              cx={ileSurCarte.x}
+              cy={ileSurCarte.y}
+              r={kmVersUnites(RADIUS_IMPACT_KM)}
+              fill="none"
+              stroke="var(--map-land-hi)"
+              strokeWidth={1.5}
+              strokeDasharray="6 4"
+            />
+            <circle cx={ileSurCarte.x} cy={ileSurCarte.y} r={7} fill="var(--map-land-hi)" />
+            <text
+              x={ileSurCarte.x + (etiquetteAGauche ? -12 : 12)}
+              y={ileSurCarte.y - 12}
+              textAnchor={etiquetteAGauche ? "end" : "start"}
+              fontSize={TEXTE_ILE}
+              fontWeight={700}
+              fill="var(--text)"
+            >
+              {reference.nom}
+            </text>
+          </g>
+        )}
       </svg>
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
         <span className="flex items-center gap-1">

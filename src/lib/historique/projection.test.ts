@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cadrer, creerProjection } from "./projection";
+import { cadrer, creerProjection, pasGrille } from "./projection";
 
 describe("cadrer", () => {
   it("entoure les positions d'une marge", () => {
@@ -42,5 +42,18 @@ describe("creerProjection", () => {
   it("convertit des kilomètres en unités de la carte", () => {
     const unDegreLat = projection.projeter({ lat: 29, lon: -80 }).y;
     expect(projection.kmVersUnites(111.19508)).toBeCloseTo(unDegreLat, 3);
+  });
+});
+
+describe("pasGrille", () => {
+  it.each([
+    [8, 5],
+    [30, 5],
+    [31, 10],
+    [60, 10],
+    [61, 20],
+    [120, 20],
+  ])("garde au plus 6 lignes de grille sur %i degrés (pas de %i°)", (etendue, pas) => {
+    expect(pasGrille(etendue)).toBe(pas);
   });
 });
