@@ -20,15 +20,34 @@ export async function generateMetadata({ params }: PageProps<"/iles/[ile]/histor
   return { title: ile ? `Historique des cyclones : ${ile.nom} · Siklon` : "Île inconnue · Siklon" };
 }
 
-export default async function Page({ params, searchParams }: PageProps<"/iles/[ile]/historique">) {
-  const ile = trouverIle((await params).ile);
-  if (!ile) notFound();
-
+// Les données d'URL (params, searchParams) sont lues sous Suspense : la coquille de la route reste
+// partagée et prérendue, et la navigation vers une île est instantanée (Partial Prefetching).
+export default function Page({ params, searchParams }: PageProps<"/iles/[ile]/historique">) {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <Link href="/historique" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
         Toutes les îles
       </Link>
+      <Suspense
+        fallback={
+          <>
+            <h1 className="text-3xl font-bold">Historique des cyclones</h1>
+            <p className="text-base">Chargement de l&apos;historique…</p>
+          </>
+        }
+      >
+        <Contenu params={params} searchParams={searchParams} />
+      </Suspense>
+    </main>
+  );
+}
+
+async function Contenu({ params, searchParams }: PageProps<"/iles/[ile]/historique">) {
+  const ile = trouverIle((await params).ile);
+  if (!ile) notFound();
+
+  return (
+    <>
       <h1 className="text-3xl font-bold">Historique des cyclones : {ile.nom}</h1>
       <p className="text-base">
         Cyclones passés à moins de {RADIUS_IMPACT_KM} km de {ile.pointReference.nom}, du plus récent au plus ancien.
@@ -36,7 +55,7 @@ export default async function Page({ params, searchParams }: PageProps<"/iles/[i
       <Suspense fallback={<p className="text-base">Chargement de l&apos;historique…</p>}>
         <Resultats ile={ile} searchParams={searchParams} />
       </Suspense>
-    </main>
+    </>
   );
 }
 

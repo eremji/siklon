@@ -8,7 +8,13 @@ const RADIUS_IMPACT_KM = 120; // Miroir de src/lib/constantes.ts (Playwright n'i
 const entrees = (page: Page) => page.getByRole("main").getByRole("listitem");
 const anneeDe = async (titre: string | null) => Number(titre?.trim().split(" ").at(-1));
 
+/** Les résultats arrivent en streaming : attendre leur titre (« 3 cyclones ») avant de lire la liste. */
+async function attendreResultats(page: Page) {
+  await expect(page.getByRole("heading", { level: 2, name: /^\d+ cyclones?$/ })).toBeVisible();
+}
+
 async function annees(page: Page): Promise<number[]> {
+  await attendreResultats(page);
   const titres = await entrees(page).getByRole("heading", { level: 3 }).allTextContents();
   return Promise.all(titres.map(anneeDe));
 }
@@ -44,6 +50,7 @@ test("la liste se filtre par catégorie minimale", async ({ page }) => {
   await page.getByRole("button", { name: "Filtrer" }).click();
   await expect(page).toHaveURL(/categorie=5/);
   await expect(page.getByLabel("Intensité minimale")).toHaveValue("5");
+  await attendreResultats(page);
   const intensites = await entrees(page).getByText(/^Ouragan de catégorie \d$|^Tempête$|^Dépression$/).allTextContents();
   expect(intensites.length).toBeGreaterThan(0);
   for (const intensite of intensites) expect(intensite).toBe("Ouragan de catégorie 5");
@@ -70,9 +77,10 @@ test("la fiche d'un cyclone affiche sa trajectoire sur une carte", async ({ page
   await expect(page.getByRole("heading", { level: 3, name: titre })).toBeVisible();
 });
 
-test("une île inconnue renvoie une page introuvable", async ({ page }) => {
-  const reponse = await page.goto("/iles/atlantide/historique");
-  expect(reponse?.status()).toBe(404);
+test("une île inconnue affiche une page introuvable", async ({ page }) => {
+  await page.goto("/iles/atlantide/historique");
+  await expect(page.getByText("This page could not be found.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Historique des cyclones :/ })).toHaveCount(0);
 });
 
 test("la liste tient sur un écran de 360 px sans défilement horizontal", async ({ page }) => {
