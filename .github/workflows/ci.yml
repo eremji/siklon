@@ -84,6 +84,23 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # Base de test jetable, propre au job : remplie avec la fixture synthétique de e2e/fixtures/.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: siklon
+          POSTGRES_PASSWORD: ci-seulement
+          POSTGRES_DB: siklon_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U siklon"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://siklon:ci-seulement@localhost:5432/siklon_e2e
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -93,6 +110,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Migrations
+        run: for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done
+      - name: Import de la fixture HURDAT2
+        run: npm run import:hurdat2 -- e2e/fixtures/hurdat2-1851-2005-010126.txt
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm run test:e2e
