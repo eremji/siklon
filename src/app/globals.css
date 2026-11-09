@@ -24,6 +24,9 @@
   --vig-rouge: #B91C1C;
   --vig-violet: #6B21A8;
   --vig-gris: #4B5563;
+  /* Texte sur fond de vigilance, identique dans les deux thèmes (DESIGN.md). */
+  --on-vig-clair: #10292E;
+  --on-vig-fonce: #FFFFFF;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -96,6 +99,8 @@
   --color-vig-rouge: var(--vig-rouge);
   --color-vig-violet: var(--vig-violet);
   --color-vig-gris: var(--vig-gris);
+  --color-on-vig-clair: var(--on-vig-clair);
+  --color-on-vig-fonce: var(--on-vig-fonce);
   --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
 }
 
