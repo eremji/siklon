@@ -1,4 +1,5 @@
 // Importe un fichier HURDAT2 du NHC dans la base : npm run import:hurdat2 -- <hurdat2-….txt>
+// (.mts : module ES explicite pour Node, qui exécute le TypeScript sans compilation)
 // La connexion vient de DATABASE_URL (.env.local en local). Tout ou rien, en une transaction.
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
