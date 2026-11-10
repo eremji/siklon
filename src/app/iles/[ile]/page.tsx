@@ -6,9 +6,9 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { MenaceIle } from "@/components/menace/MenaceIle";
 import { ILES, type Ile, trouverIle } from "@/lib/iles";
-import { chargerSystemesActifs } from "@/lib/nhc/client";
+import { fluxNhc } from "@/lib/nhc/lecture";
 import { chargerToutesPositions } from "@/lib/nhc/positions";
-import { COOKIE_FIXTURE, etatFixture, fixtureDemandee, positionsFixture } from "@/lib/nhc/source";
+import { COOKIE_FIXTURE, fixtureDemandee, positionsFixture } from "@/lib/nhc/source";
 
 type Props = PageProps<"/iles/[ile]">;
 
@@ -25,11 +25,11 @@ function Chargement({ texte }: { texte: string }) {
   return <p className="text-base text-muted">{texte}</p>;
 }
 
-// Lit le flux NHC et les positions prévues à chaque requête, jamais pendant le build.
+// Lit le flux NHC (cache partagé) et les positions prévues à chaque requête, jamais pendant le build.
 async function Menaces({ ile }: { ile: Ile }) {
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
-  const flux = fixture ? etatFixture(fixture, new Date().toISOString()) : await chargerSystemesActifs();
+  const flux = await fluxNhc(fixture);
   const systemes = flux.etat === "ok" ? flux.systemes : [];
   const positions = fixture ? positionsFixture(fixture) : await chargerToutesPositions(systemes);
   return <MenaceIle ile={ile} flux={flux} positions={positions} />;

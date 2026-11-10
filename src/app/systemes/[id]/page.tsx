@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { FicheSystemeActif } from "@/components/systemes/FicheSystemeActif";
-import { chargerSystemesActifs } from "@/lib/nhc/client";
-import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/nhc/source";
+import { fluxNhc } from "@/lib/nhc/lecture";
+import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
 
 export const metadata: Metadata = { title: "Fiche d'un système actif · Siklon" };
 
@@ -29,12 +29,12 @@ export default function Page({ params }: PageProps<"/systemes/[id]">) {
   );
 }
 
-// Lit le flux NHC à chaque requête, jamais pendant le build.
+// Lit le flux NHC à chaque requête, à travers le cache partagé, jamais pendant le build.
 async function Fiche({ params }: Pick<PageProps<"/systemes/[id]">, "params">) {
   const { id } = await params;
   if (!ID_SYSTEME.test(id)) notFound();
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
-  const flux = fixture ? etatFixture(fixture, new Date().toISOString()) : await chargerSystemesActifs();
+  const flux = await fluxNhc(fixture);
   return <FicheSystemeActif flux={flux} id={id} />;
 }
