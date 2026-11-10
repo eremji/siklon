@@ -4,6 +4,8 @@ import { entetesSecurite } from "./src/lib/securite/entetes";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // En bas, l'indicateur de développement recouvrirait la barre de navigation flottante.
+  devIndicators: { position: "top-right" },
   // Ne pas annoncer le framework utilisé.
   poweredByHeader: false,
   async headers() {
