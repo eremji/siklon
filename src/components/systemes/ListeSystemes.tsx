@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { EtatFlux } from "@/lib/nhc/client";
 import { avisLePlusRecent, formaterHeureAntilles } from "@/lib/nhc/fraicheur";
 import type { Prevision } from "@/lib/nhc/previsions";
@@ -57,7 +58,12 @@ export function ListeSystemes({
             <li key={systeme.id} className="flex min-h-11 items-center gap-3 rounded-2xl bg-surface p-3">
               <Pastille systeme={systeme} />
               <div className="flex flex-col">
-                <span className="text-lg font-bold">{systeme.nom}</span>
+                <Link
+                  href={`/systemes/${systeme.id}`}
+                  className="flex min-h-11 items-center text-lg font-bold text-accent underline underline-offset-4"
+                >
+                  {systeme.nom}
+                </Link>
                 <span className="text-base text-muted">{descriptionSysteme(systeme)}</span>
                 <span className="text-sm text-muted">
                   Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe)}

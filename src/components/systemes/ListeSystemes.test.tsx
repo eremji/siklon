@@ -45,6 +45,13 @@ describe("ListeSystemes", () => {
     expect(elements[1]).not.toHaveTextContent("catégorie");
   });
 
+  it("mène à la fiche de chaque système depuis son nom (US-02)", () => {
+    render(<ListeSystemes flux={ok([systeme({}), systeme({ id: "al122026", nom: "Leah" })])} />);
+
+    expect(screen.getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/systemes/al112026");
+    expect(screen.getByRole("link", { name: "Leah" })).toHaveAttribute("href", "/systemes/al122026");
+  });
+
   it("indique clairement qu'aucun système n'est actif", () => {
     render(<ListeSystemes flux={ok([])} />);
 
