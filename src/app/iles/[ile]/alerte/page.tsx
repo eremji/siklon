@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -37,18 +38,29 @@ async function VigilanceIle({ ile, fichier }: { ile: Ile; fichier: FichierVigila
 async function AlerteIle({ params }: Pick<Props, "params">) {
   const ile = trouverIle((await params).ile);
   if (!ile) notFound();
-  if (ile.alerte.source === "nhc") return <AlertesNhcAVenir nomIle={ile.nom} />;
 
   return (
-    <Suspense
-      fallback={
-        <EnTeteIle nomIle={ile.nom}>
-          <p className="text-base">Chargement de la vigilance Météo-France…</p>
-        </EnTeteIle>
-      }
-    >
-      <VigilanceIle ile={ile} fichier={ile.alerte.fichier} />
-    </Suspense>
+    <>
+      <Link
+        href={`/iles/${ile.slug}`}
+        className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
+      >
+        {ile.nom} : menaces en cours
+      </Link>
+      {ile.alerte.source === "nhc" ? (
+        <AlertesNhcAVenir nomIle={ile.nom} />
+      ) : (
+        <Suspense
+          fallback={
+            <EnTeteIle nomIle={ile.nom}>
+              <p className="text-base">Chargement de la vigilance Météo-France…</p>
+            </EnTeteIle>
+          }
+        >
+          <VigilanceIle ile={ile} fichier={ile.alerte.fichier} />
+        </Suspense>
+      )}
+    </>
   );
 }
 

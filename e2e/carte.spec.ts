@@ -34,9 +34,10 @@ test("la carte se dessine et son worker MapLibre se charge", async ({ page, cont
   await fixtureNhc(context, baseURL, "actifs");
   await page.goto("/");
 
-  // aria-busy passe à false quand MapLibre a chargé son style et dessiné la carte.
+  // aria-busy passe à false quand MapLibre a chargé son style et dessiné la carte. Sans carte
+  // graphique, Chromium de test met 3 à 5 s, et plus sur une machine chargée : 15 s de marge.
   const carte = page.getByRole("region", { name: "Carte des systèmes actifs" }).locator(".maplibregl-map");
-  await expect(carte).toHaveAttribute("aria-busy", "false");
+  await expect(carte).toHaveAttribute("aria-busy", "false", { timeout: 15_000 });
   expect(erreursWorker).toEqual([]);
 });
 

@@ -46,12 +46,25 @@ test("la carte interactive se charge sans violation de la CSP", async ({ page, c
   expect(violations).toEqual([]);
 });
 
-for (const chemin of ["/iles/guadeloupe/alerte", "/iles/dominique/alerte", "/historique"]) {
-  test(`la page ${chemin} s'affiche sans violation de la CSP`, async ({ page }) => {
+// Fiche d'un système actif et délai avant passage : lus dans la fixture NHC « actifs ».
+const PAGES = [
+  "/iles",
+  "/iles/guadeloupe",
+  "/iles/guadeloupe/alerte",
+  "/iles/dominique/alerte",
+  "/systemes/al112026",
+  "/historique",
+];
+
+for (const chemin of PAGES) {
+  test(`la page ${chemin} s'affiche sans violation de la CSP`, async ({ page, context, baseURL }) => {
     const violations = await surveillerCsp(page);
+    await context.addCookies([{ name: "siklon-fixture-nhc", value: "actifs", url: baseURL ?? "http://localhost:3000" }]);
     await page.goto(chemin);
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // Laisse le temps aux scripts (carte, compte à rebours) de s'exécuter.
+    await page.waitForLoadState("networkidle");
     expect(violations).toEqual([]);
   });
 }
