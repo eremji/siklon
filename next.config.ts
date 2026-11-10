@@ -1,11 +1,16 @@
 import type { NextConfig } from "next";
+import { entetesSecurite } from "./src/lib/securite/entetes";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   // En bas, l'indicateur de développement recouvrirait la barre de navigation flottante.
   devIndicators: { position: "top-right" },
+  // Ne pas annoncer le framework utilisé.
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers: entetesSecurite({ dev: process.env.NODE_ENV === "development" }) }];
+  },
   turbopack: {
     rules: {
       "*.css": {
