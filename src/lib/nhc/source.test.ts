@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { etatFixture, fixtureDemandee, previsionsFixture } from "./source";
+import { etatFixture, fixtureDemandee, positionsFixture, previsionsFixture } from "./source";
 
 describe("fixtureDemandee", () => {
   it("n'utilise jamais de fixture sans activation explicite", () => {
@@ -40,5 +40,16 @@ describe("previsionsFixture", () => {
     expect(actifs.al112026.cone).toHaveLength(1);
     expect(actifs.al112026.trajectoire).toHaveLength(1);
     expect(previsionsFixture("vide")).toEqual({});
+  });
+});
+
+describe("positionsFixture", () => {
+  it("fournit les positions prévues de Kyle avec la fixture « actifs », rien sinon", () => {
+    const actifs = positionsFixture("actifs");
+    expect(Object.keys(actifs)).toEqual(["al112026"]);
+    expect(actifs.al112026.avis.numero).toBe("14");
+    expect(actifs.al112026.positions).toHaveLength(8);
+    expect(positionsFixture("vide")).toEqual({});
+    expect(positionsFixture("indisponible")).toEqual({});
   });
 });

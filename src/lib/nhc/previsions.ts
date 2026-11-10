@@ -123,22 +123,38 @@ async function lireGeoJson(couche: number): Promise<unknown> {
   return reponse.json();
 }
 
-export async function chargerPrevision(emplacement: string): Promise<Prevision | null> {
+/**
+ * Lecture brute de la prévision d'un emplacement : null si rien n'est publié,
+ * rejet en cas d'échec, pour qu'un échec ne soit jamais mis en cache.
+ */
+export async function lirePrevision(emplacement: string): Promise<Prevision | null> {
   const couches = couchesPrevision(emplacement);
   if (!couches) return null;
+  const [bruteTrajectoire, bruteCone] = await Promise.all([
+    lireGeoJson(couches.trajectoire),
+    lireGeoJson(couches.cone),
+  ]);
+  const trajectoire = lireTrajectoire(bruteTrajectoire, emplacement);
+  const cone = lireCone(bruteCone, emplacement);
+  if (!trajectoire && !cone) return null;
+  return {
+    avis: (cone ?? trajectoire)!.avis,
+    trajectoire: trajectoire?.lignes ?? [],
+    cone: cone?.polygones ?? [],
+  };
+}
+
+/** Source des prévisions : le cache partagé en production, la lecture directe par défaut. */
+export type SourcePrevision = (emplacement: string) => Promise<Prevision | null>;
+
+export async function chargerPrevision(
+  emplacement: string,
+  lire: SourcePrevision = lirePrevision,
+): Promise<Prevision | null> {
+  // Seuls AT1 à AT5 sont interrogés : le cache n'a jamais d'autre clé.
+  if (!couchesPrevision(emplacement)) return null;
   try {
-    const [bruteTrajectoire, bruteCone] = await Promise.all([
-      lireGeoJson(couches.trajectoire),
-      lireGeoJson(couches.cone),
-    ]);
-    const trajectoire = lireTrajectoire(bruteTrajectoire, emplacement);
-    const cone = lireCone(bruteCone, emplacement);
-    if (!trajectoire && !cone) return null;
-    return {
-      avis: (cone ?? trajectoire)!.avis,
-      trajectoire: trajectoire?.lignes ?? [],
-      cone: cone?.polygones ?? [],
-    };
+    return await lire(emplacement);
   } catch (erreur) {
     console.warn("[nhc] prévision indisponible", { emplacement, raison: raisonEchec(erreur) });
     return null;
@@ -148,8 +164,9 @@ export async function chargerPrevision(emplacement: string): Promise<Prevision |
 // Prévisions disponibles des systèmes actifs, par identifiant de système.
 export async function chargerPrevisions(
   systemes: { id: string; emplacement: string }[],
+  lire: SourcePrevision = lirePrevision,
 ): Promise<Record<string, Prevision>> {
-  const lues = await Promise.all(systemes.map((systeme) => chargerPrevision(systeme.emplacement)));
+  const lues = await Promise.all(systemes.map((systeme) => chargerPrevision(systeme.emplacement, lire)));
   return Object.fromEntries(
     systemes.flatMap((systeme, index) => {
       const prevision = lues[index];
