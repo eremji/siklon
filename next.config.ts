@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // En bas, l'indicateur de développement recouvrirait la barre de navigation flottante.
+  devIndicators: { position: "top-right" },
   turbopack: {
     rules: {
       "*.css": {
