@@ -45,6 +45,23 @@ test("la page d'une île menacée affiche le délai, l'heure et la distance du p
   expect(audit.violations).toEqual([]);
 });
 
+// #71 : la page île doit signaler, comme l'accueil, un délai calculé sur un avis périmé.
+test("la page d'une île signale un avis NHC de plus de 6 h avant le délai", async ({ page, context, baseURL }) => {
+  await fixtureNhc(context, baseURL, "actifs");
+  // Fixture : avis n° 14 de Kyle émis à 15 h UTC ; il est 23 h UTC, soit 8 h plus tard.
+  await page.clock.setFixedTime(new Date("2026-09-10T23:00:00.000Z"));
+  await page.goto("/iles/guadeloupe");
+
+  const menace = page.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" }).getByRole("listitem");
+  const avertissement = menace.getByText("Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de 6 h.");
+  await expect(avertissement).toBeVisible();
+  const [hautAvertissement, hautDelai] = await Promise.all([
+    avertissement.boundingBox(),
+    menace.getByText("Dans environ 8 h").boundingBox(),
+  ]);
+  expect(hautAvertissement!.y).toBeLessThan(hautDelai!.y);
+});
+
 test("la page indique qu'aucun système ne menace l'île", async ({ page, context, baseURL }) => {
   await fixtureNhc(context, baseURL, "vide");
   await page.goto("/iles/martinique");

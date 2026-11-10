@@ -1,3 +1,4 @@
+import { AlerteObsolescence } from "@/components/systemes/AlerteObsolescence";
 import { Pastille } from "@/components/systemes/Pastille";
 import { RADIUS_WATCH_KM } from "@/lib/constantes";
 import type { Ile } from "@/lib/iles";
@@ -31,6 +32,8 @@ function CarteMenace({ ile, menace }: { ile: Ile; menace: Menace<SystemeActif> }
           <span className="text-sm text-muted">{descriptionSysteme(systeme)}</span>
         </div>
       </div>
+      {/* Avant le délai : un délai calculé sur un avis périmé ne doit pas être lu comme à jour (#71). */}
+      <AlerteObsolescence emisLe={avis.emisLe} />
       <DelaiPassage heure={passage.heure} />
       <p className="text-base">
         Plus proche passage estimé : {formaterHeurePassage(passage.heure, ile.fuseau)}, à{" "}

@@ -53,6 +53,27 @@ describe("MenaceIle", () => {
     );
   });
 
+  it("signale un avis NHC de plus de 6 h, avant le délai", () => {
+    // Avis n° 14 émis à 15 h UTC ; il est 22 h UTC, soit 7 h plus tard.
+    vi.setSystemTime(new Date("2026-09-10T22:00:00.000Z"));
+    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+
+    const menace = within(screen.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" })).getByRole(
+      "listitem",
+    );
+    const avertissement = within(menace).getByText(
+      "Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de 6 h.",
+    );
+    const delai = within(menace).getByText("Dans environ 9 h");
+    expect(avertissement.compareDocumentPosition(delai) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("ne signale rien quand l'avis NHC a moins de 6 h", () => {
+    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+
+    expect(screen.queryByText(/Données possiblement obsolètes/)).not.toBeInTheDocument();
+  });
+
   it("présente le calcul comme une estimation, avec le numéro et l'heure de l'avis NHC utilisé", () => {
     render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
 
