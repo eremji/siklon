@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { SystemesActifs } from "@/components/systemes/SystemesActifs";
 
@@ -5,6 +6,9 @@ export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <h1 className="text-3xl font-bold">Siklon</h1>
+      <Link href="/iles" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
+        Mon île : quand un système pourrait-il l&apos;atteindre ?
+      </Link>
       <section aria-labelledby="titre-systemes" className="flex flex-col gap-3">
         <h2 id="titre-systemes" className="text-xl font-bold">
           Systèmes actifs dans l&apos;Atlantique
