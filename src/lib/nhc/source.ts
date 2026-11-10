@@ -3,8 +3,10 @@
 import actifs from "./__fixtures__/current-storms-actifs.json";
 import vide from "./__fixtures__/current-storms-vide.json";
 import coneKyle from "./__fixtures__/prevision-at1-cone.json";
+import pointsKyle from "./__fixtures__/prevision-at1-points.json";
 import trajectoireKyle from "./__fixtures__/prevision-at1-trajectoire.json";
 import type { EtatFlux } from "./client";
+import { type PositionsPrevues, lirePositionsPrevues } from "./positions";
 import { type Prevision, lireCone, lireTrajectoire } from "./previsions";
 import { lireCurrentStorms } from "./systemes";
 
@@ -32,4 +34,10 @@ export function previsionsFixture(nom: NomFixture): Record<string, Prevision> {
   const cone = lireCone(coneKyle, "AT1")!;
   const trajectoire = lireTrajectoire(trajectoireKyle, "AT1")!;
   return { al112026: { avis: cone.avis, cone: cone.polygones, trajectoire: trajectoire.lignes } };
+}
+
+// Avec « actifs », seul Kyle (AT1) a des positions prévues publiées (US-03).
+export function positionsFixture(nom: NomFixture): Record<string, PositionsPrevues> {
+  if (nom !== "actifs") return {};
+  return { al112026: lirePositionsPrevues(pointsKyle, "AT1")! };
 }
