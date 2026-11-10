@@ -4,6 +4,7 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import pg from "pg";
+import { type ConfigurationConnexion, configurationConnexion } from "../src/lib/db/config";
 import { remplacerHistorique } from "../src/lib/db/historique";
 import { preparerImport } from "../src/lib/hurdat2/import";
 
@@ -20,14 +21,16 @@ if (!resultat.ok) {
   process.exit(1);
 }
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  console.error("DATABASE_URL manquante (à définir dans .env.local).");
+let configuration: ConfigurationConnexion;
+try {
+  configuration = configurationConnexion(process.env);
+} catch (erreur) {
+  console.error(`${erreur instanceof Error ? erreur.message : "configuration invalide"} (voir .env.example).`);
   process.exit(1);
 }
 
 const { donnees } = resultat;
-const client = new pg.Client({ connectionString });
+const client = new pg.Client(configuration);
 await client.connect();
 try {
   await remplacerHistorique(client, donnees);
