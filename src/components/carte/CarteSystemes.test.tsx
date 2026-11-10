@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { emprise } from "@/lib/carte/emprise";
 import type { styleCarte } from "@/lib/carte/style";
@@ -12,6 +12,8 @@ const espion = vi.hoisted(() => ({
   marqueurs: [] as { lngLat: [number, number]; element: HTMLElement }[],
   retraits: 0,
   echoue: false,
+  workerUrl: "",
+  surChargement: [] as (() => void)[],
 }));
 
 vi.mock("maplibre-gl", () => {
@@ -26,6 +28,10 @@ vi.mock("maplibre-gl", () => {
       espion.retraits += 1;
     }
     setPaintProperty() {}
+    once(evenement: string, rappel: () => void) {
+      if (evenement === "load") espion.surChargement.push(rappel);
+      return this;
+    }
   }
   class Marker {
     element: HTMLElement;
@@ -43,7 +49,10 @@ vi.mock("maplibre-gl", () => {
       return this;
     }
   }
-  return { Map, Marker };
+  function setWorkerUrl(url: string) {
+    espion.workerUrl = url;
+  }
+  return { Map, Marker, setWorkerUrl };
 });
 
 const systemes: SystemeActif[] = [
@@ -77,6 +86,8 @@ describe("CarteSystemes", () => {
     espion.marqueurs = [];
     espion.retraits = 0;
     espion.echoue = false;
+    espion.workerUrl = "";
+    espion.surChargement = [];
   });
 
   it("ouvre la carte sur une emprise qui montre tous les systèmes", async () => {
@@ -140,6 +151,25 @@ describe("CarteSystemes", () => {
     unmount();
 
     expect(espion.retraits).toBe(avant + 1);
+  });
+
+  it("indique à MapLibre l'adresse de son worker avant de créer la carte", async () => {
+    render(<CarteSystemes systemes={systemes} />);
+
+    await waitFor(() => expect(espion.options).toHaveLength(1));
+    expect(espion.workerUrl).toMatch(/maplibre-gl-worker\.mjs$/);
+  });
+
+  it("signale la carte comme occupée jusqu'à ce que MapLibre l'ait chargée", async () => {
+    render(<CarteSystemes systemes={systemes} />);
+
+    await waitFor(() => expect(espion.surChargement).toHaveLength(1));
+    const conteneur = espion.options[0].container as HTMLElement;
+    expect(conteneur).toHaveAttribute("aria-busy", "true");
+
+    act(() => espion.surChargement[0]());
+
+    expect(conteneur).toHaveAttribute("aria-busy", "false");
   });
 
   it("renvoie vers la liste quand la carte interactive ne peut pas s'afficher", async () => {
