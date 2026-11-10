@@ -62,6 +62,7 @@ export function CarteSystemes({
   const conteneur = useRef<HTMLDivElement>(null);
   const [ancres, setAncres] = useState<Ancre[]>([]);
   const [echec, setEchec] = useState(false);
+  const [prete, setPrete] = useState(false);
 
   useEffect(() => {
     let carte: CarteMapLibre | undefined;
@@ -73,8 +74,11 @@ export function CarteSystemes({
 
     // MapLibre n'est chargé que dans le navigateur, après l'affichage de la liste.
     import("maplibre-gl")
-      .then(({ Map, Marker }) => {
+      .then(({ Map, Marker, setWorkerUrl }) => {
         if (annule || !conteneur.current) return;
+        // MapLibre 6 déduit l'adresse de son worker de import.meta.url, que Turbopack réécrit
+        // vers un autre fichier (#53). Un chemin littéral est publié tel quel par Turbopack.
+        setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
         carte = new Map({
           container: conteneur.current,
           style: styleCarte(lireCouleurs(), liste),
@@ -83,6 +87,9 @@ export function CarteSystemes({
           fitBoundsOptions: { padding: { top: 32, bottom: 32, left: 32, right: 96 } },
           attributionControl: { compact: true },
           locale: TEXTES_CARTE,
+        });
+        carte.once("load", () => {
+          if (!annule) setPrete(true);
         });
         const nouvelles = systemes.map((systeme) => {
           const element = document.createElement("div");
@@ -113,7 +120,7 @@ export function CarteSystemes({
           La carte interactive n&apos;a pas pu s&apos;afficher. La liste des systèmes reste à jour ci-dessous.
         </p>
       ) : (
-        <div ref={conteneur} className="h-72 w-full overflow-hidden rounded-2xl bg-sea" />
+        <div ref={conteneur} aria-busy={!prete} className="h-72 w-full overflow-hidden rounded-2xl bg-sea" />
       )}
       {ancres.map(({ systeme, element }) =>
         createPortal(
