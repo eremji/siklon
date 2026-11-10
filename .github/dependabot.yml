@@ -4,6 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Une version doit avoir quelques jours avant d'être proposée : une version piégée est
+    # en général retirée du registre avant. Ne retarde pas les mises à jour de sécurité.
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
     commit-message:
       prefix: chore
       include: scope
@@ -25,6 +30,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: chore
       include: scope

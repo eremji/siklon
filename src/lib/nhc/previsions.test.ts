@@ -8,6 +8,7 @@ import {
   chargerPrevisions,
   couchesPrevision,
   lireCone,
+  lirePrevision,
   lireTrajectoire,
 } from "./previsions";
 
@@ -156,6 +157,34 @@ describe("chargerPrevision", () => {
 
     expect(await chargerPrevision("AT1")).toBeNull();
     expect(warn).toHaveBeenCalled();
+  });
+
+  it("lirePrevision rejette en cas d'échec, pour que l'échec ne soit pas mis en cache", async () => {
+    repondre({ 7: trajectoire });
+
+    await expect(lirePrevision("AT1")).rejects.toThrow();
+  });
+
+  it("lit la prévision par la source fournie (cache partagé), seulement pour l'Atlantique", async () => {
+    const lire = vi.fn(async () => ({ avis: "9", trajectoire: [], cone: [] }));
+
+    expect(await chargerPrevision("AT2", lire)).toEqual({ avis: "9", trajectoire: [], cone: [] });
+    expect(await chargerPrevision("EP1", lire)).toBeNull();
+    expect(lire.mock.calls).toEqual([["AT2"]]);
+    expect(fetchSimule).not.toHaveBeenCalled();
+  });
+
+  it("renvoie null et journalise quand la source fournie échoue", async () => {
+    expect(await chargerPrevision("AT1", () => Promise.reject(new Error("HTTP 500")))).toBeNull();
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it("transmet la source fournie pour chaque système", async () => {
+    const lire = vi.fn(async (emplacement: string) => ({ avis: emplacement, trajectoire: [], cone: [] }));
+
+    const previsions = await chargerPrevisions([{ id: "al122026", emplacement: "AT2" }], lire);
+
+    expect(previsions).toEqual({ al122026: { avis: "AT2", trajectoire: [], cone: [] } });
   });
 
   it("charge les prévisions de chaque système, rattachées à son identifiant", async () => {
