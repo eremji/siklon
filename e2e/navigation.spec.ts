@@ -34,9 +34,10 @@ test("la barre de navigation offre des zones tactiles d'au moins 44 px", async (
 test("la barre de navigation ne masque pas le bas de la page", async ({ page }) => {
   await page.goto("/iles");
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const mention = await page.getByText("Siklon ne remplace pas les consignes officielles.").boundingBox();
+  // Le pied de page (lien Confidentialité) est le dernier élément : il doit rester au-dessus de la barre.
+  const pied = await page.getByRole("contentinfo").getByRole("link", { name: "Confidentialité" }).boundingBox();
   const barre = await page.getByRole("navigation", { name: "Navigation principale" }).boundingBox();
-  expect(mention!.y + mention!.height).toBeLessThanOrEqual(barre!.y);
+  expect(pied!.y + pied!.height).toBeLessThanOrEqual(barre!.y);
 });
 
 test("la page alerte d'une île renvoie vers la page de l'île", async ({ page, context, baseURL }) => {
