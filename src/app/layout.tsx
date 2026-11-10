@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible } from "next/font/google";
+import { PiedDePage } from "@/components/PiedDePage";
 import "./globals.css";
 
 const atkinson = Atkinson_Hyperlegible({
@@ -16,7 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${atkinson.variable} h-full font-sans antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <PiedDePage />
+      </body>
     </html>
   );
 }
