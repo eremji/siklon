@@ -20,6 +20,11 @@ describe("Accueil", () => {
     ).toHaveTextContent("Systèmes simulés");
   });
 
+  it("mène au choix d'une île pour savoir quand un système pourrait l'atteindre", () => {
+    render(<Home />);
+    expect(screen.getByRole("link", { name: /Mon île/ })).toHaveAttribute("href", "/iles");
+  });
+
   it("rappelle de suivre les consignes officielles", () => {
     render(<Home />);
     expect(
