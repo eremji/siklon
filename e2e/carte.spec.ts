@@ -22,6 +22,24 @@ test("la carte liste chaque système actif avec son nom, son type et sa catégor
   await expect(systemes.nth(2)).toContainText("Dépression tropicale");
 });
 
+// #53 : avec MapLibre 6, le worker ne se chargeait plus et la carte restait vide sans erreur visible.
+test("la carte se dessine et son worker MapLibre se charge", async ({ page, context, baseURL }) => {
+  const erreursWorker: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && /worker/i.test(message.text())) erreursWorker.push(message.text());
+  });
+  page.on("pageerror", (erreur) => {
+    if (/worker/i.test(erreur.message)) erreursWorker.push(erreur.message);
+  });
+  await fixtureNhc(context, baseURL, "actifs");
+  await page.goto("/");
+
+  // aria-busy passe à false quand MapLibre a chargé son style et dessiné la carte.
+  const carte = page.getByRole("region", { name: "Carte des systèmes actifs" }).locator(".maplibregl-map");
+  await expect(carte).toHaveAttribute("aria-busy", "false");
+  expect(erreursWorker).toEqual([]);
+});
+
 test("la carte indique clairement qu'aucun système n'est actif", async ({ page, context, baseURL }) => {
   await fixtureNhc(context, baseURL, "vide");
   await page.goto("/");
