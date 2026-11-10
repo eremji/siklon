@@ -35,7 +35,12 @@ describe("lireCurrentStorms", () => {
       pressionHpa: 948,
       latitude: 16.8,
       longitude: -58.2,
-      avis: { numero: "14", emisLe: "2026-09-10T15:00:00.000Z" },
+      avis: {
+        numero: "14",
+        emisLe: "2026-09-10T15:00:00.000Z",
+        url: "https://www.nhc.noaa.gov/text/MIATCPAT1.shtml",
+      },
+      deplacement: { directionDeg: 285, vitesseMph: 12 },
     });
   });
 
@@ -97,6 +102,59 @@ describe("lireCurrentStorms", () => {
     );
 
     expect(systemes[0]).toMatchObject({ ventKt: 120, pressionHpa: 948 });
+  });
+});
+
+describe("lireCurrentStorms : champs facultatifs de la fiche (US-02)", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it("accepte un système immobile et des valeurs de déplacement données en texte", () => {
+    const { systemes } = lireCurrentStorms(
+      fluxAvec((s) => {
+        s.movementDir = "0";
+        s.movementSpeed = "0";
+      }),
+    );
+
+    expect(systemes[0].deplacement).toEqual({ directionDeg: 0, vitesseMph: 0 });
+  });
+
+  it.each([
+    ["la direction manque", (s: Record<string, unknown>) => delete s.movementDir],
+    ["la direction est hors bornes", (s: Record<string, unknown>) => (s.movementDir = 400)],
+    ["la vitesse est négative", (s: Record<string, unknown>) => (s.movementSpeed = -3)],
+    ["la vitesse n'est pas un nombre", (s: Record<string, unknown>) => (s.movementSpeed = "rapide")],
+  ])("garde le système sans déplacement quand %s, et journalise le champ", (_cas, modifier) => {
+    const { systemes, rejetes } = lireCurrentStorms(fluxAvec(modifier));
+
+    expect(rejetes).toBe(0);
+    expect(systemes[0].nom).toBe("Kyle");
+    expect(systemes[0]).not.toHaveProperty("deplacement");
+    expect(warn).toHaveBeenCalledWith("[nhc] champ facultatif ignoré", expect.objectContaining({ champ: expect.any(String) }));
+  });
+
+  it.each([
+    ["en http", "http://www.nhc.noaa.gov/text/MIATCPAT1.shtml"],
+    ["sur un autre domaine", "https://www.nhc.noaa.gov.exemple.com/text/MIATCPAT1.shtml"],
+    ["hors du dossier des avis", "https://www.nhc.noaa.gov/../MIATCPAT1.shtml"],
+    ["en javascript", "javascript:alert(1)"],
+    ["qui n'est pas du texte", 42],
+  ])("ignore une URL d'avis %s : le système reste affiché sans ce lien", (_cas, url) => {
+    const { systemes, rejetes } = lireCurrentStorms(
+      fluxAvec((s) => (s.publicAdvisory = { ...(s.publicAdvisory as object), url })),
+    );
+
+    expect(rejetes).toBe(0);
+    expect(systemes[0].avis).toEqual({ numero: "14", emisLe: "2026-09-10T15:00:00.000Z" });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("alert");
   });
 });
 
