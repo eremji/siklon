@@ -254,6 +254,42 @@ affinées plus tard sans changer le reste de la spec.
 | Jamaïque | Kingston | 17.97 | −76.79 | NHC |
 | Cuba | La Havane | 23.13 | −82.38 | NHC |
 
+### Watches/warnings NHC et emprises des îles
+- Source : couche « ATn Watch-Warning » du service cartographique NOAA
+  `NHC_tropical_weather/MapServer` (export GeoJSON), une couche par
+  système actif de l'Atlantique (AT1 = couche 9, puis +26 par
+  emplacement). Chaque entité est un segment de côte (polyligne) portant
+  le code `tcww` : `TWA`, `TWR`, `HWA`, `HWR`.
+- Rattachement : un segment concerne une île dès qu'un de ses points
+  tombe dans l'emprise de l'île (rectangle latitude/longitude, bornes
+  incluses, à 0,01° près). Une emprise couvre toute l'île, au-delà du
+  seul point de référence : un avertissement pour l'est de Cuba concerne
+  Cuba même loin de La Havane.
+- Limites connues : l'emprise de Trinité touche la pointe de la
+  péninsule de Paria (Venezuela) ; celle de Cuba contient quelques îlots
+  du sud des Bahamas (Ragged Island, Cay Lobos, Cay Santo Domingo). Un
+  segment sur ces côtes s'affiche donc aussi pour Trinité ou Cuba.
+- Haïti et la République dominicaine partagent la longitude −71.75 : un
+  point sur la frontière compte pour les deux.
+
+| Île | Lat min | Lat max | Lon min | Lon max |
+|---|---|---|---|---|
+| Dominique | 15.18 | 15.67 | −61.51 | −61.22 |
+| Sainte-Lucie | 13.68 | 14.13 | −61.10 | −60.85 |
+| Barbade | 13.02 | 13.35 | −59.67 | −59.40 |
+| Trinité | 10.02 | 10.86 | −61.95 | −60.88 |
+| Porto Rico | 17.86 | 18.54 | −67.29 | −65.20 |
+| Haïti | 17.98 | 20.10 | −74.50 | −71.75 |
+| République dominicaine | 17.45 | 19.95 | −71.75 | −68.30 |
+| Jamaïque | 17.68 | 18.55 | −78.39 | −76.16 |
+| Cuba | 19.80 | 23.30 | −84.97 | −74.12 |
+
+Gravité, de la plus forte à la plus faible : `HWR` (avertissement
+d'ouragan), `TWR` (avertissement de tempête tropicale), `HWA` (veille
+d'ouragan), `TWA` (veille de tempête tropicale). Un avertissement
+annonce des conditions attendues, une veille des conditions possibles :
+les avertissements passent donc avant les veilles.
+
 ## Hors périmètre V1
 - Dégâts, nombre de blessés et de morts des cyclones historiques (V2).
 - Notifications par SMS.

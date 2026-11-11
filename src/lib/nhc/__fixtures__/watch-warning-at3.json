@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": 1,
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-83.05, 22.95],
+          [-83.9, 22.6],
+          [-84.45, 22.25],
+          [-84.95, 21.87]
+        ]
+      },
+      "properties": {
+        "stormname": "THIRTEEN",
+        "stormtype": "TD",
+        "basin": "al",
+        "advdate": "800 AM EDT Thu Sep 10 2026",
+        "advisnum": "1",
+        "fcstprd": 120,
+        "stormnum": 13,
+        "tcww": "TWA",
+        "binnumber": "AT3"
+      }
+    }
+  ]
+}
