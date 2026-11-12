@@ -8,6 +8,9 @@ import type { PassageIle } from "../hurdat2/passages";
 import type { TempeteHurdat2 } from "../hurdat2/parseur";
 import { type ImportHistorique, lireDernierImport, lirePassages, lireTempete, remplacerHistorique } from "./historique";
 
+// Démarrer PGlite et appliquer les migrations prend plusieurs secondes quand les fichiers tournent en parallèle.
+const DEMARRAGE_PGLITE_MS = 30_000;
+
 const DOSSIER_MIGRATIONS = join(import.meta.dirname, "../../../supabase/migrations");
 
 let db: PGlite;
@@ -17,7 +20,7 @@ beforeAll(async () => {
   for (const fichier of readdirSync(DOSSIER_MIGRATIONS).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(join(DOSSIER_MIGRATIONS, fichier), "utf8"));
   }
-});
+}, DEMARRAGE_PGLITE_MS);
 
 afterAll(async () => {
   await db.close();
@@ -166,7 +169,7 @@ describe("rôles de connexion", () => {
 
   it("aucun rôle de l'API Supabase n'existe ici : les tables ne leur sont pas ouvertes", async () => {
     const { rows } = await db.query(
-      "select count(*)::int as n from pg_policies where schemaname = 'public' and not ('siklon_lecture' = any(roles) or 'siklon_import' = any(roles))",
+      "select count(*)::int as n from pg_policies where schemaname = 'public' and not (roles <@ array['siklon_lecture', 'siklon_import', 'siklon_comptes']::name[])",
     );
     expect(rows).toEqual([{ n: 0 }]);
   });
