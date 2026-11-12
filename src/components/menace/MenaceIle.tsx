@@ -51,7 +51,7 @@ function Incompletude({ sansPrevision, rejetes }: { sansPrevision: SystemeActif[
   if (sansPrevision.length === 0 && rejetes === 0) return null;
   const noms = LISTE.format(sansPrevision.map((systeme) => systeme.nom));
   return (
-    <div role="alert" className="flex flex-col gap-1 rounded-2xl bg-danger-soft p-4 text-base">
+    <div role="alert" className="flex flex-col gap-1 rounded-2xl bg-soft p-4 text-base">
       {sansPrevision.length === 1 && <p>Prévision indisponible pour {noms} : sa menace ne peut pas être évaluée.</p>}
       {sansPrevision.length > 1 && (
         <p>Prévisions indisponibles pour {noms} : leur menace ne peut pas être évaluée.</p>
