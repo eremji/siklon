@@ -46,7 +46,7 @@ export function ListeSystemes({
       {systemes.length > 0 && (
         <ul aria-label="Systèmes actifs" className="flex flex-col gap-2">
           {systemes.map((systeme) => (
-            <li key={systeme.id} className="flex min-h-11 items-center gap-3 rounded-2xl bg-surface p-3">
+            <li key={systeme.id} className="flex min-h-11 items-start gap-3 rounded-2xl bg-surface p-3">
               <Pastille systeme={systeme} />
               <div className="flex flex-col">
                 <Link
