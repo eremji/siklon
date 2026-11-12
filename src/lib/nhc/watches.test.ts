@@ -85,7 +85,7 @@ describe("lireWatchWarning", () => {
   it("lit les lignes multiples et les quatre types de la fixture de Kyle", () => {
     const segments = lireWatchWarning(at1, "AT1");
 
-    expect(segments.map((segment) => segment.code)).toEqual(["HWR", "HWR", "TWR", "TWR", "HWA"]);
+    expect(segments.map((segment) => segment.code)).toEqual(["HWR", "HWR", "TWR", "TWR", "HWA", "HWA"]);
     expect(segments[1].lignes).toHaveLength(2);
     expect(segments.every((segment) => segment.avis.numero === "14")).toBe(true);
   });
@@ -146,7 +146,7 @@ describe("lireWatches", () => {
   it("interroge la seule couche Watch-Warning de l'emplacement, en GeoJSON", async () => {
     const segments = await lireWatches("AT1");
 
-    expect(segments).toHaveLength(5);
+    expect(segments).toHaveLength(6);
     expect(fetchSimule).toHaveBeenCalledTimes(1);
     const [url, options] = fetchSimule.mock.calls[0];
     const lue = new URL(String(url));

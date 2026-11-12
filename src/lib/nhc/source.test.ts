@@ -57,7 +57,7 @@ describe("positionsFixture", () => {
 describe("watchesFixture", () => {
   it("fournit les watches/warnings de Kyle (AT1) et de Thirteen (AT3) avec la fixture « actifs »", async () => {
     const lire = watchesFixture("actifs");
-    expect((await lire("AT1")).map((segment) => segment.code)).toEqual(["HWR", "HWR", "TWR", "TWR", "HWA"]);
+    expect((await lire("AT1")).map((segment) => segment.code)).toEqual(["HWR", "HWR", "TWR", "TWR", "HWA", "HWA"]);
     expect(await lire("AT2")).toEqual([]);
     expect((await lire("AT3")).map((segment) => segment.code)).toEqual(["TWA"]);
   });
