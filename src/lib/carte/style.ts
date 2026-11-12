@@ -3,6 +3,7 @@ import type { Prevision } from "@/lib/nhc/previsions";
 
 // Fond vectoriel OpenFreeMap (schéma OpenMapTiles), sans clé d'API.
 const TUILES_OPENFREEMAP = "https://tiles.openfreemap.org/planet";
+export const SOURCE_FOND = "openmaptiles";
 
 export interface CouleursCarte {
   mer: string;
@@ -41,29 +42,36 @@ function entitesPrevisions(previsions: Prevision[]) {
 const CONE: FilterSpecification = ["==", ["get", "genre"], "cone"];
 const TRAJECTOIRE: FilterSpecification = ["==", ["get", "genre"], "trajectoire"];
 
-export function styleCarte(couleurs: CouleursCarte, previsions: Prevision[] = []) {
+// Le schéma OpenMapTiles n'a pas de couche « terre » : la terre est le fond, et les tuiles
+// dessinent l'eau par-dessus. Tant qu'aucune tuile n'est chargée (connexion faible, US-14),
+// le fond reste la mer : une carte sans tuiles ne devient pas un aplat de terre.
+export function styleCarte(couleurs: CouleursCarte, previsions: Prevision[] = [], tuilesChargees = false) {
   return {
     version: 8,
     sources: {
-      openmaptiles: { type: "vector", url: TUILES_OPENFREEMAP },
+      [SOURCE_FOND]: { type: "vector", url: TUILES_OPENFREEMAP },
       previsions: {
         type: "geojson",
         data: { type: "FeatureCollection", features: entitesPrevisions(previsions) },
       },
     },
     layers: [
-      { id: "terre", type: "background", paint: { "background-color": couleurs.terre } },
+      {
+        id: "fond",
+        type: "background",
+        paint: { "background-color": tuilesChargees ? couleurs.terre : couleurs.mer },
+      },
       {
         id: "mer",
         type: "fill",
-        source: "openmaptiles",
+        source: SOURCE_FOND,
         "source-layer": "water",
         paint: { "fill-color": couleurs.mer },
       },
       {
         id: "frontieres",
         type: "line",
-        source: "openmaptiles",
+        source: SOURCE_FOND,
         "source-layer": "boundary",
         filter: ["==", ["get", "admin_level"], 2],
         paint: { "line-color": couleurs.frontiere, "line-width": 1 },
