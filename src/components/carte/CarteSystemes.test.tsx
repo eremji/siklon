@@ -14,6 +14,8 @@ const espion = vi.hoisted(() => ({
   echoue: false,
   workerUrl: "",
   surChargement: [] as (() => void)[],
+  surDonnees: [] as ((e: Record<string, unknown>) => void)[],
+  peintures: [] as [string, string, unknown][],
 }));
 
 vi.mock("maplibre-gl", () => {
@@ -27,7 +29,13 @@ vi.mock("maplibre-gl", () => {
     remove() {
       espion.retraits += 1;
     }
-    setPaintProperty() {}
+    setPaintProperty(couche: string, propriete: string, valeur: unknown) {
+      espion.peintures.push([couche, propriete, valeur]);
+    }
+    on(evenement: string, rappel: (e: Record<string, unknown>) => void) {
+      if (evenement === "sourcedata") espion.surDonnees.push(rappel);
+      return this;
+    }
     once(evenement: string, rappel: () => void) {
       if (evenement === "load") espion.surChargement.push(rappel);
       return this;
@@ -88,6 +96,23 @@ describe("CarteSystemes", () => {
     espion.echoue = false;
     espion.workerUrl = "";
     espion.surChargement = [];
+    espion.surDonnees = [];
+    espion.peintures = [];
+    document.documentElement.style.removeProperty("--map-land");
+  });
+
+  it("peint la terre en fond dès qu'une tuile du fond de carte est chargée, et pas avant", async () => {
+    document.documentElement.style.setProperty("--map-land", "#3F6B4F");
+    render(<CarteSystemes systemes={systemes} />);
+    await waitFor(() => expect(espion.surDonnees).toHaveLength(1));
+
+    // Ni un changement de la source sans tuile, ni la source des prévisions ne prouvent que les tuiles arrivent.
+    espion.surDonnees[0]({ sourceId: "openmaptiles" });
+    espion.surDonnees[0]({ sourceId: "previsions", tile: {} });
+    expect(espion.peintures).toEqual([]);
+
+    espion.surDonnees[0]({ sourceId: "openmaptiles", tile: {} });
+    expect(espion.peintures).toContainEqual(["fond", "background-color", "#3F6B4F"]);
   });
 
   it("ouvre la carte sur une emprise qui montre tous les systèmes", async () => {

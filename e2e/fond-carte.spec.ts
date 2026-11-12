@@ -92,3 +92,25 @@ test("le fond de carte dessine la mer à partir des tuiles décodées par le wor
   expect(tuilesServies).toBeGreaterThan(0);
   expect(erreursWorker).toEqual([]);
 });
+
+test("sans tuiles (connexion faible), la carte montre la mer et non un aplat de terre", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  // Enregistrée après celle du beforeEach, cette route passe en premier : toutes les tuiles échouent.
+  await context.route(/^https:\/\/tiles\.openfreemap\.org\//, (route) => route.abort());
+  await fixtureNhc(context, baseURL, "vide");
+  await page.goto("/");
+
+  const carte = page.getByRole("region", { name: "Carte des systèmes actifs" }).locator(".maplibregl-map");
+  await expect(carte).toHaveAttribute("aria-busy", "false");
+  const [mer, terre] = await page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement);
+    return ["--map-sea", "--map-land"].map((jeton) => style.getPropertyValue(jeton).trim());
+  });
+
+  const [partMer, partTerre] = await partsDeCouleurs(page, await carte.locator("canvas").screenshot(), [mer, terre]);
+  expect(partMer).toBeGreaterThan(0.9);
+  expect(partTerre).toBe(0);
+});
