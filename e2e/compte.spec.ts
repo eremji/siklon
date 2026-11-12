@@ -20,13 +20,14 @@ const alerte = (page: Page) => page.locator("form [role=alert]");
 const texteVisible = (page: Page, texte: string) => page.getByText(texte, { exact: true }).filter({ visible: true });
 const champ = (page: Page, libelle: string) => page.getByLabel(libelle, { exact: true }).filter({ visible: true });
 
-// Envoie le formulaire et attend la réponse de la server action : React vide le formulaire à la fin
-// de l'envoi, il ne faut donc pas remplir l'essai suivant avant.
+// Envoie le formulaire et attend que React l'ait vidé, ce qu'il fait un peu après la réponse de la
+// server action : remplir l'essai suivant plus tôt le ferait effacer.
 async function envoyer(page: Page, bouton: string) {
   await Promise.all([
     page.waitForResponse((reponse) => reponse.request().method() === "POST"),
     page.getByRole("button", { name: bouton }).click(),
   ]);
+  await expect(page.locator("form input[type=password]").filter({ visible: true })).toHaveValue("");
 }
 
 async function inscrire(page: Page, email: string, langue: "Français" | "English" = "Français") {
