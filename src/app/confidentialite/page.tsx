@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { DUREE_SESSION_JOURS, LIMITES_TENTATIVES } from "@/lib/auth/options";
 
 export const metadata: Metadata = {
   title: "Confidentialité · Siklon",
-  description: "Les données que Siklon collecte (aucune) et les tiers qui voient votre adresse IP.",
+  description: "Les données que Siklon collecte, où elles sont gardées, et les tiers qui voient votre adresse IP.",
 };
 
-// Décrit l'état actuel du site. À mettre à jour avant l'arrivée des comptes et des
-// notifications (US-05, US-13), qui collecteront des données personnelles.
+// Décrit l'état actuel du site. À mettre à jour à chaque nouvelle donnée collectée
+// (emails, notifications : US-05, US-07, US-13).
+
+// Les compteurs de tentatives (clé : adresse IP) sont purgés après la plus longue fenêtre.
+const MINUTES_COMPTEURS = Math.max(...Object.values(LIMITES_TENTATIVES).map((l) => l.window)) / 60;
 
 function Section({ id, titre, children }: { id: string; titre: string; children: ReactNode }) {
   return (
@@ -35,12 +40,48 @@ export default function Page() {
 
       <Section id="collecte" titre="Ce que Siklon collecte">
         <p>
-          Rien. Siklon ne vous demande aucun compte, aucune adresse email et aucune information personnelle. Il ne
-          dépose aucun cookie et n&apos;utilise aucune mesure d&apos;audience ni aucune publicité.
+          Sans compte, rien : toutes les informations sur les cyclones et les îles se consultent sans compte ni
+          information personnelle. Siklon n&apos;utilise aucune mesure d&apos;audience ni aucune publicité.
+        </p>
+        <p>
+          Le compte est facultatif. Il contient seulement votre adresse email, la langue choisie (français ou anglais)
+          et votre mot de passe, qui n&apos;est jamais en clair : seule son empreinte (scrypt) est gardée. Siklon ne
+          demande ni votre nom, ni votre photo.
         </p>
         <p>
           Les filtres de l&apos;historique (période, intensité) restent dans l&apos;adresse de la page : ils ne sont pas
           enregistrés.
+        </p>
+      </Section>
+
+      <Section id="cookie" titre="Cookie">
+        <p>
+          Siklon dépose un seul cookie, et seulement si vous vous connectez : il garde votre session ouverte pendant{" "}
+          {DUREE_SESSION_JOURS} jours au plus, et disparaît quand vous vous déconnectez. Il est indispensable à la
+          connexion, et ne sert à rien d&apos;autre.
+        </p>
+      </Section>
+
+      <Section id="conservation" titre="Où et combien de temps">
+        <p>
+          Les données du compte sont gardées dans une base de données hébergée à Paris par{" "}
+          <LienExterne href="https://supabase.com/privacy">Supabase</LienExterne>, tant que le compte existe.
+        </p>
+        <p>
+          Pour bloquer les tentatives de connexion répétées, Siklon compte les essais par adresse IP : ce compteur est
+          effacé au bout de {MINUTES_COMPTEURS} minutes. Votre adresse IP n&apos;est jamais gardée avec votre compte.
+        </p>
+      </Section>
+
+      <Section id="suppression" titre="Supprimer vos données">
+        <p>
+          Depuis la{" "}
+          <Link href="/compte" className="text-accent underline underline-offset-4">
+            page Compte
+          </Link>
+          , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
+          (adresse email, langue, empreinte du mot de passe, sessions). Votre mot de passe vous est demandé pour
+          confirmer.
         </p>
       </Section>
 
@@ -76,7 +117,7 @@ export default function Page() {
         </p>
       </Section>
 
-      <p className="text-sm text-muted">Mise à jour : 10 novembre 2026.</p>
+      <p className="text-sm text-muted">Mise à jour : 13 novembre 2026.</p>
     </main>
   );
 }
