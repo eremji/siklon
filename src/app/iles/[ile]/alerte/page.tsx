@@ -4,9 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { AlertesNhcAVenir } from "@/components/vigilance/AlertesNhcAVenir";
+import { AlertesNhc } from "@/components/vigilance/AlertesNhc";
 import { BandeauVigilance, EnTeteIle } from "@/components/vigilance/BandeauVigilance";
-import { type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
+import { type Emprise, type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
+import { alertesNhc } from "@/lib/nhc/lecture";
+import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDemandee } from "@/lib/nhc/source";
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
 import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
 import { chargerVigilance } from "@/lib/vigilance/vigilance";
@@ -34,6 +36,13 @@ async function VigilanceIle({ ile, fichier }: { ile: Ile; fichier: FichierVigila
   return <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />;
 }
 
+// Lit les watches/warnings NHC à chaque requête, par le cache partagé du flux et des couches NOAA.
+async function AlertesNhcIle({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
+  await connection();
+  const fixture = fixtureNhcDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE_NHC)?.value);
+  return <AlertesNhc nomIle={ile.nom} etat={await alertesNhc(fixture, emprise)} />;
+}
+
 // L'identifiant d'île vient de l'URL : il est lu sous Suspense pour garder un App Shell commun.
 async function AlerteIle({ params }: Pick<Props, "params">) {
   const ile = trouverIle((await params).ile);
@@ -48,7 +57,15 @@ async function AlerteIle({ params }: Pick<Props, "params">) {
         {ile.nom} : menaces en cours
       </Link>
       {ile.alerte.source === "nhc" ? (
-        <AlertesNhcAVenir nomIle={ile.nom} />
+        <Suspense
+          fallback={
+            <EnTeteIle nomIle={ile.nom}>
+              <p className="text-base">Chargement des veilles et avertissements du NHC…</p>
+            </EnTeteIle>
+          }
+        >
+          <AlertesNhcIle ile={ile} emprise={ile.alerte.emprise} />
+        </Suspense>
       ) : (
         <Suspense
           fallback={

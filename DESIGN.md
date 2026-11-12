@@ -59,6 +59,26 @@ Contrastes clés : `--text` sur `--bg` 14:1 (clair) et 14,8:1 (sombre) ;
 Les îles sans vigilance Météo-France affichent les watches/warnings NHC
 avec les mêmes règles de contraste.
 
+## Couleurs des watches/warnings (NHC)
+
+Échelle bleu → magenta, reprise des cartes du NHC (bleu pour
+l'avertissement de tempête tropicale, rose pour la veille d'ouragan),
+sans le jaune ni le rouge réservés à la vigilance Météo-France, et loin
+du Lagon de la marque. L'en-tête de la page île prend la couleur du type
+le plus grave en cours ; sans watch ni warning, il garde `--header`.
+
+| Type (terme d'origine) | Jeton | Clair : fond / texte | Sombre : fond / texte |
+|---|---|---|---|
+| Avertissement d'ouragan (Hurricane Warning) | `--nhc-hwr` | #9D174D / #FFFFFF (7,9:1) | #DB2777 / #FFFFFF (4,6:1) |
+| Avertissement de tempête tropicale (Tropical Storm Warning) | `--nhc-twr` | #1D4ED8 / #FFFFFF (6,7:1) | #2563EB / #FFFFFF (5,2:1) |
+| Veille d'ouragan (Hurricane Watch) | `--nhc-hwa` | #F9A8D4 / #10292E (8,4:1) | idem |
+| Veille de tempête tropicale (Tropical Storm Watch) | `--nhc-twa` | #93C5FD / #10292E (8,4:1) | idem |
+
+Le texte utilise `--on-vig-clair` / `--on-vig-fonce`. Le libellé
+français est toujours écrit, suivi du terme d'origine entre parenthèses,
+et de la définition du NHC : veille = conditions possibles (environ
+48 h avant), avertissement = conditions attendues (environ 36 h avant).
+
 ## Typographie
 Police unique : **Atkinson Hyperlegible** (Google Fonts, 400 et 700),
 conçue pour distinguer sans ambiguïté I, l et 1.

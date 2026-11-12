@@ -44,6 +44,34 @@ describe("référentiel des îles", () => {
     });
   });
 
+  // Table « Watches/warnings NHC et emprises des îles » de SPEC.md.
+  it("donne à chaque île NHC son emprise de SPEC.md", () => {
+    const emprises = Object.fromEntries(
+      ILES.flatMap((ile) => (ile.alerte.source === "nhc" ? [[ile.nom, ile.alerte.emprise]] : [])),
+    );
+    const e = (latMin: number, latMax: number, lonMin: number, lonMax: number) => ({ latMin, latMax, lonMin, lonMax });
+    expect(emprises).toEqual({
+      Dominique: e(15.18, 15.67, -61.51, -61.22),
+      "Sainte-Lucie": e(13.68, 14.13, -61.1, -60.85),
+      Barbade: e(13.02, 13.35, -59.67, -59.4),
+      Trinité: e(10.02, 10.86, -61.95, -60.88),
+      "Porto Rico": e(17.86, 18.54, -67.29, -65.2),
+      Haïti: e(17.98, 20.1, -74.5, -71.75),
+      "République dominicaine": e(17.45, 19.95, -71.75, -68.3),
+      Jamaïque: e(17.68, 18.55, -78.39, -76.16),
+      Cuba: e(19.8, 23.3, -84.97, -74.12),
+    });
+  });
+
+  it("place le point de référence de chaque île NHC dans son emprise", () => {
+    for (const ile of ILES) {
+      if (ile.alerte.source !== "nhc") continue;
+      const { latMin, latMax, lonMin, lonMax } = ile.alerte.emprise;
+      const { lat, lon } = ile.pointReference;
+      expect(lat >= latMin && lat <= latMax && lon >= lonMin && lon <= lonMax, ile.nom).toBe(true);
+    }
+  });
+
   it("donne à chaque île un slug d'URL unique, en minuscules ASCII", () => {
     const slugs = ILES.map((ile) => ile.slug);
     expect(new Set(slugs).size).toBe(ILES.length);

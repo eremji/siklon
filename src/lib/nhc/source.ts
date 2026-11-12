@@ -5,10 +5,13 @@ import vide from "./__fixtures__/current-storms-vide.json";
 import coneKyle from "./__fixtures__/prevision-at1-cone.json";
 import pointsKyle from "./__fixtures__/prevision-at1-points.json";
 import trajectoireKyle from "./__fixtures__/prevision-at1-trajectoire.json";
+import watchesKyle from "./__fixtures__/watch-warning-at1.json";
+import watchesThirteen from "./__fixtures__/watch-warning-at3.json";
 import type { EtatFlux } from "./client";
 import { type PositionsPrevues, lirePositionsPrevues } from "./positions";
 import { type Prevision, lireCone, lireTrajectoire } from "./previsions";
 import { lireCurrentStorms } from "./systemes";
+import { type SegmentAlerte, lireWatchWarning } from "./watches";
 
 export const COOKIE_FIXTURE = "siklon-fixture-nhc";
 
@@ -40,4 +43,11 @@ export function previsionsFixture(nom: NomFixture): Record<string, Prevision> {
 export function positionsFixture(nom: NomFixture): Record<string, PositionsPrevues> {
   if (nom !== "actifs") return {};
   return { al112026: lirePositionsPrevues(pointsKyle, "AT1")! };
+}
+
+// Avec « actifs », Kyle (AT1) et Thirteen (AT3) ont des watches/warnings publiés (US-06b),
+// lus par le même lecteur que la couche réelle.
+export function watchesFixture(nom: NomFixture): (emplacement: string) => Promise<SegmentAlerte[]> {
+  const couches: Record<string, unknown> = nom === "actifs" ? { AT1: watchesKyle, AT3: watchesThirteen } : {};
+  return async (emplacement) => (couches[emplacement] ? lireWatchWarning(couches[emplacement], emplacement) : []);
 }

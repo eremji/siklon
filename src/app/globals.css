@@ -24,6 +24,11 @@
   --vig-rouge: #B91C1C;
   --vig-violet: #6B21A8;
   --vig-gris: #4B5563;
+  /* Watches/warnings NHC (DESIGN.md), texte sur --on-vig-clair / --on-vig-fonce. */
+  --nhc-hwr: #9D174D;
+  --nhc-twr: #1D4ED8;
+  --nhc-hwa: #F9A8D4;
+  --nhc-twa: #93C5FD;
   /* Texte sur fond de vigilance, identique dans les deux thèmes (DESIGN.md). */
   --on-vig-clair: #10292E;
   --on-vig-fonce: #FFFFFF;
@@ -51,6 +56,8 @@
     --vig-rouge: #DC2626;
     --vig-violet: #9333EA;
     --vig-gris: #64748B;
+    --nhc-hwr: #DB2777;
+    --nhc-twr: #2563EB;
   }
 }
 
@@ -75,6 +82,8 @@
   --vig-rouge: #DC2626;
   --vig-violet: #9333EA;
   --vig-gris: #64748B;
+  --nhc-hwr: #DB2777;
+  --nhc-twr: #2563EB;
 }
 
 @theme inline {
@@ -99,6 +108,10 @@
   --color-vig-rouge: var(--vig-rouge);
   --color-vig-violet: var(--vig-violet);
   --color-vig-gris: var(--vig-gris);
+  --color-nhc-hwr: var(--nhc-hwr);
+  --color-nhc-twr: var(--nhc-twr);
+  --color-nhc-hwa: var(--nhc-hwa);
+  --color-nhc-twa: var(--nhc-twa);
   --color-on-vig-clair: var(--on-vig-clair);
   --color-on-vig-fonce: var(--on-vig-fonce);
   --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;

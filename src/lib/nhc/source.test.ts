@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { etatFixture, fixtureDemandee, positionsFixture, previsionsFixture } from "./source";
+import { etatFixture, fixtureDemandee, positionsFixture, previsionsFixture, watchesFixture } from "./source";
 
 describe("fixtureDemandee", () => {
   it("n'utilise jamais de fixture sans activation explicite", () => {
@@ -51,5 +51,19 @@ describe("positionsFixture", () => {
     expect(actifs.al112026.positions).toHaveLength(8);
     expect(positionsFixture("vide")).toEqual({});
     expect(positionsFixture("indisponible")).toEqual({});
+  });
+});
+
+describe("watchesFixture", () => {
+  it("fournit les watches/warnings de Kyle (AT1) et de Thirteen (AT3) avec la fixture « actifs »", async () => {
+    const lire = watchesFixture("actifs");
+    expect((await lire("AT1")).map((segment) => segment.code)).toEqual(["HWR", "HWR", "TWR", "TWR", "HWA", "HWA"]);
+    expect(await lire("AT2")).toEqual([]);
+    expect((await lire("AT3")).map((segment) => segment.code)).toEqual(["TWA"]);
+  });
+
+  it("ne fournit aucun watch ni warning avec les autres fixtures", async () => {
+    expect(await watchesFixture("vide")("AT1")).toEqual([]);
+    expect(await watchesFixture("indisponible")("AT1")).toEqual([]);
   });
 });
