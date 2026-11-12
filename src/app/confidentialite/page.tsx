@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { DUREE_SESSION_JOURS, LIMITES_TENTATIVES } from "@/lib/auth/options";
 
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 // Décrit l'état actuel du site. À mettre à jour à chaque nouvelle donnée collectée
-// (suppression du compte, emails, notifications : US-05, US-07, US-13).
+// (emails, notifications : US-05, US-07, US-13).
 
 // Les compteurs de tentatives (clé : adresse IP) sont purgés après la plus longue fenêtre.
 const MINUTES_COMPTEURS = Math.max(...Object.values(LIMITES_TENTATIVES).map((l) => l.window)) / 60;
@@ -69,6 +70,18 @@ export default function Page() {
         <p>
           Pour bloquer les tentatives de connexion répétées, Siklon compte les essais par adresse IP : ce compteur est
           effacé au bout de {MINUTES_COMPTEURS} minutes. Votre adresse IP n&apos;est jamais gardée avec votre compte.
+        </p>
+      </Section>
+
+      <Section id="suppression" titre="Supprimer vos données">
+        <p>
+          Depuis la{" "}
+          <Link href="/compte" className="text-accent underline underline-offset-4">
+            page Compte
+          </Link>
+          , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
+          (adresse email, langue, empreinte du mot de passe, sessions). Votre mot de passe vous est demandé pour
+          confirmer.
         </p>
       </Section>
 
