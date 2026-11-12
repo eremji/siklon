@@ -54,6 +54,9 @@ const PAGES = [
   "/iles/dominique/alerte",
   "/systemes/al112026",
   "/historique",
+  "/compte",
+  "/compte/connexion",
+  "/compte/inscription",
 ];
 
 for (const chemin of PAGES) {
