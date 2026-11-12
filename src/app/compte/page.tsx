@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { EtatCompte } from "@/components/compte/EtatCompte";
 import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { utilisateurCourant } from "@/lib/auth/serveur";
-import { deconnecter } from "./actions";
+import { deconnecter, supprimerCompte } from "./actions";
 
 export const metadata: Metadata = {
   title: "Compte · Siklon",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 // Lit la session : rendu à la requête, sous la frontière <Suspense> (Cache Components).
 async function Contenu() {
-  return <EtatCompte utilisateur={await utilisateurCourant()} deconnecter={deconnecter} />;
+  return <EtatCompte utilisateur={await utilisateurCourant()} deconnecter={deconnecter} supprimer={supprimerCompte} />;
 }
 
 export default function Page() {

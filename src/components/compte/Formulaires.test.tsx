@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { FormulaireConnexion, FormulaireInscription } from "./Formulaires";
+import { FormulaireConnexion, FormulaireInscription, FormulaireSuppression } from "./Formulaires";
 
 describe("FormulaireInscription", () => {
   it("demande un email, un mot de passe d'au moins 12 caractères et une langue", () => {
@@ -73,5 +73,27 @@ describe("FormulaireConnexion", () => {
     await userEvent.click(screen.getByRole("button", { name: "Se connecter" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Email ou mot de passe incorrect.");
+  });
+});
+
+describe("FormulaireSuppression", () => {
+  it("demande le mot de passe pour confirmer et dit ce qui sera effacé", () => {
+    render(<FormulaireSuppression action={vi.fn()} />);
+    expect(screen.getByRole("heading", { level: 2, name: "Supprimer mon compte" })).toBeInTheDocument();
+    expect(screen.getByText(/toutes ses données/i)).toBeInTheDocument();
+    expect(screen.getByText(/La suppression est définitive/)).toBeInTheDocument();
+    const motDePasse = screen.getByLabelText("Mot de passe actuel");
+    expect(motDePasse).toHaveAttribute("type", "password");
+    expect(motDePasse).toHaveAttribute("autocomplete", "current-password");
+    expect(motDePasse).toBeRequired();
+    expect(screen.getByRole("button", { name: "Supprimer définitivement mon compte" })).toBeInTheDocument();
+  });
+
+  it("affiche l'erreur renvoyée par le serveur", async () => {
+    const action = vi.fn(async () => ({ message: "Mot de passe incorrect." }));
+    render(<FormulaireSuppression action={action} />);
+    await userEvent.type(screen.getByLabelText("Mot de passe actuel"), "faux mot de passe");
+    await userEvent.click(screen.getByRole("button", { name: "Supprimer définitivement mon compte" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Mot de passe incorrect.");
   });
 });

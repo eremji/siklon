@@ -41,3 +41,10 @@ export async function deconnecter(): Promise<void> {
   await appelerAuth("/sign-out", {});
   redirect("/compte");
 }
+
+/** Supprime le compte et toutes ses données, sur confirmation du mot de passe (RGPD). */
+export async function supprimerCompte(_etat: EtatFormulaire, donnees: FormData): Promise<EtatFormulaire> {
+  const resultat = await appelerAuth("/delete-user", { password: champ(donnees, "motDePasse") });
+  if (!resultat.ok) return { message: resultat.message };
+  redirect("/compte/supprime");
+}

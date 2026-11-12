@@ -1,12 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./actions", () => ({ inscrire: vi.fn(), connecter: vi.fn(), deconnecter: vi.fn() }));
+vi.mock("./actions", () => ({ inscrire: vi.fn(), connecter: vi.fn(), deconnecter: vi.fn(), supprimerCompte: vi.fn() }));
 vi.mock("@/lib/auth/serveur", () => ({ utilisateurCourant: vi.fn() }));
 
 const Compte = await import("./page");
 const Connexion = await import("./connexion/page");
 const Inscription = await import("./inscription/page");
+const Supprime = await import("./supprime/page");
 
 describe("pages du compte", () => {
   it("la page Compte porte un titre et sa métadonnée", () => {
@@ -28,5 +29,13 @@ describe("pages du compte", () => {
     expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/compte/connexion");
     expect(screen.getByRole("link", { name: /données/i })).toHaveAttribute("href", "/confidentialite");
     expect(Inscription.metadata.title).toBe("Créer un compte · Siklon");
+  });
+
+  it("la page de confirmation dit que tout a été effacé et propose de revenir à la carte", () => {
+    render(<Supprime.default />);
+    expect(screen.getByRole("heading", { level: 1, name: "Compte supprimé" })).toBeInTheDocument();
+    expect(screen.getByText(/toutes ses données ont été effacés/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Revenir à la carte" })).toHaveAttribute("href", "/");
+    expect(Supprime.metadata.title).toBe("Compte supprimé · Siklon");
   });
 });

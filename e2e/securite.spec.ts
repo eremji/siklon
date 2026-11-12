@@ -57,6 +57,7 @@ const PAGES = [
   "/compte",
   "/compte/connexion",
   "/compte/inscription",
+  "/compte/supprime",
 ];
 
 for (const chemin of PAGES) {

@@ -103,3 +103,42 @@ export function FormulaireConnexion({ action }: { action: Action }) {
     </form>
   );
 }
+
+export function FormulaireSuppression({ action }: { action: Action }) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  return (
+    <section aria-labelledby="suppression-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
+      <h2 id="suppression-titre" className="text-xl font-bold">
+        Supprimer mon compte
+      </h2>
+      <p className="text-base">
+        Le compte et toutes ses données (adresse email, langue, mot de passe, sessions) sont effacés
+        immédiatement. La suppression est définitive.
+      </p>
+      <form action={envoyer} className="flex flex-col gap-3">
+        <Erreur message={etat.message} />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="suppression-mot-de-passe" className="text-base font-bold">
+            Mot de passe actuel
+          </label>
+          <input
+            id="suppression-mot-de-passe"
+            name="motDePasse"
+            type="password"
+            autoComplete="current-password"
+            required
+            maxLength={LONGUEUR_MAX_MOT_DE_PASSE}
+            className={CHAMP}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={enCours}
+          className="min-h-12 rounded-full border-2 border-danger-text px-6 text-base font-bold text-danger-text disabled:opacity-70"
+        >
+          {enCours ? "Suppression en cours…" : "Supprimer définitivement mon compte"}
+        </button>
+      </form>
+    </section>
+  );
+}

@@ -32,14 +32,26 @@ beforeEach(() => {
   ip = `203.0.113.${ipSuivante++}`;
 });
 
-const appeler = (chemin: string, corps: Record<string, unknown>) =>
+const appeler = (chemin: string, corps: Record<string, unknown>, cookie?: string) =>
   auth.handler(
     new Request(`${BASE}/api/auth${chemin}`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: BASE, "x-forwarded-for": ip },
+      headers: {
+        "content-type": "application/json",
+        origin: BASE,
+        "x-forwarded-for": ip,
+        ...(cookie ? { cookie } : {}),
+      },
       body: JSON.stringify(corps),
     }),
   );
+
+// Cookie de session renvoyé par une inscription ou une connexion, prêt à renvoyer au serveur.
+const cookieDeSession = (reponse: Response) =>
+  reponse.headers
+    .getSetCookie()
+    .map((ligne) => ligne.split(";")[0])
+    .join("; ");
 
 let numero = 0;
 const nouvelEmail = () => `personne${++numero}@exemple.org`;
@@ -136,6 +148,70 @@ describe("limitation des tentatives", () => {
     const statuts = [];
     for (let i = 0; i <= LIMITES_TENTATIVES.inscription.max; i++) {
       statuts.push((await inscrire(nouvelEmail(), "un mot de passe solide")).status);
+    }
+    expect(statuts.at(-1)).toBe(429);
+  });
+});
+
+describe("suppression du compte", () => {
+  const MOT_DE_PASSE = "un mot de passe solide";
+
+  async function compteConnecte() {
+    const email = nouvelEmail();
+    const reponse = await inscrire(email, MOT_DE_PASSE);
+    const {
+      rows: [{ id }],
+    } = await db.query<{ id: string }>("select id from utilisateurs where email = $1", [email]);
+    return { email, id, cookie: cookieDeSession(reponse) };
+  }
+
+  const traces = async (id: string, email: string) => {
+    const { rows } = await db.query<{ n: number }>(
+      `select (select count(*) from utilisateurs where id = $1 or email = $2)
+            + (select count(*) from sessions where utilisateur_id = $1)
+            + (select count(*) from comptes_lies where utilisateur_id = $1)
+            + (select count(*) from verifications where valeur like '%' || $3 || '%' or identifiant like '%' || $2 || '%')
+            as n`,
+      [id, email, id],
+    );
+    return Number(rows[0].n);
+  };
+
+  it("efface le compte et toutes ses données, y compris ses jetons, et ferme la session", async () => {
+    const { email, id, cookie } = await compteConnecte();
+    await db.query(
+      "insert into verifications (identifiant, valeur, expire_le) values ($1, $2, now() + interval '1 hour'), ($3, 'x', now() + interval '1 hour')",
+      [`reset-password:jeton-${id}`, id, `email-verification:${email}`],
+    );
+    expect(await traces(id, email)).toBeGreaterThan(0);
+
+    const reponse = await appeler("/delete-user", { password: MOT_DE_PASSE }, cookie);
+    expect(reponse.status).toBe(200);
+    expect(reponse.headers.get("set-cookie")).toMatch(/siklon\.session_token=;/);
+    expect(await traces(id, email)).toBe(0);
+  });
+
+  it("refuse sans le mot de passe, même juste après la connexion", async () => {
+    const { id, cookie } = await compteConnecte();
+    expect((await appeler("/delete-user", {}, cookie)).status).toBe(400);
+    expect((await db.query("select 1 from utilisateurs where id = $1", [id])).rows).toHaveLength(1);
+  });
+
+  it("refuse un mauvais mot de passe", async () => {
+    const { id, cookie } = await compteConnecte();
+    expect((await appeler("/delete-user", { password: "pas le bon mot de passe" }, cookie)).status).toBe(400);
+    expect((await db.query("select 1 from utilisateurs where id = $1", [id])).rows).toHaveLength(1);
+  });
+
+  it("refuse sans session", async () => {
+    expect((await appeler("/delete-user", { password: MOT_DE_PASSE })).status).toBe(401);
+  });
+
+  it(`limite les essais de mot de passe à ${LIMITES_TENTATIVES.connexion.max} par minute et par IP`, async () => {
+    const { cookie } = await compteConnecte();
+    const statuts = [];
+    for (let i = 0; i <= LIMITES_TENTATIVES.connexion.max; i++) {
+      statuts.push((await appeler("/delete-user", { password: "pas le bon mot de passe" }, cookie)).status);
     }
     expect(statuts.at(-1)).toBe(429);
   });
