@@ -53,9 +53,19 @@ export function formaterDate(date: Date, fuseau: string): string {
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: fuseau }).format(date);
 }
 
-const deuxChiffres = (n: number) => String(n).padStart(2, "0");
+// HURDAT2 date ses points en UTC : l'heure reste en UTC, écrite comme le reste de l'app.
+const FORMAT_UTC = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "UTC",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
 
+/** « 25 août 1979 à 12 h 00 UTC ». */
 export function formaterDateHeureUtc(date: Date): string {
-  const jour = `${deuxChiffres(date.getUTCDate())}/${deuxChiffres(date.getUTCMonth() + 1)}/${date.getUTCFullYear()}`;
-  return `${jour} ${deuxChiffres(date.getUTCHours())}:${deuxChiffres(date.getUTCMinutes())} UTC`;
+  const parties = Object.fromEntries(FORMAT_UTC.formatToParts(date).map(({ type, value }) => [type, value]));
+  return `${parties.day} ${parties.month} ${parties.year} à ${parties.hour} h ${parties.minute} UTC`;
 }

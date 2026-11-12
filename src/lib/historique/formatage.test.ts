@@ -64,8 +64,13 @@ describe("formaterDate", () => {
 });
 
 describe("formaterDateHeureUtc", () => {
-  it("affiche la date et l'heure en UTC", () => {
-    expect(formaterDateHeureUtc(new Date("1989-09-17T06:00:00Z"))).toBe("17/09/1989 06:00 UTC");
+  it("écrit la date en toutes lettres et l'heure en UTC, comme le reste de l'app", () => {
+    expect(formaterDateHeureUtc(new Date("1979-08-25T12:00:00Z"))).toBe("25 août 1979 à 12 h 00 UTC");
+  });
+
+  it("garde l'heure UTC même quand le fuseau local changerait la date", () => {
+    expect(formaterDateHeureUtc(new Date("1989-09-17T00:00:00Z"))).toBe("17 septembre 1989 à 00 h 00 UTC");
+    expect(formaterDateHeureUtc(new Date("1989-09-17T23:45:00Z"))).toBe("17 septembre 1989 à 23 h 45 UTC");
   });
 });
 
