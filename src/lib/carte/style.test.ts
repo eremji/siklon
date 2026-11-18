@@ -47,12 +47,23 @@ describe("styleCarte", () => {
     });
   });
 
-  it("peint la terre, la mer et les frontières avec les couleurs fournies", () => {
+  it("peint la mer et les frontières des tuiles avec les couleurs fournies", () => {
     const couches = peinture(styleCarte(couleurs));
 
-    expect(couches.terre).toEqual({ "background-color": "#3F6B4F" });
     expect(couches.mer).toEqual({ "fill-color": "#CFE7E4" });
     expect(couches.frontieres).toMatchObject({ "line-color": "#6B8287" });
+  });
+
+  it("prend la mer pour fond tant qu'aucune tuile n'est chargée : sans tuiles, pas d'aplat de terre", () => {
+    const style = styleCarte(couleurs);
+
+    expect(style.layers[0]).toEqual({ id: "fond", type: "background", paint: { "background-color": "#CFE7E4" } });
+  });
+
+  it("prend la terre pour fond une fois les tuiles chargées, l'eau des tuiles étant dessinée par-dessus", () => {
+    const couches = peinture(styleCarte(couleurs, [], true));
+
+    expect(couches.fond).toEqual({ "background-color": "#3F6B4F" });
   });
 
   it("trace le cône et la trajectoire de chaque prévision", () => {

@@ -1,9 +1,8 @@
 import Link from "next/link";
+import { LienNhc } from "@/components/LienNhc";
 import type { EtatFlux } from "@/lib/nhc/client";
 import { formaterHeureAntilles } from "@/lib/nhc/fraicheur";
 import { FicheSysteme } from "./FicheSysteme";
-
-const URL_NHC = "https://www.nhc.noaa.gov/";
 
 /** Fiche d'un système selon l'état du flux NHC : disponible, système disparu, ou flux indisponible. */
 export function FicheSystemeActif({ flux, id }: { flux: EtatFlux; id: string }) {
@@ -13,9 +12,7 @@ export function FicheSystemeActif({ flux, id }: { flux: EtatFlux; id: string }) 
         <h1 className="text-3xl font-bold">Fiche du système</h1>
         <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
           Les données du NHC sont momentanément indisponibles. Consultez{" "}
-          <a href={URL_NHC} className="font-bold text-accent underline underline-offset-2">
-            nhc.noaa.gov
-          </a>
+          <LienNhc />
           .
         </p>
       </>
