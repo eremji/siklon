@@ -1,3 +1,4 @@
+import { LienNhc } from "@/components/LienNhc";
 import { AlerteObsolescence } from "@/components/systemes/AlerteObsolescence";
 import { Pastille } from "@/components/systemes/Pastille";
 import { RADIUS_WATCH_KM } from "@/lib/constantes";
@@ -9,17 +10,8 @@ import { ECHEANCE_MAX_H, type PositionsPrevues } from "@/lib/nhc/positions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { DelaiPassage } from "./DelaiPassage";
 
-const URL_NHC = "https://www.nhc.noaa.gov/";
 const JOURS_PREVUS = ECHEANCE_MAX_H / 24;
 const LISTE = new Intl.ListFormat("fr", { type: "conjunction" });
-
-function LienNhc() {
-  return (
-    <a href={URL_NHC} className="font-bold text-accent underline underline-offset-2">
-      nhc.noaa.gov
-    </a>
-  );
-}
 
 function CarteMenace({ ile, menace }: { ile: Ile; menace: Menace<SystemeActif> }) {
   const { systeme, passage, avis } = menace;
@@ -51,7 +43,7 @@ function Incompletude({ sansPrevision, rejetes }: { sansPrevision: SystemeActif[
   if (sansPrevision.length === 0 && rejetes === 0) return null;
   const noms = LISTE.format(sansPrevision.map((systeme) => systeme.nom));
   return (
-    <div role="alert" className="flex flex-col gap-1 rounded-2xl bg-danger-soft p-4 text-base">
+    <div role="alert" className="flex flex-col gap-1 rounded-2xl bg-soft p-4 text-base">
       {sansPrevision.length === 1 && <p>Prévision indisponible pour {noms} : sa menace ne peut pas être évaluée.</p>}
       {sansPrevision.length > 1 && (
         <p>Prévisions indisponibles pour {noms} : leur menace ne peut pas être évaluée.</p>

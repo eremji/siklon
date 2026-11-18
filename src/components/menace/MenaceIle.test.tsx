@@ -120,6 +120,14 @@ describe("MenaceIle", () => {
     expect(screen.queryByText(/pour le moment/)).not.toBeInTheDocument();
   });
 
+  it("présente les prévisions manquantes sur un fond neutre, pas celui des échéances proches (DESIGN.md)", () => {
+    render(<MenaceIle ile={martinique} flux={ok([systeme(), leah])} positions={positionsKyle} />);
+
+    const encadre = screen.getByRole("alert");
+    expect(encadre).toHaveClass("bg-soft");
+    expect(encadre).not.toHaveClass("bg-danger-soft");
+  });
+
   it("signale les systèmes écartés du flux NHC", () => {
     render(<MenaceIle ile={martinique} flux={ok([], 2)} positions={{}} />);
 
