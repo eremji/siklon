@@ -5,7 +5,7 @@ import type { Map as CarteMapLibre } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { emprise } from "@/lib/carte/emprise";
-import { type CouleursCarte, JETONS_CARTE, styleCarte } from "@/lib/carte/style";
+import { type CouleursCarte, JETONS_CARTE, SOURCE_FOND, styleCarte } from "@/lib/carte/style";
 import type { Prevision } from "@/lib/nhc/previsions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { Pastille } from "@/components/systemes/Pastille";
@@ -33,8 +33,8 @@ function lireCouleurs(): CouleursCarte {
 type EntreePeinture = [Parameters<CarteMapLibre["setPaintProperty"]>[1], Parameters<CarteMapLibre["setPaintProperty"]>[2]];
 
 // Le thème suit le téléphone : les couleurs de la carte suivent les jetons.
-function repeindre(carte: CarteMapLibre) {
-  const { layers } = styleCarte(lireCouleurs());
+function repeindre(carte: CarteMapLibre, tuilesChargees: boolean) {
+  const { layers } = styleCarte(lireCouleurs(), [], tuilesChargees);
   for (const couche of layers) {
     for (const [propriete, valeur] of Object.entries(couche.paint) as EntreePeinture[]) {
       carte.setPaintProperty(couche.id, propriete, valeur);
@@ -67,8 +67,10 @@ export function CarteSystemes({
   useEffect(() => {
     let carte: CarteMapLibre | undefined;
     let annule = false;
+    // Le fond passe de la mer à la terre à la première tuile reçue (voir styleCarte).
+    let tuilesChargees = false;
     const theme = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const surTheme = () => carte && repeindre(carte);
+    const surTheme = () => carte && repeindre(carte, tuilesChargees);
 
     const liste = Object.values(previsions);
 
@@ -90,6 +92,11 @@ export function CarteSystemes({
         });
         carte.once("load", () => {
           if (!annule) setPrete(true);
+        });
+        carte.on("sourcedata", (evenement) => {
+          if (tuilesChargees || evenement.sourceId !== SOURCE_FOND || !evenement.tile) return;
+          tuilesChargees = true;
+          repeindre(carte!, tuilesChargees);
         });
         const nouvelles = systemes.map((systeme) => {
           const element = document.createElement("div");

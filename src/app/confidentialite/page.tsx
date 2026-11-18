@@ -76,7 +76,10 @@ export default function Page() {
         </p>
       </Section>
 
-      <p className="text-sm text-muted">Mise à jour : 10 novembre 2026.</p>
+      <div className="flex flex-col gap-1 text-sm text-muted">
+        <p>Mise à jour : 10 novembre 2026.</p>
+        <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
+      </div>
     </main>
   );
 }

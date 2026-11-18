@@ -22,3 +22,15 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test("la pastille de catégorie est alignée en haut de chaque système, avec son nom", async ({ page }) => {
+  await page.goto("/");
+  const systemes = page.getByRole("list", { name: "Systèmes actifs" }).getByRole("listitem");
+  await expect(systemes.first()).toBeVisible();
+
+  for (const systeme of await systemes.all()) {
+    const pastille = await systeme.locator(":scope > [aria-hidden='true']").boundingBox();
+    const nom = await systeme.getByRole("link").first().boundingBox();
+    expect(Math.abs(pastille!.y - nom!.y)).toBeLessThanOrEqual(2);
+  }
+});

@@ -1,20 +1,11 @@
 import Link from "next/link";
+import { LienNhc } from "@/components/LienNhc";
 import type { EtatFlux } from "@/lib/nhc/client";
 import { avisLePlusRecent, formaterHeureAntilles } from "@/lib/nhc/fraicheur";
 import type { Prevision } from "@/lib/nhc/previsions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { AlerteObsolescence } from "./AlerteObsolescence";
 import { Pastille } from "./Pastille";
-
-const URL_NHC = "https://www.nhc.noaa.gov/";
-
-function LienNhc() {
-  return (
-    <a href={URL_NHC} className="font-bold text-accent underline underline-offset-2">
-      nhc.noaa.gov
-    </a>
-  );
-}
 
 function Source({ systemes, luLe }: { systemes: SystemeActif[]; luLe: string }) {
   const dernierAvis = avisLePlusRecent(systemes.map((systeme) => systeme.avis.emisLe));
@@ -55,7 +46,7 @@ export function ListeSystemes({
       {systemes.length > 0 && (
         <ul aria-label="Systèmes actifs" className="flex flex-col gap-2">
           {systemes.map((systeme) => (
-            <li key={systeme.id} className="flex min-h-11 items-center gap-3 rounded-2xl bg-surface p-3">
+            <li key={systeme.id} className="flex min-h-11 items-start gap-3 rounded-2xl bg-surface p-3">
               <Pastille systeme={systeme} />
               <div className="flex flex-col">
                 <Link

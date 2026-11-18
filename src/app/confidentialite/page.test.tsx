@@ -36,6 +36,13 @@ describe("Page de confidentialité", () => {
     expect(section).toHaveTextContent(/serveur de Siklon/);
   });
 
+  it("rappelle de suivre les consignes officielles, comme chaque écran (DESIGN.md)", () => {
+    render(<Page />);
+    expect(
+      screen.getByText("Siklon ne remplace pas les consignes officielles. Suivez les autorités locales."),
+    ).toBeInTheDocument();
+  });
+
   it("indique sa date de mise à jour", () => {
     render(<Page />);
     expect(screen.getByText(/Mise à jour : 10 novembre 2026/)).toBeInTheDocument();

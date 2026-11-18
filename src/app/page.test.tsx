@@ -20,9 +20,9 @@ describe("Accueil", () => {
     ).toHaveTextContent("Systèmes simulés");
   });
 
-  it("mène au choix d'une île pour savoir quand un système pourrait l'atteindre", () => {
+  it("ne double pas l'entrée « Mon île » de la barre de navigation", () => {
     render(<Home />);
-    expect(screen.getByRole("link", { name: /Mon île/ })).toHaveAttribute("href", "/iles");
+    expect(screen.queryByRole("link", { name: /Mon île/ })).not.toBeInTheDocument();
   });
 
   it("rappelle de suivre les consignes officielles", () => {
