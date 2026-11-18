@@ -23,7 +23,7 @@ test("la barre de navigation mène de l'accueil à Mon île et retour", async ({
 test("la barre de navigation offre des zones tactiles d'au moins 44 px", async ({ page }) => {
   await page.goto("/iles");
   const liens = page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link");
-  await expect(liens).toHaveCount(2);
+  await expect(liens).toHaveCount(3);
   for (const lien of await liens.all()) {
     const boite = await lien.boundingBox();
     expect(boite?.height).toBeGreaterThanOrEqual(44);

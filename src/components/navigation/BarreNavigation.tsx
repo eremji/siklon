@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// DESIGN.md : barre flottante en pilule, onglet actif sur --accent. Les entrées Alertes et
-// Compte viendront avec leurs pages (US-05, US-07, US-09).
+// DESIGN.md : barre flottante en pilule, onglet actif sur --accent. L'entrée Alertes viendra
+// avec sa page (US-07, US-09).
 const ENTREES = [
   { href: "/", libelle: "Carte", section: (chemin: string) => chemin === "/" || chemin.startsWith("/systemes") },
   { href: "/iles", libelle: "Mon île", section: (chemin: string) => /^\/(iles|historique)(\/|$)/.test(chemin) },
+  { href: "/compte", libelle: "Compte", section: (chemin: string) => /^\/compte(\/|$)/.test(chemin) },
 ] as const;
 
 function Barre({ chemin }: { chemin?: string }) {

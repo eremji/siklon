@@ -25,14 +25,14 @@ describe("TableauTrajectoire", () => {
     render(<TableauTrajectoire points={points} />);
     const lignes = screen.getAllByRole("row").slice(1);
     expect(within(lignes[0]).getAllByRole("cell").map((td) => td.textContent)).toEqual([
-      "17/09/1989 00:00 UTC",
+      "17 septembre 1989 à 00 h 00 UTC",
       "Ouragan",
       "16,2° N 61,5° O",
       "222 km/h (120 nœuds)",
       "941 hPa",
     ]);
     expect(within(lignes[1]).getAllByRole("cell").map((td) => td.textContent)).toEqual([
-      "17/09/1989 06:00 UTC",
+      "17 septembre 1989 à 06 h 00 UTC",
       "Ouragan (atterrissage)",
       "16,6° N 62,2° O",
       "—",
