@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "siklon-demo",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "eval \"$(fnm env --shell bash)\" && fnm use >/dev/null && NHC_FIXTURES=1 npm run dev"],
+      "port": 3000
+    },
+    {
+      "name": "siklon",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "eval \"$(fnm env --shell bash)\" && fnm use >/dev/null && npm run dev"],
+      "port": 3000
+    }
+  ]
+}

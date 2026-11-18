@@ -22,6 +22,8 @@ Application web de suivi des cyclones tropicaux pour les Antilles.
 - `npm run build` puis `npm run start` : version de production en local.
 - Tests e2e : installer le navigateur une fois avec `npx playwright install chromium`.
 - Next.js 16 : lire la doc de `node_modules/next/dist/docs/` avant d'utiliser une API (voir AGENTS.md).
+- Prévisualisation dans l'app Claude : configurations `siklon` et `siklon-demo`
+  (fixtures NHC locales, `NHC_FIXTURES=1`) dans `.claude/launch.json`.
 
 ## Règles de travail
 - Toujours répondre en français.
@@ -51,3 +53,23 @@ Application web de suivi des cyclones tropicaux pour les Antilles.
 - Chaque PR contient « Closes #<n°> » et suit le template de PR.
 - Jamais de commit direct sur `main` ; jamais de merge si la CI est rouge.
 - Procédures détaillées : `/start-us <n°>` pour démarrer une US, `/ship` pour livrer.
+
+## Vérification locale
+- Tests e2e : base Postgres locale jetable `siklon_e2e` (Postgres 17 Homebrew,
+  migrations + fixture HURDAT2 importée), jamais la base de `.env.local` :
+  `DATABASE_URL=postgresql://localhost:5432/siklon_e2e npm run test:e2e`.
+  Après une nouvelle migration, l'appliquer aussi à `siklon_e2e`
+  (`/opt/homebrew/opt/postgresql@17/bin/psql -h localhost siklon_e2e -f <fichier>`).
+- Ports 3000 et 3100 souvent occupés par d'autres sessions : ne jamais tuer
+  ces serveurs ; lancer les e2e sur un port libre (`npm run start -- -p <port>`
+  avec une config Playwright temporaire hors du dépôt qui change `baseURL` et `webServer`).
+- Dans un worktree (`.claude/worktrees/…`) : `npm ci` avant `npm run build` ou les e2e,
+  sinon Turbopack échoue sur « Module not found » alors que Vitest passe.
+- Next.js 16 garde la page précédente cachée dans le DOM : en e2e, filtrer
+  `{ visible: true }` ; pas de `useId` pour un champ présent sur deux pages.
+- Captures d'une PR : les mettre en commentaire de la PR, pas seulement dans le chat.
+  `gh` ne téléverse pas d'image : pousser les PNG par un commit orphelin sur une branche
+  `captures/us-<n°>` (jamais mergée, ignorée par Vercel) et les citer par
+  `https://raw.githubusercontent.com/eremji/siklon/captures/us-<n°>/<fichier>.png`.
+- Le hook `guard-bash.sh` bloque toute commande contenant à la fois `git push` et le mot
+  `main` : faire `git push` et `gh pr create` en deux commandes.

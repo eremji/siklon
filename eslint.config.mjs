@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Rapports Playwright
     "playwright-report/**",
     "test-results/**",
+    // Worktrees des sessions Claude Code (copies du dépôt, sans node_modules)
+    ".claude/worktrees/**",
   ]),
 ]);
 
