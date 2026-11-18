@@ -110,6 +110,28 @@ test("un mauvais mot de passe est refusé, puis les tentatives répétées sont 
   await expect(alerte(page)).toHaveText(/^Trop de tentatives\. Réessayez dans \d+ minutes?\.$/);
 });
 
+test("supprimer son compte efface tout : on ne peut plus s'y connecter", async ({ page, context }, testInfo) => {
+  const email = nouvelEmail(testInfo);
+  await inscrire(page, email);
+
+  await champ(page, "Mot de passe actuel").fill("pas le bon mot de passe");
+  await envoyer(page, "Supprimer définitivement mon compte");
+  await expect(alerte(page)).toHaveText("Mot de passe incorrect.");
+  await expect(texteVisible(page, email)).toBeVisible();
+
+  await champ(page, "Mot de passe actuel").fill(MOT_DE_PASSE);
+  await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
+  await expect(page).toHaveURL("/compte/supprime");
+  await expect(page.getByRole("status")).toContainText("toutes ses données ont été effacés");
+  expect((await context.cookies()).filter((c) => c.name.startsWith("siklon."))).toEqual([]);
+
+  await page.goto("/compte/connexion");
+  await champ(page, "Adresse email").fill(email);
+  await champ(page, "Mot de passe").fill(MOT_DE_PASSE);
+  await envoyer(page, "Se connecter");
+  await expect(alerte(page)).toHaveText("Email ou mot de passe incorrect.");
+});
+
 // Les formulaires marchent avant le chargement du JavaScript (connexion lente). La page Compte, elle,
 // diffuse son contenu derrière <Suspense>, qui s'affiche par un script : on vérifie ici la session.
 test.describe("sans JavaScript", () => {
@@ -122,7 +144,7 @@ test.describe("sans JavaScript", () => {
   });
 });
 
-for (const chemin of ["/compte", "/compte/connexion", "/compte/inscription"]) {
+for (const chemin of ["/compte", "/compte/connexion", "/compte/inscription", "/compte/supprime"]) {
   for (const colorScheme of ["light", "dark"] as const) {
     test(`la page ${chemin} respecte WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
       page,

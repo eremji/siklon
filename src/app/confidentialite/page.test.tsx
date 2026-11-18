@@ -51,6 +51,14 @@ describe("Page de confidentialité", () => {
     );
   });
 
+  it("explique comment supprimer son compte et toutes ses données", () => {
+    render(<Page />);
+    const section = screen.getByRole("region", { name: "Supprimer vos données" });
+    expect(section).toHaveTextContent(/immédiatement/i);
+    expect(section).toHaveTextContent(/toutes ses données/i);
+    expect(within(section).getByRole("link", { name: "page Compte" })).toHaveAttribute("href", "/compte");
+  });
+
   it("précise que les sources de données ne reçoivent rien du visiteur", () => {
     render(<Page />);
     const section = screen.getByRole("region", { name: "Sources de données" });

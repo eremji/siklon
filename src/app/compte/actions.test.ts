@@ -10,7 +10,7 @@ const redirect = vi.hoisted(() =>
 vi.mock("@/lib/auth/serveur", () => ({ appelerAuth }));
 vi.mock("next/navigation", () => ({ redirect }));
 
-const { connecter, deconnecter, inscrire } = await import("./actions");
+const { connecter, deconnecter, inscrire, supprimerCompte } = await import("./actions");
 
 const formulaire = (champs: Record<string, string>) => {
   const donnees = new FormData();
@@ -73,5 +73,21 @@ describe("deconnecter", () => {
     appelerAuth.mockResolvedValue({ ok: true });
     await expect(deconnecter()).rejects.toThrow("redirection vers /compte");
     expect(appelerAuth).toHaveBeenCalledWith("/sign-out", {});
+  });
+});
+
+describe("supprimerCompte", () => {
+  it("supprime le compte avec le mot de passe, puis mène à la confirmation", async () => {
+    appelerAuth.mockResolvedValue({ ok: true });
+    await expect(supprimerCompte({}, formulaire({ motDePasse: "un mot de passe solide" }))).rejects.toThrow(
+      "redirection vers /compte/supprime",
+    );
+    expect(appelerAuth).toHaveBeenCalledWith("/delete-user", { password: "un mot de passe solide" });
+  });
+
+  it("renvoie le message d'erreur sans rien supprimer", async () => {
+    appelerAuth.mockResolvedValue({ ok: false, message: "Mot de passe incorrect." });
+    expect(await supprimerCompte({}, formulaire({ motDePasse: "faux" }))).toEqual({ message: "Mot de passe incorrect." });
+    expect(redirect).not.toHaveBeenCalled();
   });
 });

@@ -44,6 +44,8 @@ const MESSAGES: Record<string, string> = {
   USER_ALREADY_EXISTS: "Un compte existe déjà avec cette adresse email.",
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Un compte existe déjà avec cette adresse email.",
   INVALID_EMAIL_OR_PASSWORD: "Email ou mot de passe incorrect.",
+  INVALID_PASSWORD: "Mot de passe incorrect.",
+  PASSWORD_REQUIRED: "Saisissez votre mot de passe pour confirmer.",
 };
 
 /** Message d'erreur en français ; jamais le détail technique renvoyé par le serveur. */

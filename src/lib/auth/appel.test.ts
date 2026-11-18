@@ -61,6 +61,8 @@ describe("messageErreur", () => {
     [400, { code: "INVALID_EMAIL" }, "Cette adresse email n'est pas valide."],
     [422, { code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" }, "Un compte existe déjà avec cette adresse email."],
     [401, { code: "INVALID_EMAIL_OR_PASSWORD" }, "Email ou mot de passe incorrect."],
+    [400, { code: "INVALID_PASSWORD" }, "Mot de passe incorrect."],
+    [400, { code: "PASSWORD_REQUIRED" }, "Saisissez votre mot de passe pour confirmer."],
   ])("statut %i, %o → %s", (statut, corps, attendu) => {
     expect(messageErreur(statut, corps, new Headers())).toBe(attendu);
   });
