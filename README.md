@@ -71,15 +71,29 @@ npm run build                # build de production
 
 Les secrets ne sont jamais committés : ils vont dans `.env.local` (ignoré par
 git) en local, et dans les variables d'environnement Vercel en production.
-Aucune variable n'est encore nécessaire. `.env.example` arrivera avec la
-première, et listera toutes les variables attendues, sans leurs valeurs,
+`.env.example` liste toutes les variables attendues, sans leurs valeurs,
 notamment :
 
 | Variable | Usage |
 |---|---|
-| `DATABASE_URL` | Connexion à PostgreSQL |
+| `DATABASE_URL` | Connexion à PostgreSQL (historique, lecture seule) |
+| `DATABASE_URL_COMPTES` | Connexion à PostgreSQL pour les comptes (rôle `siklon_comptes`) |
+| `BETTER_AUTH_SECRET` | Signature des sessions (32 caractères aléatoires au moins) |
+| `BETTER_AUTH_URL` | URL publique du site (obligatoire en production) |
 | `METEOFRANCE_API_KEY` | API Vigilance de Météo-France (clé gratuite) |
 | `BREVO_API_KEY` | Envoi des emails |
+
+### Base locale des tests e2e
+
+Les tests e2e des comptes écrivent dans une base Postgres locale jetable,
+jamais dans celle du site : `playwright.config.ts` l'impose, quel que soit le
+contenu de `.env.local`. À préparer une fois :
+
+```bash
+brew install postgresql@17 && brew services start postgresql@17
+createdb siklon_e2e
+for f in supabase/migrations/*.sql; do psql siklon_e2e -v ON_ERROR_STOP=1 -q -f "$f"; done
+```
 
 ## Contribuer
 

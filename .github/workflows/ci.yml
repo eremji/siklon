@@ -101,6 +101,8 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://siklon:ci-seulement@localhost:5432/siklon_e2e
+      # Les comptes passent par le rôle du site (siklon_comptes), comme en production.
+      E2E_DATABASE_URL_COMPTES: postgresql://siklon_comptes:ci-seulement@localhost:5432/siklon_e2e
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -112,6 +114,13 @@ jobs:
       - run: npm ci
       - name: Migrations
         run: for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done
+      - name: Mot de passe du rôle des comptes (base jetable du job)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "alter role siklon_comptes password 'ci-seulement'"
+      - name: Secret d'authentification propre au job
+        run: |
+          secret="$(openssl rand -base64 32)"
+          echo "::add-mask::$secret"
+          echo "E2E_BETTER_AUTH_SECRET=$secret" >> "$GITHUB_ENV"
       - name: Import de la fixture HURDAT2
         run: npm run import:hurdat2 -- e2e/fixtures/hurdat2-1851-2005-010126.txt
       - run: npx playwright install --with-deps chromium

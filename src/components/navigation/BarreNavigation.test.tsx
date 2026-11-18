@@ -10,17 +10,29 @@ function liens() {
   return {
     carte: within(barre).getByRole("link", { name: "Carte" }),
     monIle: within(barre).getByRole("link", { name: "Mon île" }),
+    compte: within(barre).getByRole("link", { name: "Compte" }),
   };
 }
 
 describe("BarreNavigation", () => {
-  it("mène à la carte de l'accueil et à la liste des îles", () => {
+  it("mène à la carte de l'accueil, à la liste des îles et au compte", () => {
     chemin.actuel = "/";
     render(<BarreNavigation />);
 
-    const { carte, monIle } = liens();
+    const { carte, monIle, compte } = liens();
     expect(carte).toHaveAttribute("href", "/");
     expect(monIle).toHaveAttribute("href", "/iles");
+    expect(compte).toHaveAttribute("href", "/compte");
+  });
+
+  it.each(["/compte", "/compte/connexion", "/compte/inscription"])("marque Compte comme page en cours sur %s", (actuel) => {
+    chemin.actuel = actuel;
+    render(<BarreNavigation />);
+
+    const { carte, monIle, compte } = liens();
+    expect(compte).toHaveAttribute("aria-current", "page");
+    expect(carte).not.toHaveAttribute("aria-current");
+    expect(monIle).not.toHaveAttribute("aria-current");
   });
 
   it.each(["/", "/systemes/al112026"])("marque Carte comme page en cours sur %s", (actuel) => {
