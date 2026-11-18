@@ -25,17 +25,15 @@ export interface ParametresAuth {
 }
 
 /**
- * Efface les jetons à usage unique (confirmation, réinitialisation) liés à un utilisateur supprimé :
- * Better Auth ne les supprime pas avec le compte. Leur valeur porte l'identifiant de l'utilisateur,
- * ou leur identifiant porte son email.
+ * Efface les jetons à usage unique (réinitialisation du mot de passe, suppression du compte) d'un
+ * utilisateur supprimé : Better Auth ne les supprime pas avec le compte. Dans Better Auth 1.7.18 sans
+ * plugin, leur valeur est exactement l'identifiant de l'utilisateur. On ne cherche pas l'email dans
+ * l'identifiant du jeton : a@b.fr toucherait aussi les jetons de ba@b.fr.
  */
-async function effacerJetons(database: PostgresPool, utilisateur: { id: string; email: string }) {
+async function effacerJetons(database: PostgresPool, utilisateur: { id: string }) {
   const client = await database.connect();
   try {
-    await client.query(
-      "delete from public.verifications where strpos(valeur, $1) > 0 or strpos(identifiant, $2) > 0",
-      [utilisateur.id, utilisateur.email],
-    );
+    await client.query("delete from public.verifications where valeur = $1", [utilisateur.id]);
   } finally {
     client.release();
   }

@@ -4,6 +4,7 @@
 // le navigateur, pour que la limitation des tentatives s'applique.
 import type { PGlite } from "@electric-sql/pglite";
 import { betterAuth } from "better-auth";
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { baseMigree, poolPglite } from "../test/poolPglite";
 import { LIMITES_TENTATIVES, optionsAuth } from "./options";
@@ -165,30 +166,52 @@ describe("suppression du compte", () => {
     return { email, id, cookie: cookieDeSession(reponse) };
   }
 
+  // Jetons à usage unique de Better Auth 1.7.18 : l'identifiant porte le jeton, la valeur l'id de l'utilisateur.
+  const ajouterJeton = (identifiant: string, valeur: string) =>
+    db.query("insert into verifications (identifiant, valeur, expire_le) values ($1, $2, now() + interval '1 hour')", [
+      identifiant,
+      valeur,
+    ]);
+
   const traces = async (id: string, email: string) => {
     const { rows } = await db.query<{ n: number }>(
       `select (select count(*) from utilisateurs where id = $1 or email = $2)
             + (select count(*) from sessions where utilisateur_id = $1)
             + (select count(*) from comptes_lies where utilisateur_id = $1)
-            + (select count(*) from verifications where valeur like '%' || $3 || '%' or identifiant like '%' || $2 || '%')
+            + (select count(*) from verifications where valeur = $1::text)
             as n`,
-      [id, email, id],
+      [id, email],
     );
     return Number(rows[0].n);
   };
 
   it("efface le compte et toutes ses données, y compris ses jetons, et ferme la session", async () => {
     const { email, id, cookie } = await compteConnecte();
-    await db.query(
-      "insert into verifications (identifiant, valeur, expire_le) values ($1, $2, now() + interval '1 hour'), ($3, 'x', now() + interval '1 hour')",
-      [`reset-password:jeton-${id}`, id, `email-verification:${email}`],
-    );
+    await ajouterJeton(`reset-password:${randomUUID()}`, id);
+    await ajouterJeton(`delete-account-${randomUUID()}`, id);
     expect(await traces(id, email)).toBeGreaterThan(0);
 
     const reponse = await appeler("/delete-user", { password: MOT_DE_PASSE }, cookie);
     expect(reponse.status).toBe(200);
     expect(reponse.headers.get("set-cookie")).toMatch(/siklon\.session_token=;/);
     expect(await traces(id, email)).toBe(0);
+  });
+
+  it("laisse en place les jetons des autres utilisateurs, même si leur email contient celui du supprimé", async () => {
+    const { email, cookie } = await compteConnecte();
+    const autre = randomUUID();
+    const jetonsDesAutres = [
+      [`reset-password:${randomUUID()}`, autre],
+      // Format du plugin email-otp, que Siklon n'utilise pas encore : l'identifiant porte l'email.
+      [`sign-in-otp-a${email}`, "123456:0"],
+    ];
+    for (const [identifiant, valeur] of jetonsDesAutres) await ajouterJeton(identifiant, valeur);
+
+    expect((await appeler("/delete-user", { password: MOT_DE_PASSE }, cookie)).status).toBe(200);
+    const { rows } = await db.query("select identifiant, valeur from verifications where identifiant = any($1)", [
+      jetonsDesAutres.map(([identifiant]) => identifiant),
+    ]);
+    expect(rows).toHaveLength(jetonsDesAutres.length);
   });
 
   it("refuse sans le mot de passe, même juste après la connexion", async () => {
