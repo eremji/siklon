@@ -8,9 +8,13 @@ import { join } from "node:path";
 
 const DOSSIER_MIGRATIONS = join(import.meta.dirname, "../../../supabase/migrations");
 
-/** Base PGlite neuve, avec toutes les migrations du dépôt appliquées dans l'ordre. */
-export async function baseMigree(): Promise<PGlite> {
+/**
+ * Base PGlite neuve, avec toutes les migrations du dépôt appliquées dans l'ordre.
+ * `preparation` : SQL exécuté avant les migrations, pour imiter une base existante (Supabase).
+ */
+export async function baseMigree(preparation?: string): Promise<PGlite> {
   const db = new PGlite();
+  if (preparation) await db.exec(preparation);
   for (const fichier of readdirSync(DOSSIER_MIGRATIONS).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(join(DOSSIER_MIGRATIONS, fichier), "utf8"));
   }
