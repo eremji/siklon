@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { FormulaireConnexion, FormulaireInscription, FormulaireSuppression } from "./Formulaires";
+import { ILES } from "@/lib/iles";
+import { FormulaireConnexion, FormulaireIles, FormulaireInscription, FormulaireSuppression } from "./Formulaires";
 
 describe("FormulaireInscription", () => {
   it("demande un email, un mot de passe d'au moins 12 caractères et une langue", () => {
@@ -80,7 +81,7 @@ describe("FormulaireSuppression", () => {
   it("demande le mot de passe pour confirmer et dit ce qui sera effacé", () => {
     render(<FormulaireSuppression action={vi.fn()} />);
     expect(screen.getByRole("heading", { level: 2, name: "Supprimer mon compte" })).toBeInTheDocument();
-    expect(screen.getByText(/toutes ses données/i)).toBeInTheDocument();
+    expect(screen.getByText(/toutes ses données/i)).toHaveTextContent(/îles suivies/);
     expect(screen.getByText(/La suppression est définitive/)).toBeInTheDocument();
     const motDePasse = screen.getByLabelText("Mot de passe actuel");
     expect(motDePasse).toHaveAttribute("type", "password");
@@ -95,5 +96,42 @@ describe("FormulaireSuppression", () => {
     await userEvent.type(screen.getByLabelText("Mot de passe actuel"), "faux mot de passe");
     await userEvent.click(screen.getByRole("button", { name: "Supprimer définitivement mon compte" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Mot de passe incorrect.");
+  });
+});
+
+describe("FormulaireIles", () => {
+  it("propose toutes les îles à cocher, celles déjà suivies cochées", () => {
+    render(<FormulaireIles action={vi.fn()} suivies={["martinique"]} />);
+    expect(screen.getByRole("heading", { level: 2, name: "Mes îles" })).toBeInTheDocument();
+    const groupe = screen.getByRole("group", { name: "Îles suivies" });
+    expect(groupe).toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(ILES.length);
+    expect(screen.getByRole("checkbox", { name: "Martinique" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Guadeloupe" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Enregistrer mes îles" })).toBeInTheDocument();
+  });
+
+  it("envoie les îles cochées, puis confirme et coche celles enregistrées", async () => {
+    const action = vi.fn<(etat: object, donnees: FormData) => Promise<object>>(async () => ({
+      confirmation: "Vos îles sont enregistrées.",
+      iles: ["guadeloupe"],
+    }));
+    render(<FormulaireIles action={action} suivies={["martinique"]} />);
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Guadeloupe" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Martinique" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer mes îles" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Vos îles sont enregistrées.");
+    expect(action.mock.calls[0][1].getAll("ile")).toEqual(["guadeloupe"]);
+    expect(screen.getByRole("checkbox", { name: "Guadeloupe" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Martinique" })).not.toBeChecked();
+  });
+
+  it("affiche l'erreur renvoyée par le serveur", async () => {
+    const action = vi.fn(async () => ({ message: "Votre session a expiré. Reconnectez-vous pour enregistrer vos îles." }));
+    render(<FormulaireIles action={action} suivies={[]} />);
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer mes îles" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Votre session a expiré.");
   });
 });

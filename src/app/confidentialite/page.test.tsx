@@ -15,6 +15,7 @@ describe("Page de confidentialité", () => {
     expect(section).toHaveTextContent(/sans compte/i);
     expect(section).toHaveTextContent(/adresse email/i);
     expect(section).toHaveTextContent(/langue/i);
+    expect(section).toHaveTextContent(/îles que vous suivez/i);
     expect(section).toHaveTextContent(/jamais en clair/i);
     expect(section).toHaveTextContent(/aucune mesure d'audience/i);
   });
@@ -56,6 +57,7 @@ describe("Page de confidentialité", () => {
     const section = screen.getByRole("region", { name: "Supprimer vos données" });
     expect(section).toHaveTextContent(/immédiatement/i);
     expect(section).toHaveTextContent(/toutes ses données/i);
+    expect(section).toHaveTextContent(/îles suivies/i);
     expect(within(section).getByRole("link", { name: "page Compte" })).toHaveAttribute("href", "/compte");
   });
 

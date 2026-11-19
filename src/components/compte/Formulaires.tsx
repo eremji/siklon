@@ -3,13 +3,22 @@
 // page : sans JavaScript, le formulaire est envoyé normalement ; avec, l'erreur s'affiche sur place.
 import { useActionState } from "react";
 import { LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/options";
+import { ILES } from "@/lib/iles";
 
 export interface EtatFormulaire {
   message?: string;
   email?: string;
 }
 
+/** État du formulaire des îles suivies : îles enregistrées, confirmation ou erreur. */
+export interface EtatIles {
+  message?: string;
+  confirmation?: string;
+  iles?: string[];
+}
+
 type Action = (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
+type ActionIles = (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
 
 const CHAMP = "min-h-12 w-full rounded-xl border border-field bg-surface px-3 text-base text-foreground";
 const BOUTON = "min-h-12 rounded-full bg-accent px-6 text-base font-bold text-on-accent disabled:opacity-70";
@@ -112,8 +121,8 @@ export function FormulaireSuppression({ action }: { action: Action }) {
         Supprimer mon compte
       </h2>
       <p className="text-base">
-        Le compte et toutes ses données (adresse email, langue, mot de passe, sessions) sont effacés
-        immédiatement. La suppression est définitive.
+        Le compte et toutes ses données (adresse email, langue, îles suivies, mot de passe, sessions) sont
+        effacés immédiatement. La suppression est définitive.
       </p>
       <form action={envoyer} className="flex flex-col gap-3">
         <Erreur message={etat.message} />
@@ -137,6 +146,45 @@ export function FormulaireSuppression({ action }: { action: Action }) {
           className="min-h-12 rounded-full border-2 border-danger-text px-6 text-base font-bold text-danger-text disabled:opacity-70"
         >
           {enCours ? "Suppression en cours…" : "Supprimer définitivement mon compte"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+/** Îles suivies (US-05) : cocher pour suivre, décocher pour retirer, puis enregistrer. */
+export function FormulaireIles({ action, suivies }: { action: ActionIles; suivies: readonly string[] }) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  const cochees = etat.iles ?? suivies;
+  return (
+    <section aria-labelledby="iles-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
+      <h2 id="iles-titre" className="text-xl font-bold">
+        Mes îles
+      </h2>
+      <p className="text-base">Cochez les îles que vous suivez, décochez celles que vous ne suivez plus.</p>
+      <form action={envoyer} className="flex flex-col gap-3">
+        <Erreur message={etat.message} />
+        {/* key : React vide le formulaire après l'envoi ; on recoche les îles enregistrées. */}
+        <fieldset key={cochees.join(" ")} className="flex flex-col">
+          <legend className="mb-1 text-base font-bold">Îles suivies</legend>
+          {ILES.map((ile) => (
+            <label key={ile.slug} className="flex min-h-11 items-center gap-3 text-base">
+              <input
+                type="checkbox"
+                name="ile"
+                value={ile.slug}
+                defaultChecked={cochees.includes(ile.slug)}
+                className="size-5 accent-accent"
+              />
+              {ile.nom}
+            </label>
+          ))}
+        </fieldset>
+        <p role="status" className="text-base font-bold empty:hidden">
+          {etat.confirmation}
+        </p>
+        <button type="submit" disabled={enCours} className={BOUTON}>
+          {enCours ? "Enregistrement en cours…" : "Enregistrer mes îles"}
         </button>
       </form>
     </section>

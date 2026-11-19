@@ -38,6 +38,7 @@ export async function appelerAuth(chemin: string, corps: object): Promise<Result
 }
 
 export interface UtilisateurCourant {
+  id: string;
   email: string;
   emailVerifie: boolean;
   langue: Langue;
@@ -49,6 +50,6 @@ export async function utilisateurCourant(): Promise<UtilisateurCourant | null> {
   const entetes = await headers();
   const session = await auth().api.getSession({ headers: entetes });
   if (!session) return null;
-  const { email, emailVerified, langue } = session.user;
-  return { email, emailVerifie: emailVerified, langue: langue as Langue };
+  const { id, email, emailVerified, langue } = session.user;
+  return { id, email, emailVerifie: emailVerified, langue: langue as Langue };
 }
