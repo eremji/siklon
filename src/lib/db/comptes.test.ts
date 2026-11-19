@@ -9,7 +9,7 @@ import { baseMigree, poolPglite } from "../test/poolPglite";
 // Démarrer PGlite et appliquer les migrations prend plusieurs secondes quand les fichiers tournent en parallèle.
 const DEMARRAGE_PGLITE_MS = 30_000;
 
-const TABLES_COMPTES = ["utilisateurs", "sessions", "comptes_lies", "verifications", "limites_tentatives"];
+const TABLES_COMPTES = ["utilisateurs", "sessions", "comptes_lies", "verifications", "limites_tentatives", "iles_suivies"];
 
 let db: PGlite;
 
@@ -70,12 +70,27 @@ describe("migration des comptes", () => {
       "insert into public.comptes_lies (utilisateur_id, fournisseur, compte_fournisseur, modifie_le) values ($1, 'credential', $2, now())",
       [id, id],
     );
+    await db.query("insert into public.iles_suivies (utilisateur_id, ile) values ($1, 'martinique')", [id]);
     await db.query("delete from public.utilisateurs where id = $1", [id]);
     const { rows } = await db.query<{ n: number }>(
-      "select (select count(*) from public.sessions where utilisateur_id = $1)::int + (select count(*) from public.comptes_lies where utilisateur_id = $1)::int as n",
+      `select (select count(*) from public.sessions where utilisateur_id = $1)::int
+            + (select count(*) from public.comptes_lies where utilisateur_id = $1)::int
+            + (select count(*) from public.iles_suivies where utilisateur_id = $1)::int as n`,
       [id],
     );
     expect(rows[0].n).toBe(0);
+  });
+
+  it("une île n'est suivie qu'une fois par utilisateur", async () => {
+    const {
+      rows: [{ id }],
+    } = await db.query<{ id: string }>(
+      "insert into public.utilisateurs (nom, email, email_verifie, langue) values ('', 'd@exemple.org', false, 'fr') returning id",
+    );
+    await db.query("insert into public.iles_suivies (utilisateur_id, ile) values ($1, 'guadeloupe')", [id]);
+    await expect(
+      db.query("insert into public.iles_suivies (utilisateur_id, ile) values ($1, 'guadeloupe')", [id]),
+    ).rejects.toThrow(/duplicate key/);
   });
 });
 

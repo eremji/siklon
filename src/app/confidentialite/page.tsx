@@ -44,9 +44,9 @@ export default function Page() {
           information personnelle. Siklon n&apos;utilise aucune mesure d&apos;audience ni aucune publicité.
         </p>
         <p>
-          Le compte est facultatif. Il contient seulement votre adresse email, la langue choisie (français ou anglais)
-          et votre mot de passe, qui n&apos;est jamais en clair : seule son empreinte (scrypt) est gardée. Siklon ne
-          demande ni votre nom, ni votre photo.
+          Le compte est facultatif. Il contient seulement votre adresse email, la langue choisie (français ou anglais),
+          les îles que vous suivez et votre mot de passe, qui n&apos;est jamais en clair : seule son empreinte (scrypt)
+          est gardée. Siklon ne demande ni votre nom, ni votre photo.
         </p>
         <p>
           Les filtres de l&apos;historique (période, intensité) restent dans l&apos;adresse de la page : ils ne sont pas
@@ -80,7 +80,7 @@ export default function Page() {
             page Compte
           </Link>
           , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
-          (adresse email, langue, empreinte du mot de passe, sessions). Votre mot de passe vous est demandé pour
+          (adresse email, langue, îles suivies, empreinte du mot de passe, sessions). Votre mot de passe vous est demandé pour
           confirmer.
         </p>
       </Section>
