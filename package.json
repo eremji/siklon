@@ -18,7 +18,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "better-auth": "1.7.18",
+    "better-auth": "1.7.25",
     "fflate": "^0.8.3",
     "maplibre-gl": "6.17.0",
     "next": "16.4.6",
