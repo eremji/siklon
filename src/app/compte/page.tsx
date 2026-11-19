@@ -3,7 +3,9 @@ import { Suspense } from "react";
 import { EtatCompte } from "@/components/compte/EtatCompte";
 import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { utilisateurCourant } from "@/lib/auth/serveur";
-import { deconnecter, supprimerCompte } from "./actions";
+import { lireIlesSuivies } from "@/lib/db/ilesSuivies";
+import { connexionComptes } from "@/lib/db/pool";
+import { deconnecter, enregistrerIles, supprimerCompte } from "./actions";
 
 export const metadata: Metadata = {
   title: "Compte · Siklon",
@@ -12,7 +14,17 @@ export const metadata: Metadata = {
 
 // Lit la session : rendu à la requête, sous la frontière <Suspense> (Cache Components).
 async function Contenu() {
-  return <EtatCompte utilisateur={await utilisateurCourant()} deconnecter={deconnecter} supprimer={supprimerCompte} />;
+  const utilisateur = await utilisateurCourant();
+  const ilesSuivies = utilisateur ? await lireIlesSuivies(connexionComptes(), utilisateur.id) : [];
+  return (
+    <EtatCompte
+      utilisateur={utilisateur}
+      ilesSuivies={ilesSuivies}
+      deconnecter={deconnecter}
+      supprimer={supprimerCompte}
+      enregistrerIles={enregistrerIles}
+    />
+  );
 }
 
 export default function Page() {

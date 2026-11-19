@@ -110,6 +110,29 @@ test("un mauvais mot de passe est refusé, puis les tentatives répétées sont 
   await expect(alerte(page)).toHaveText(/^Trop de tentatives\. Réessayez dans \d+ minutes?\.$/);
 });
 
+test("suivre des îles, puis en retirer une : le choix reste après rechargement", async ({ page }, testInfo) => {
+  await inscrire(page, nouvelEmail(testInfo));
+  const ile = (nom: string) => page.getByRole("checkbox", { name: nom, exact: true }).filter({ visible: true });
+  const enregistrer = async () => {
+    await page.getByRole("button", { name: "Enregistrer mes îles" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Vos îles sont enregistrées." })).toBeVisible();
+  };
+
+  await ile("Guadeloupe").check();
+  await ile("Martinique").check();
+  await enregistrer();
+  await page.reload();
+  await expect(ile("Guadeloupe")).toBeChecked();
+  await expect(ile("Martinique")).toBeChecked();
+  await expect(ile("Haïti")).not.toBeChecked();
+
+  await ile("Guadeloupe").uncheck();
+  await enregistrer();
+  await page.reload();
+  await expect(ile("Guadeloupe")).not.toBeChecked();
+  await expect(ile("Martinique")).toBeChecked();
+});
+
 test("supprimer son compte efface tout : on ne peut plus s'y connecter", async ({ page, context }, testInfo) => {
   const email = nouvelEmail(testInfo);
   await inscrire(page, email);

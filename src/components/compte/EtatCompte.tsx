@@ -1,6 +1,11 @@
 // Contenu de la page Compte selon la session (US-05) : invitation à se connecter, ou résumé du compte.
 import Link from "next/link";
-import { type EtatFormulaire, FormulaireSuppression } from "@/components/compte/Formulaires";
+import {
+  type EtatFormulaire,
+  type EtatIles,
+  FormulaireIles,
+  FormulaireSuppression,
+} from "@/components/compte/Formulaires";
 import type { Langue } from "@/lib/auth/options";
 import type { UtilisateurCourant } from "@/lib/auth/serveur";
 
@@ -15,12 +20,16 @@ const LIEN_SECONDAIRE =
 
 export function EtatCompte({
   utilisateur,
+  ilesSuivies = [],
   deconnecter,
   supprimer,
+  enregistrerIles,
 }: {
   utilisateur: UtilisateurCourant | null;
+  ilesSuivies?: readonly string[];
   deconnecter: () => Promise<void>;
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
+  enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
 }) {
   if (!utilisateur) {
     return (
@@ -58,6 +67,7 @@ export function EtatCompte({
           </dd>
         </div>
       </dl>
+      <FormulaireIles action={enregistrerIles} suivies={ilesSuivies} />
       <form action={deconnecter}>
         <button type="submit" className={`${LIEN_SECONDAIRE} w-full`}>
           Se déconnecter

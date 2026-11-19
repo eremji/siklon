@@ -7,10 +7,20 @@ const redirect = vi.hoisted(() =>
     throw new Error(`redirection vers ${chemin}`);
   }),
 );
-vi.mock("@/lib/auth/serveur", () => ({ appelerAuth }));
+const utilisateurCourant = vi.hoisted(() => vi.fn());
+const ilesSuivies = vi.hoisted(() => ({ enregistrer: vi.fn(), lire: vi.fn() }));
+const pool = vi.hoisted(() => ({ nom: "pool des comptes" }));
+vi.mock("@/lib/auth/serveur", () => ({ appelerAuth, utilisateurCourant }));
 vi.mock("next/navigation", () => ({ redirect }));
+vi.mock("@/lib/db/pool", () => ({ connexionComptes: () => pool }));
+vi.mock("@/lib/db/ilesSuivies", async (original) => ({
+  ...(await original<typeof import("@/lib/db/ilesSuivies")>()),
+  enregistrerIlesSuivies: ilesSuivies.enregistrer,
+  lireIlesSuivies: ilesSuivies.lire,
+}));
 
-const { connecter, deconnecter, inscrire, supprimerCompte } = await import("./actions");
+const { connecter, deconnecter, enregistrerIles, inscrire, supprimerCompte } = await import("./actions");
+const { IleInconnueError } = await import("@/lib/db/ilesSuivies");
 
 const formulaire = (champs: Record<string, string>) => {
   const donnees = new FormData();
@@ -20,6 +30,9 @@ const formulaire = (champs: Record<string, string>) => {
 
 beforeEach(() => {
   appelerAuth.mockReset();
+  utilisateurCourant.mockReset();
+  ilesSuivies.enregistrer.mockReset();
+  ilesSuivies.lire.mockReset();
   redirect.mockClear();
 });
 
@@ -89,5 +102,46 @@ describe("supprimerCompte", () => {
     appelerAuth.mockResolvedValue({ ok: false, message: "Mot de passe incorrect." });
     expect(await supprimerCompte({}, formulaire({ motDePasse: "faux" }))).toEqual({ message: "Mot de passe incorrect." });
     expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe("enregistrerIles", () => {
+  const UTILISATEUR = { id: "id-1", email: "a@b.fr", emailVerifie: false, langue: "fr" };
+  const cochees = (...iles: string[]) => {
+    const donnees = new FormData();
+    for (const ile of iles) donnees.append("ile", ile);
+    return donnees;
+  };
+
+  it("enregistre les îles cochées pour l'utilisateur connecté et confirme", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    ilesSuivies.lire.mockResolvedValue(["guadeloupe", "martinique"]);
+    const etat = await enregistrerIles({}, cochees("martinique", "guadeloupe"));
+    expect(ilesSuivies.enregistrer).toHaveBeenCalledWith(pool, "id-1", ["martinique", "guadeloupe"]);
+    expect(etat).toEqual({ confirmation: "Vos îles sont enregistrées.", iles: ["guadeloupe", "martinique"] });
+  });
+
+  it("aucune île cochée : les retire toutes", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    ilesSuivies.lire.mockResolvedValue([]);
+    expect(await enregistrerIles({}, cochees())).toEqual({ confirmation: "Vos îles sont enregistrées.", iles: [] });
+    expect(ilesSuivies.enregistrer).toHaveBeenCalledWith(pool, "id-1", []);
+  });
+
+  it("sans session, n'enregistre rien et invite à se reconnecter", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await enregistrerIles({}, cochees("guadeloupe"))).toEqual({
+      message: "Votre session a expiré. Reconnectez-vous pour enregistrer vos îles.",
+    });
+    expect(ilesSuivies.enregistrer).not.toHaveBeenCalled();
+  });
+
+  it("refuse une île inconnue", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    ilesSuivies.enregistrer.mockRejectedValue(new IleInconnueError("atlantide"));
+    expect(await enregistrerIles({ iles: ["guadeloupe"] }, cochees("atlantide"))).toEqual({
+      message: "Cette île ne fait pas partie de la liste.",
+      iles: ["guadeloupe"],
+    });
   });
 });

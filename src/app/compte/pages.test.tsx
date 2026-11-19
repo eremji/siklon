@@ -1,8 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./actions", () => ({ inscrire: vi.fn(), connecter: vi.fn(), deconnecter: vi.fn(), supprimerCompte: vi.fn() }));
+vi.mock("./actions", () => ({
+  inscrire: vi.fn(),
+  connecter: vi.fn(),
+  deconnecter: vi.fn(),
+  supprimerCompte: vi.fn(),
+  enregistrerIles: vi.fn(),
+}));
 vi.mock("@/lib/auth/serveur", () => ({ utilisateurCourant: vi.fn() }));
+vi.mock("@/lib/db/pool", () => ({ connexionComptes: vi.fn() }));
 
 const Compte = await import("./page");
 const Connexion = await import("./connexion/page");
