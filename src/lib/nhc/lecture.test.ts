@@ -6,9 +6,10 @@ import { lireCurrentStorms } from "./systemes";
 vi.mock("server-only", () => ({}));
 const fluxEnCache = vi.fn();
 const watchesEnCache = vi.fn();
-vi.mock("./cache", () => ({ fluxEnCache, watchesEnCache }));
+const positionsEnCache = vi.fn();
+vi.mock("./cache", () => ({ fluxEnCache, positionsEnCache, watchesEnCache }));
 
-const { alertesNhc, fluxNhc } = await import("./lecture");
+const { alertesNhc, fluxNhc, positionsNhc } = await import("./lecture");
 
 const DOMINIQUE = { latMin: 15.18, latMax: 15.67, lonMin: -61.51, lonMax: -61.22 };
 
@@ -83,5 +84,44 @@ describe("alertesNhc : watches/warnings d'une île, par le cache partagé ou la 
     expect(watchesEnCache).not.toHaveBeenCalled();
     expect(fetchSimule).not.toHaveBeenCalled();
     expect(etat.etat === "ok" && etat.alertes.map((a) => `${a.code} ${a.systeme.nom}`)).toEqual(["HWR Kyle"]);
+  });
+});
+
+describe("positionsNhc : positions prévues des systèmes actifs, par le cache partagé ou la fixture", () => {
+  const fetchSimule = vi.fn<typeof fetch>();
+  const systemes = lireCurrentStorms(actifs).systemes;
+
+  beforeEach(() => vi.stubGlobal("fetch", fetchSimule));
+  afterEach(() => {
+    positionsEnCache.mockReset();
+    fetchSimule.mockReset();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("lit les positions de chaque système à travers le cache partagé, jamais directement", async () => {
+    const positions = { avis: { numero: "12", emisLe: "2026-09-10T15:00:00.000Z" }, positions: [] };
+    positionsEnCache.mockImplementation(async (emplacement: string) => (emplacement === "AT1" ? positions : null));
+
+    const lues = await positionsNhc(null, systemes);
+
+    expect(positionsEnCache.mock.calls.map(([emplacement]) => emplacement).sort()).toEqual(["AT1", "AT2", "AT3"]);
+    expect(fetchSimule).not.toHaveBeenCalled();
+    expect(lues).toEqual({ al112026: positions });
+  });
+
+  it("écarte un système dont la lecture en cache échoue, sans lever d'erreur", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    positionsEnCache.mockRejectedValue(new Error("HTTP 503"));
+
+    expect(await positionsNhc(null, systemes)).toEqual({});
+  });
+
+  it("lit la fixture demandée sans toucher au cache ni au réseau", async () => {
+    const lues = await positionsNhc("actifs", systemes);
+
+    expect(positionsEnCache).not.toHaveBeenCalled();
+    expect(fetchSimule).not.toHaveBeenCalled();
+    expect(Object.keys(lues)).toEqual(["al112026"]);
   });
 });

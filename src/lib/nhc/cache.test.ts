@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 const cacheLife = vi.fn();
 vi.mock("next/cache", () => ({ cacheLife }));
 
-const { DUREE_CACHE_NHC, fluxEnCache, previsionEnCache, watchesEnCache } = await import("./cache");
+const { DUREE_CACHE_NHC, fluxEnCache, positionsEnCache, previsionEnCache, watchesEnCache } = await import("./cache");
 
 describe("cache partagé des flux NHC", () => {
   const fetchSimule = vi.fn<typeof fetch>();
@@ -37,6 +37,7 @@ describe("cache partagé des flux NHC", () => {
     await expect(fluxEnCache()).rejects.toThrow();
     await expect(previsionEnCache("AT1")).rejects.toThrow();
     await expect(watchesEnCache("AT1")).rejects.toThrow();
+    await expect(positionsEnCache("AT1")).rejects.toThrow();
   });
 
   it("met en cache les prévisions par emplacement avec la même durée", async () => {
@@ -50,6 +51,13 @@ describe("cache partagé des flux NHC", () => {
     fetchSimule.mockImplementation(async () => new Response(JSON.stringify({ type: "FeatureCollection", features: [] })));
 
     expect(await watchesEnCache("AT1")).toEqual([]);
+    expect(cacheLife).toHaveBeenCalledWith(DUREE_CACHE_NHC);
+  });
+
+  it("met en cache les positions prévues par emplacement avec la même durée", async () => {
+    fetchSimule.mockImplementation(async () => new Response(JSON.stringify({ type: "FeatureCollection", features: [] })));
+
+    expect(await positionsEnCache("AT1")).toBeNull();
     expect(cacheLife).toHaveBeenCalledWith(DUREE_CACHE_NHC);
   });
 });
