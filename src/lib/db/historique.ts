@@ -65,17 +65,25 @@ export async function lirePassages(db: Executeur, filtres: FiltresHistorique): P
   return rows as EntreeHistorique[];
 }
 
-/** Tempête et trajectoire complète, ou null si l'identifiant est inconnu. */
+/** Tempête et trajectoire complète, ou null si l'identifiant est inconnu. Une seule requête : un aller-retour. */
 export async function lireTempete(db: Executeur, id: string): Promise<TempeteHistorique | null> {
-  const tempetes = await db.query("select id, nom, annee from public.hurdat2_tempetes where id = $1", [id]);
-  const tempete = tempetes.rows[0] as Omit<TempeteHistorique, "points"> | undefined;
-  if (!tempete) return null;
-  const points = await db.query(
-    `select horodatage, identifiant, statut, lat, lon, vent_kt as "ventKt", pression_mb as "pressionMb"
-       from public.hurdat2_points where tempete_id = $1 order by rang`,
+  // Jointure externe : une tempête sans point donne une ligne aux colonnes de point nulles.
+  const { rows } = await db.query(
+    `select t.id, t.nom, t.annee, p.horodatage, p.identifiant, p.statut, p.lat, p.lon,
+            p.vent_kt as "ventKt", p.pression_mb as "pressionMb"
+       from public.hurdat2_tempetes t
+       left join public.hurdat2_points p on p.tempete_id = t.id
+      where t.id = $1
+      order by p.rang`,
     [id],
   );
-  return { ...tempete, points: points.rows as PointHurdat2[] };
+  const lignes = rows as (Omit<TempeteHistorique, "points"> & { [C in keyof PointHurdat2]: PointHurdat2[C] | null })[];
+  if (lignes.length === 0) return null;
+  const { id: identifiantTempete, nom, annee } = lignes[0];
+  const points = lignes.flatMap(({ horodatage, identifiant, statut, lat, lon, ventKt, pressionMb }) =>
+    horodatage === null ? [] : [{ horodatage, identifiant, statut, lat, lon, ventKt, pressionMb } as PointHurdat2],
+  );
+  return { id: identifiantTempete, nom, annee, points };
 }
 
 export async function lireDernierImport(db: Executeur): Promise<DernierImport | null> {
