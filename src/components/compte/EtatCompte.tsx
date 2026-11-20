@@ -4,6 +4,7 @@ import {
   type EtatFormulaire,
   type EtatIles,
   FormulaireIles,
+  FormulaireRenvoiConfirmation,
   FormulaireSuppression,
 } from "@/components/compte/Formulaires";
 import type { Langue } from "@/lib/auth/options";
@@ -24,12 +25,14 @@ export function EtatCompte({
   deconnecter,
   supprimer,
   enregistrerIles,
+  renvoyerConfirmation,
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
   deconnecter: () => Promise<void>;
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
+  renvoyerConfirmation: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
 }) {
   if (!utilisateur) {
     return (
@@ -67,6 +70,17 @@ export function EtatCompte({
           </dd>
         </div>
       </dl>
+      {!utilisateur.emailVerifie && (
+        <section aria-labelledby="confirmation-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
+          <h2 id="confirmation-titre" className="text-xl font-bold">
+            Confirmer mon adresse
+          </h2>
+          <p className="text-base">
+            Ouvrez le lien envoyé à votre adresse email. Les alertes ne seront envoyées qu&apos;à une adresse confirmée.
+          </p>
+          <FormulaireRenvoiConfirmation action={renvoyerConfirmation} />
+        </section>
+      )}
       <FormulaireIles action={enregistrerIles} suivies={ilesSuivies} />
       <form action={deconnecter}>
         <button type="submit" className={`${LIEN_SECONDAIRE} w-full`}>

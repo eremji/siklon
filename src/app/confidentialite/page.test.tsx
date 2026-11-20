@@ -40,6 +40,18 @@ describe("Page de confidentialité", () => {
     );
   });
 
+  it("nomme le service qui envoie les emails du compte et ce qu'il reçoit", () => {
+    render(<Page />);
+    const section = screen.getByRole("region", { name: "Où et combien de temps" });
+    expect(section).toHaveTextContent(/Brevo/);
+    expect(section).toHaveTextContent(/confirmation de l'adresse/);
+    expect(section).toHaveTextContent(/réinitialisation du mot de passe/);
+    expect(within(section).getByRole("link", { name: /Brevo/ })).toHaveAttribute(
+      "href",
+      "https://www.brevo.com/fr/legal/privacypolicy/",
+    );
+  });
+
   it("nomme les tiers qui reçoivent l'adresse IP et ce qu'ils voient", () => {
     render(<Page />);
     const section = screen.getByRole("region", { name: "Qui voit votre adresse IP" });
@@ -58,6 +70,7 @@ describe("Page de confidentialité", () => {
     expect(section).toHaveTextContent(/immédiatement/i);
     expect(section).toHaveTextContent(/toutes ses données/i);
     expect(section).toHaveTextContent(/îles suivies/i);
+    expect(section).toHaveTextContent(/y compris chez Brevo/);
     expect(within(section).getByRole("link", { name: "page Compte" })).toHaveAttribute("href", "/compte");
   });
 
@@ -77,6 +90,6 @@ describe("Page de confidentialité", () => {
 
   it("indique sa date de mise à jour", () => {
     render(<Page />);
-    expect(screen.getByText(/Mise à jour : 13 novembre 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Mise à jour : 19 novembre 2026/)).toBeInTheDocument();
   });
 });

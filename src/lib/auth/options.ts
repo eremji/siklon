@@ -3,6 +3,8 @@
 import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import type { PostgresPool } from "kysely";
+import { emailConfirmation, emailReinitialisation, VALIDITE_LIEN } from "../emails/messages";
+import type { ServiceEmails } from "../emails/types";
 
 export const LONGUEUR_MIN_MOT_DE_PASSE = 12;
 // Au-delà, le hachage scrypt coûterait cher pour rien (et ouvrirait un déni de service).
@@ -16,13 +18,30 @@ export const DUREE_SESSION_JOURS = 7;
 export const LIMITES_TENTATIVES = {
   connexion: { window: 60, max: 5 },
   inscription: { window: 600, max: 3 },
+  // Demandes d'un email (lien de confirmation, réinitialisation) : protège aussi le quota Brevo.
+  emails: { window: 600, max: 3 },
+} as const;
+
+/** Pages du site où mènent les liens envoyés par email. */
+export const PAGES_LIENS = {
+  confirmation: "/compte/confirmer",
+  reinitialisation: "/compte/nouveau-mot-de-passe",
 } as const;
 
 export interface ParametresAuth {
   database: PostgresPool;
   secret: string;
   baseURL: string;
+  emails: ServiceEmails;
+  /**
+   * Exécute un envoi après la réponse (sur le serveur : `after` de Next.js). Ainsi la réponse ne
+   * révèle pas, par sa durée, si l'adresse a un compte. Sans elle, l'envoi est attendu (tests).
+   */
+  tacheDeFond?: (tache: Promise<unknown>) => void;
 }
+
+const langueDe = (utilisateur: object): Langue =>
+  "langue" in utilisateur && utilisateur.langue === "en" ? "en" : "fr";
 
 /**
  * Efface les jetons à usage unique (réinitialisation du mot de passe, suppression du compte) d'un
@@ -39,7 +58,10 @@ async function effacerJetons(database: PostgresPool, utilisateur: { id: string }
   }
 }
 
-export function optionsAuth({ database, secret, baseURL }: ParametresAuth) {
+export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond }: ParametresAuth) {
+  // Le lien mène à une page du site (et non à l'API) : la personne y confirme d'un clic. Un antivirus
+  // de messagerie qui ouvre les liens ne consomme donc pas le jeton.
+  const lien = (page: string, jeton: string) => `${baseURL}${page}?jeton=${encodeURIComponent(jeton)}`;
   return {
     appName: "Siklon",
     database,
@@ -51,10 +73,20 @@ export function optionsAuth({ database, secret, baseURL }: ParametresAuth) {
       enabled: true,
       minPasswordLength: LONGUEUR_MIN_MOT_DE_PASSE,
       maxPasswordLength: LONGUEUR_MAX_MOT_DE_PASSE,
-      // La confirmation de l'adresse arrive avec l'envoi d'emails (PR suivante) ; d'ici là, aucune
-      // notification n'existe, et `emailVerified` reste faux.
+      // La connexion reste possible avant la confirmation : c'est l'envoi des notifications (US-07)
+      // qui exigera une adresse confirmée.
       requireEmailVerification: false,
       autoSignIn: true,
+      resetPasswordTokenExpiresIn: VALIDITE_LIEN.reinitialisation,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, token }) =>
+        emails.envoyer({ a: user.email, ...emailReinitialisation(langueDe(user), lien(PAGES_LIENS.reinitialisation, token)) }),
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      expiresIn: VALIDITE_LIEN.confirmation,
+      sendVerificationEmail: async ({ user, token }) =>
+        emails.envoyer({ a: user.email, ...emailConfirmation(langueDe(user), lien(PAGES_LIENS.confirmation, token)) }),
     },
     user: {
       modelName: "utilisateurs",
@@ -65,7 +97,13 @@ export function optionsAuth({ database, secret, baseURL }: ParametresAuth) {
       // Suppression immédiate et complète (RGPD), sur confirmation du mot de passe (hooks ci-dessous).
       deleteUser: {
         enabled: true,
-        afterDelete: async (utilisateur) => effacerJetons(database, utilisateur),
+        afterDelete: async (utilisateur) => {
+          await effacerJetons(database, utilisateur);
+          // Le compte est déjà effacé chez Siklon : un échec chez Brevo est journalisé, sans l'adresse.
+          await emails.effacer(utilisateur.email).catch((erreur: unknown) => {
+            console.error("Effacement chez le service d'envoi échoué :", erreur instanceof Error ? erreur.message : erreur);
+          });
+        },
       },
     },
     session: {
@@ -113,6 +151,9 @@ export function optionsAuth({ database, secret, baseURL }: ParametresAuth) {
         "/sign-up/*": LIMITES_TENTATIVES.inscription,
         // La suppression vérifie le mot de passe : mêmes limites que la connexion.
         "/delete-user": LIMITES_TENTATIVES.connexion,
+        "/reset-password": LIMITES_TENTATIVES.connexion,
+        "/request-password-reset": LIMITES_TENTATIVES.emails,
+        "/send-verification-email": LIMITES_TENTATIVES.emails,
       },
     },
     advanced: {
@@ -120,6 +161,7 @@ export function optionsAuth({ database, secret, baseURL }: ParametresAuth) {
       database: { generateId: "uuid" },
       // Vercel remplace l'en-tête x-forwarded-for par l'adresse réelle du client.
       ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
+      ...(tacheDeFond ? { backgroundTasks: { handler: tacheDeFond } } : {}),
     },
     hooks: {
       // Better Auth accepte une suppression sans mot de passe si la session a moins d'un jour : Siklon

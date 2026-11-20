@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { type Page, expect, test } from "@playwright/test";
 import { randomInt } from "node:crypto";
+import { emailsRecus, lienRecu } from "./emails";
 
 // Comptes (US-05). Base Postgres locale de test (voir playwright.config.ts), jamais celle du site.
 // Chaque test se présente avec sa propre adresse IP : la limitation des tentatives (par IP) ne
@@ -147,12 +148,97 @@ test("supprimer son compte efface tout : on ne peut plus s'y connecter", async (
   await expect(page).toHaveURL("/compte/supprime");
   await expect(page.getByRole("status")).toContainText("toutes ses données ont été effacés");
   expect((await context.cookies()).filter((c) => c.name.startsWith("siklon."))).toEqual([]);
+  // Le service d'envoi (ici le dossier local, Brevo en production) a effacé ses emails.
+  expect(await emailsRecus(email)).toEqual([]);
 
   await page.goto("/compte/connexion");
   await champ(page, "Adresse email").fill(email);
   await champ(page, "Mot de passe").fill(MOT_DE_PASSE);
   await envoyer(page, "Se connecter");
   await expect(alerte(page)).toHaveText("Email ou mot de passe incorrect.");
+});
+
+// Le serveur écrit l'email juste après sa réponse (after) : on attend qu'il apparaisse.
+async function suivreLien(page: Page, email: string, sujet: string) {
+  let lien: string | null = null;
+  await expect.poll(async () => (lien = await lienRecu(email, sujet))).not.toBeNull();
+  await page.goto(lien ?? "");
+}
+
+test("confirmer son adresse avec le lien reçu par email", async ({ page }, testInfo) => {
+  const email = nouvelEmail(testInfo);
+  await inscrire(page, email);
+  await expect(texteVisible(page, "Non confirmée")).toBeVisible();
+
+  await suivreLien(page, email, "Confirmez votre adresse email");
+  await expect(page).toHaveURL(/\/compte\/confirmer\?jeton=/);
+  await page.getByRole("button", { name: "Confirmer mon adresse" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Votre adresse est confirmée." })).toBeVisible();
+
+  await page.getByRole("link", { name: "Aller à mon compte" }).click();
+  await expect(texteVisible(page, "Confirmée")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Renvoyer le lien de confirmation" })).toHaveCount(0);
+});
+
+test("renvoyer le lien de confirmation depuis la page Compte", async ({ page }, testInfo) => {
+  const email = nouvelEmail(testInfo);
+  await inscrire(page, email);
+  await expect.poll(async () => (await emailsRecus(email)).length).toBe(1);
+
+  await page.getByRole("button", { name: "Renvoyer le lien de confirmation" }).click();
+  await expect(page.getByRole("status").filter({ hasText: `Un nouveau lien vient d'être envoyé à ${email}.` })).toBeVisible();
+  await expect.poll(async () => (await emailsRecus(email)).length).toBe(2);
+});
+
+test("mot de passe oublié : choisir un nouveau mot de passe avec le lien reçu, puis se connecter", async ({
+  page,
+}, testInfo) => {
+  const email = nouvelEmail(testInfo);
+  const nouveau = "un tout nouveau mot de passe";
+  await inscrire(page, email);
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await expect(page.getByRole("link", { name: "Se connecter" })).toBeVisible();
+
+  await page.goto("/compte/connexion");
+  await page.getByRole("link", { name: "Mot de passe oublié ?" }).click();
+  // Attendre la nouvelle page : sinon l'email irait dans le champ de la page de connexion, encore affichée.
+  await expect(page.getByRole("heading", { level: 1, name: "Mot de passe oublié" })).toBeVisible();
+  await champ(page, "Adresse email").fill(email);
+  await page.getByRole("button", { name: "Recevoir un lien" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Si un compte existe avec cette adresse" })).toBeVisible();
+
+  await suivreLien(page, email, "Réinitialisez votre mot de passe");
+  await champ(page, "Nouveau mot de passe").fill(nouveau);
+  await page.getByRole("button", { name: "Changer mon mot de passe" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Votre mot de passe est changé." })).toBeVisible();
+
+  await page.getByRole("link", { name: "Se connecter" }).filter({ visible: true }).click();
+  await champ(page, "Adresse email").fill(email);
+  await champ(page, "Mot de passe").fill(nouveau);
+  await page.getByRole("button", { name: "Se connecter" }).click();
+  await expect(page).toHaveURL("/compte");
+  await expect(texteVisible(page, email)).toBeVisible();
+});
+
+test("un lien de réinitialisation ne sert qu'une fois", async ({ page }, testInfo) => {
+  const email = nouvelEmail(testInfo);
+  await inscrire(page, email);
+  await expect(texteVisible(page, email)).toBeVisible();
+  await page.goto("/compte/mot-de-passe-oublie");
+  await champ(page, "Adresse email").fill(email);
+  await page.getByRole("button", { name: "Recevoir un lien" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Si un compte existe" })).toBeVisible();
+
+  await suivreLien(page, email, "Réinitialisez votre mot de passe");
+  const lien = page.url();
+  await champ(page, "Nouveau mot de passe").fill("un tout nouveau mot de passe");
+  await page.getByRole("button", { name: "Changer mon mot de passe" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Votre mot de passe est changé." })).toBeVisible();
+
+  await page.goto(lien);
+  await champ(page, "Nouveau mot de passe").fill("encore un autre mot de passe");
+  await page.getByRole("button", { name: "Changer mon mot de passe" }).click();
+  await expect(alerte(page)).toHaveText("Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.");
 });
 
 // Les formulaires marchent avant le chargement du JavaScript (connexion lente). La page Compte, elle,
@@ -167,7 +253,15 @@ test.describe("sans JavaScript", () => {
   });
 });
 
-for (const chemin of ["/compte", "/compte/connexion", "/compte/inscription", "/compte/supprime"]) {
+for (const chemin of [
+  "/compte",
+  "/compte/connexion",
+  "/compte/inscription",
+  "/compte/supprime",
+  "/compte/mot-de-passe-oublie",
+  "/compte/confirmer?jeton=exemple",
+  "/compte/nouveau-mot-de-passe?jeton=exemple",
+]) {
   for (const colorScheme of ["light", "dark"] as const) {
     test(`la page ${chemin} respecte WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
       page,

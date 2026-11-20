@@ -5,7 +5,8 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { betterAuth } from "better-auth";
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { EmailSortant } from "../emails/types";
 import { baseMigree, poolPglite } from "../test/poolPglite";
 import { LIMITES_TENTATIVES, optionsAuth } from "./options";
 
@@ -17,11 +18,19 @@ let db: PGlite;
 let auth: ReturnType<typeof betterAuth<ReturnType<typeof optionsAuth>>>;
 let ipSuivante = 1;
 let ip: string;
+// Emails « envoyés » par Better Auth : aucun appel réseau dans les tests.
+let envoyes: EmailSortant[] = [];
+const emails = {
+  envoyer: vi.fn(async (message: EmailSortant) => {
+    envoyes.push(message);
+  }),
+  effacer: vi.fn<(adresse: string) => Promise<void>>(async () => {}),
+};
 
 beforeAll(async () => {
   db = await baseMigree();
   await db.exec("set role siklon_comptes");
-  auth = betterAuth(optionsAuth({ database: poolPglite(db), secret: "secret-de-test-".repeat(3), baseURL: BASE }));
+  auth = betterAuth(optionsAuth({ database: poolPglite(db), secret: "secret-de-test-".repeat(3), baseURL: BASE, emails }));
 }, DEMARRAGE_PGLITE_MS);
 
 afterAll(async () => {
@@ -31,6 +40,8 @@ afterAll(async () => {
 // Chaque test part d'une adresse IP neuve, pour que les compteurs ne se mélangent pas.
 beforeEach(() => {
   ip = `203.0.113.${ipSuivante++}`;
+  envoyes = [];
+  emails.effacer.mockClear();
 });
 
 const appeler = (chemin: string, corps: Record<string, unknown>, cookie?: string) =>
@@ -237,5 +248,130 @@ describe("suppression du compte", () => {
       statuts.push((await appeler("/delete-user", { password: "pas le bon mot de passe" }, cookie)).status);
     }
     expect(statuts.at(-1)).toBe(429);
+  });
+});
+
+// Lien contenu dans le dernier email envoyé à cette adresse.
+const lienEnvoye = (email: string) => {
+  const message = envoyes.findLast((envoye) => envoye.a === email);
+  const lien = message?.texte.match(/https?:\/\/\S+/)?.[0];
+  if (!lien) throw new Error(`aucun lien envoyé à ${email}`);
+  return new URL(lien);
+};
+
+const confirmer = (jeton: string) =>
+  auth.handler(new Request(`${BASE}/api/auth/verify-email?token=${encodeURIComponent(jeton)}`, { headers: { "x-forwarded-for": ip } }));
+
+describe("confirmation de l'adresse", () => {
+  it("envoie à l'inscription un lien vers la page de confirmation du site, dans la langue choisie", async () => {
+    const email = nouvelEmail();
+    await inscrire(email, "un mot de passe solide", "en");
+    expect(envoyes).toHaveLength(1);
+    expect(envoyes[0].sujet).toBe("Confirm your email address · Siklon");
+    const lien = lienEnvoye(email);
+    expect(`${lien.origin}${lien.pathname}`).toBe(`${BASE}/compte/confirmer`);
+    expect(lien.searchParams.get("jeton")).toBeTruthy();
+  });
+
+  it("confirme l'adresse avec le jeton du lien", async () => {
+    const email = nouvelEmail();
+    await inscrire(email, "un mot de passe solide");
+    const reponse = await confirmer(lienEnvoye(email).searchParams.get("jeton") ?? "");
+    expect(reponse.status).toBe(200);
+    const { rows } = await db.query<{ email_verifie: boolean }>("select email_verifie from utilisateurs where email = $1", [email]);
+    expect(rows[0].email_verifie).toBe(true);
+  });
+
+  it("refuse un jeton falsifié", async () => {
+    const email = nouvelEmail();
+    await inscrire(email, "un mot de passe solide");
+    const jeton = lienEnvoye(email).searchParams.get("jeton") ?? "";
+    expect((await confirmer(`${jeton.slice(0, -2)}xx`)).ok).toBe(false);
+    const { rows } = await db.query<{ email_verifie: boolean }>("select email_verifie from utilisateurs where email = $1", [email]);
+    expect(rows[0].email_verifie).toBe(false);
+  });
+
+  it("renvoie un lien à l'utilisateur connecté qui le demande", async () => {
+    const email = nouvelEmail();
+    const cookie = cookieDeSession(await inscrire(email, "un mot de passe solide"));
+    envoyes = [];
+    expect((await appeler("/send-verification-email", { email }, cookie)).status).toBe(200);
+    expect(envoyes.map((envoye) => envoye.a)).toEqual([email]);
+  });
+
+  it(`limite les renvois à ${LIMITES_TENTATIVES.emails.max} par IP`, async () => {
+    const email = nouvelEmail();
+    const cookie = cookieDeSession(await inscrire(email, "un mot de passe solide"));
+    const statuts = [];
+    for (let i = 0; i <= LIMITES_TENTATIVES.emails.max; i++) {
+      statuts.push((await appeler("/send-verification-email", { email }, cookie)).status);
+    }
+    expect(statuts.at(-1)).toBe(429);
+  });
+});
+
+describe("réinitialisation du mot de passe", () => {
+  const ANCIEN = "un mot de passe solide";
+  const NOUVEAU = "un tout nouveau mot de passe";
+
+  async function demander(email: string) {
+    envoyes = [];
+    return appeler("/request-password-reset", { email });
+  }
+
+  it("envoie un lien vers la page du site, dans la langue du compte", async () => {
+    const email = nouvelEmail();
+    await inscrire(email, ANCIEN, "en");
+    expect((await demander(email)).status).toBe(200);
+    expect(envoyes.map((envoye) => envoye.sujet)).toEqual(["Reset your password · Siklon"]);
+    const lien = lienEnvoye(email);
+    expect(`${lien.origin}${lien.pathname}`).toBe(`${BASE}/compte/nouveau-mot-de-passe`);
+  });
+
+  it("répond de la même façon pour une adresse inconnue, sans rien envoyer", async () => {
+    const reponse = await demander(nouvelEmail());
+    expect(reponse.status).toBe(200);
+    expect(envoyes).toHaveLength(0);
+  });
+
+  it("change le mot de passe avec le jeton, ferme les sessions ouvertes, et le jeton ne sert qu'une fois", async () => {
+    const email = nouvelEmail();
+    const cookie = cookieDeSession(await inscrire(email, ANCIEN));
+    await demander(email);
+    const jeton = lienEnvoye(email).searchParams.get("jeton");
+
+    expect((await appeler("/reset-password", { token: jeton, newPassword: NOUVEAU })).status).toBe(200);
+    const { rows: sessions } = await db.query(
+      "select 1 from sessions s join utilisateurs u on u.id = s.utilisateur_id where u.email = $1",
+      [email],
+    );
+    expect(sessions).toHaveLength(0);
+    expect(cookie).toMatch(/siklon\.session_token=/);
+    expect((await appeler("/sign-in/email", { email, password: NOUVEAU })).status).toBe(200);
+    expect((await appeler("/sign-in/email", { email, password: ANCIEN })).status).toBe(401);
+    expect((await appeler("/reset-password", { token: jeton, newPassword: "encore un autre mot de passe" })).status).toBe(400);
+  });
+
+  it("refuse un nouveau mot de passe de moins de 12 caractères", async () => {
+    const email = nouvelEmail();
+    await inscrire(email, ANCIEN);
+    await demander(email);
+    const jeton = lienEnvoye(email).searchParams.get("jeton");
+    expect((await appeler("/reset-password", { token: jeton, newPassword: "onze-caract" })).status).toBe(400);
+  });
+
+  it(`limite les demandes à ${LIMITES_TENTATIVES.emails.max} par IP`, async () => {
+    const statuts = [];
+    for (let i = 0; i <= LIMITES_TENTATIVES.emails.max; i++) statuts.push((await demander(nouvelEmail())).status);
+    expect(statuts.at(-1)).toBe(429);
+  });
+});
+
+describe("effacement chez le service d'envoi", () => {
+  it("efface l'adresse chez le service d'envoi quand le compte est supprimé", async () => {
+    const email = nouvelEmail();
+    const cookie = cookieDeSession(await inscrire(email, "un mot de passe solide"));
+    expect((await appeler("/delete-user", { password: "un mot de passe solide" }, cookie)).status).toBe(200);
+    expect(emails.effacer).toHaveBeenCalledWith(email);
   });
 });
