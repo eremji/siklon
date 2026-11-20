@@ -68,6 +68,11 @@ export default function Page() {
           <LienExterne href="https://supabase.com/privacy">Supabase</LienExterne>, tant que le compte existe.
         </p>
         <p>
+          Les emails du compte (confirmation de l&apos;adresse, réinitialisation du mot de passe) sont envoyés par{" "}
+          <LienExterne href="https://www.brevo.com/fr/legal/privacypolicy/">Brevo</LienExterne> (France), qui reçoit
+          pour cela votre adresse email et garde un journal des envois.
+        </p>
+        <p>
           Pour bloquer les tentatives de connexion répétées, Siklon compte les essais par adresse IP : ce compteur est
           effacé au bout de {MINUTES_COMPTEURS} minutes. Votre adresse IP n&apos;est jamais gardée avec votre compte.
         </p>
@@ -80,7 +85,8 @@ export default function Page() {
             page Compte
           </Link>
           , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
-          (adresse email, langue, îles suivies, empreinte du mot de passe, sessions). Votre mot de passe vous est demandé pour
+          (adresse email, langue, îles suivies, empreinte du mot de passe, sessions), y compris chez Brevo, qui efface le
+          journal des emails envoyés à votre adresse. Votre mot de passe vous est demandé pour
           confirmer.
         </p>
       </Section>
@@ -118,7 +124,7 @@ export default function Page() {
       </Section>
 
       <div className="flex flex-col gap-1 text-sm text-muted">
-        <p>Mise à jour : 13 novembre 2026.</p>
+        <p>Mise à jour : 19 novembre 2026.</p>
         <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
       </div>
     </main>
