@@ -241,6 +241,40 @@ test("un lien de réinitialisation ne sert qu'une fois", async ({ page }, testIn
   await expect(alerte(page)).toHaveText("Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.");
 });
 
+// Connexion avec Google : le client est factice (playwright.config.ts) et la page de Google est
+// interceptée, sans appel réseau. Le retour depuis Google est couvert par src/lib/auth/google.test.ts.
+async function departVersGoogle(page: Page, bouton: string) {
+  let depart: URL | undefined;
+  await page.route("https://accounts.google.com/**", async (route) => {
+    depart = new URL(route.request().url());
+    await route.fulfill({ contentType: "text/html", body: "<title>Google (factice)</title><h1>Google</h1>" });
+  });
+  await page.getByRole("button", { name: bouton }).filter({ visible: true }).click();
+  await expect(page).toHaveTitle("Google (factice)");
+  return depart as URL;
+}
+
+test("se connecter avec Google : le bouton mène à Google avec le client du site et l'adresse de retour", async ({ page, baseURL }) => {
+  await page.goto("/compte/connexion");
+  await expect(page.getByRole("heading", { level: 1, name: "Se connecter" })).toBeVisible();
+  const depart = await departVersGoogle(page, "Continuer avec Google");
+  expect(depart.searchParams.get("client_id")).toBe("client-e2e.apps.googleusercontent.com");
+  expect(depart.searchParams.get("redirect_uri")).toBe(`${baseURL}/api/auth/callback/google`);
+});
+
+test("s'inscrire avec Google sans remplir l'email ni le mot de passe", async ({ page }) => {
+  await page.goto("/compte/inscription");
+  await expect(page.getByRole("heading", { level: 1, name: "Créer un compte" })).toBeVisible();
+  await page.getByRole("radio", { name: "English" }).check();
+  const depart = await departVersGoogle(page, "S'inscrire avec Google");
+  expect(depart.origin).toBe("https://accounts.google.com");
+});
+
+test("au retour de Google, un compte à l'adresse non confirmée est expliqué", async ({ page }) => {
+  await page.goto("/compte/connexion?error=account_not_linked");
+  await expect(page.getByRole("alert").filter({ hasText: "n'est pas confirmée" })).toBeVisible();
+});
+
 // Les formulaires marchent avant le chargement du JavaScript (connexion lente). La page Compte, elle,
 // diffuse son contenu derrière <Suspense>, qui s'affiche par un script : on vérifie ici la session.
 test.describe("sans JavaScript", () => {
@@ -251,11 +285,18 @@ test.describe("sans JavaScript", () => {
     await expect(page).toHaveURL("/compte");
     expect((await context.cookies()).map((c) => c.name)).toContain("siklon.session_token");
   });
+
+  test("le bouton Google mène à Google : la CSP autorise cette redirection du formulaire", async ({ page }) => {
+    await page.goto("/compte/connexion");
+    const depart = await departVersGoogle(page, "Continuer avec Google");
+    expect(depart.origin).toBe("https://accounts.google.com");
+  });
 });
 
 for (const chemin of [
   "/compte",
   "/compte/connexion",
+  "/compte/connexion?error=account_not_linked",
   "/compte/inscription",
   "/compte/supprime",
   "/compte/mot-de-passe-oublie",

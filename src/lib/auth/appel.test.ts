@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { cookiesDeLaReponse, messageErreur, requeteAuth } from "./appel";
+import { cookiesDeLaReponse, messageErreur, messageErreurGoogle, requeteAuth } from "./appel";
 
 describe("requeteAuth", () => {
   const entetes = new Headers({
@@ -66,6 +66,11 @@ describe("messageErreur", () => {
     [400, { code: "INVALID_TOKEN" }, "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau."],
     [401, { code: "TOKEN_EXPIRED" }, "Ce lien a expiré. Demandez-en un nouveau."],
     [400, { code: "EMAIL_ALREADY_VERIFIED" }, "Votre adresse est déjà confirmée."],
+    [
+      400,
+      { code: "RECENT_SIGN_IN_REQUIRED" },
+      "Pour confirmer, reconnectez-vous avec Google, puis supprimez votre compte dans les 10 minutes.",
+    ],
   ])("statut %i, %o → %s", (statut, corps, attendu) => {
     expect(messageErreur(statut, corps, new Headers())).toBe(attendu);
   });
@@ -83,5 +88,20 @@ describe("messageErreur", () => {
     expect(messageErreur(500, { message: "relation utilisateurs does not exist" }, new Headers())).toBe(
       "Une erreur est survenue. Réessayez dans quelques instants.",
     );
+  });
+});
+
+describe("messageErreurGoogle", () => {
+  it.each([
+    [
+      "account_not_linked",
+      "Un compte existe déjà avec cette adresse, mais elle n'est pas confirmée. Connectez-vous avec votre mot de passe et confirmez votre adresse : vous pourrez ensuite utiliser Google.",
+    ],
+    ["access_denied", "Connexion avec Google annulée."],
+    ["depart_impossible", "La connexion avec Google n'a pas pu démarrer. Réessayez dans quelques instants."],
+    ["state_mismatch", "La connexion avec Google n'a pas abouti. Réessayez."],
+    ["<script>", "La connexion avec Google n'a pas abouti. Réessayez."],
+  ])("%s → %s", (code, attendu) => {
+    expect(messageErreurGoogle(code)).toBe(attendu);
   });
 });

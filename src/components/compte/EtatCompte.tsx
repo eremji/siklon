@@ -1,6 +1,7 @@
 // Contenu de la page Compte selon la session (US-05) : invitation à se connecter, ou résumé du compte.
 import Link from "next/link";
 import {
+  type ActionGoogle,
   type EtatFormulaire,
   type EtatIles,
   FormulaireIles,
@@ -26,6 +27,7 @@ export function EtatCompte({
   supprimer,
   enregistrerIles,
   renvoyerConfirmation,
+  google,
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
@@ -33,6 +35,8 @@ export function EtatCompte({
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
   renvoyerConfirmation: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
+  /** Départ vers Google, si la connexion avec Google est configurée. */
+  google?: ActionGoogle;
 }) {
   if (!utilisateur) {
     return (
@@ -87,7 +91,7 @@ export function EtatCompte({
           Se déconnecter
         </button>
       </form>
-      <FormulaireSuppression action={supprimer} />
+      <FormulaireSuppression action={supprimer} motDePasse={utilisateur.motDePasse} google={google} />
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FormulaireConnexion } from "@/components/compte/Formulaires";
+import { Suspense } from "react";
+import { AlerteGoogle, FormulaireConnexion, FormulaireGoogle } from "@/components/compte/Formulaires";
 import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
-import { connecter } from "../actions";
+import { connexionGoogleActive } from "@/lib/auth/configuration";
+import { connecter, connecterAvecGoogle } from "../actions";
 
 export const metadata: Metadata = {
   title: "Se connecter · Siklon",
@@ -13,6 +15,15 @@ export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <h1 className="text-3xl font-bold">Se connecter</h1>
+      {connexionGoogleActive(process.env) && (
+        <>
+          <Suspense fallback={null}>
+            <AlerteGoogle />
+          </Suspense>
+          <FormulaireGoogle action={connecterAvecGoogle} origine="/compte/connexion" />
+          <p className="text-center text-sm text-muted">ou avec votre adresse email</p>
+        </>
+      )}
       <FormulaireConnexion action={connecter} />
       <Link href="/compte/mot-de-passe-oublie" className="inline-flex min-h-11 items-center text-base text-accent underline underline-offset-4">
         Mot de passe oublié ?

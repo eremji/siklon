@@ -29,6 +29,9 @@ export default defineConfig({
       BETTER_AUTH_URL: baseURL,
       // Les emails sont écrits dans un dossier local, jamais envoyés (ignoré sur Vercel).
       EMAILS_DOSSIER: DOSSIER_EMAILS,
+      // Client Google factice : le bouton s'affiche, et les tests interceptent la page de Google.
+      GOOGLE_CLIENT_ID: "client-e2e.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "secret-client-e2e",
     },
   },
 });

@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./actions", () => ({
   inscrire: vi.fn(),
   connecter: vi.fn(),
+  connecterAvecGoogle: vi.fn(),
   deconnecter: vi.fn(),
   supprimerCompte: vi.fn(),
   enregistrerIles: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock("./actions", () => ({
 }));
 vi.mock("@/lib/auth/serveur", () => ({ utilisateurCourant: vi.fn() }));
 vi.mock("@/lib/db/pool", () => ({ connexionComptes: vi.fn() }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
 
 const Compte = await import("./page");
 const Connexion = await import("./connexion/page");
@@ -69,5 +71,31 @@ describe("pages du compte", () => {
     expect(metadata.title).toBe(titre);
     expect(metadata.referrer).toBe("no-referrer");
     expect(metadata.robots).toEqual({ index: false, follow: false });
+  });
+
+  describe("connexion avec Google", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it("propose Google sur la connexion et l'inscription quand le client Google est configuré", () => {
+      vi.stubEnv("GOOGLE_CLIENT_ID", "id-client");
+      vi.stubEnv("GOOGLE_CLIENT_SECRET", "secret-client");
+      const { unmount } = render(<Connexion.default />);
+      expect(screen.getByRole("button", { name: "Continuer avec Google" })).toBeInTheDocument();
+      unmount();
+      render(<Inscription.default />);
+      expect(screen.getByRole("button", { name: "S'inscrire avec Google" })).toBeInTheDocument();
+    });
+
+    it("ne propose pas Google sans client configuré", () => {
+      vi.stubEnv("GOOGLE_CLIENT_ID", "");
+      vi.stubEnv("GOOGLE_CLIENT_SECRET", "");
+      const { unmount } = render(<Connexion.default />);
+      expect(screen.queryByRole("button", { name: /Google/ })).not.toBeInTheDocument();
+      unmount();
+      render(<Inscription.default />);
+      expect(screen.queryByRole("button", { name: /Google/ })).not.toBeInTheDocument();
+    });
   });
 });

@@ -7,6 +7,8 @@
 
 // Fond de carte (src/lib/carte/style.ts) : seul domaine tiers contacté par le navigateur.
 const TUILES = "https://tiles.openfreemap.org";
+// Connexion avec Google : sans JavaScript, le formulaire du bouton est redirigé vers cette page.
+const AUTORISATION_GOOGLE = "https://accounts.google.com";
 
 export function politiqueContenu({ dev }: { dev: boolean }): string {
   const directives: [string, ...string[]][] = [
@@ -22,7 +24,7 @@ export function politiqueContenu({ dev }: { dev: boolean }): string {
     ["worker-src", "'self'"],
     ["object-src", "'none'"],
     ["base-uri", "'self'"],
-    ["form-action", "'self'"],
+    ["form-action", "'self'", AUTORISATION_GOOGLE],
     ["frame-ancestors", "'none'"],
     ["upgrade-insecure-requests"],
   ];

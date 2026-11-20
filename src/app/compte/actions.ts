@@ -39,14 +39,41 @@ export async function connecter(_etat: EtatFormulaire, donnees: FormData): Promi
   redirect("/compte");
 }
 
+// Pages d'où part la connexion avec Google, où revenir en cas d'échec (jamais une adresse reçue telle quelle).
+const PAGES_DEPART_GOOGLE = ["/compte/connexion", "/compte/inscription", "/compte"] as const;
+const AUTORISATION_GOOGLE = "https://accounts.google.com/";
+
+const urlDe = (corps: unknown) =>
+  typeof corps === "object" && corps !== null && "url" in corps && typeof corps.url === "string" ? corps.url : "";
+
+/** Bouton « Continuer avec Google » : part chez Google, qui renvoie ensuite sur la page Compte. */
+export async function connecterAvecGoogle(donnees: FormData): Promise<void> {
+  const origine = champ(donnees, "origine");
+  const depart = PAGES_DEPART_GOOGLE.find((page) => page === origine) ?? "/compte/connexion";
+  const langue = champ(donnees, "langue");
+  const resultat = await appelerAuth("/sign-in/social", {
+    provider: "google",
+    callbackURL: "/compte",
+    errorCallbackURL: depart,
+    additionalData: { langue: estLangue(langue) ? langue : "fr" },
+  });
+  const url = resultat.ok ? urlDe(resultat.corps) : "";
+  if (!url.startsWith(AUTORISATION_GOOGLE)) redirect(`${depart}?error=depart_impossible`);
+  redirect(url);
+}
+
 export async function deconnecter(): Promise<void> {
   await appelerAuth("/sign-out", {});
   redirect("/compte");
 }
 
-/** Supprime le compte et toutes ses données, sur confirmation du mot de passe (RGPD). */
+/**
+ * Supprime le compte et toutes ses données (RGPD), sur confirmation du mot de passe ; un compte
+ * Google sans mot de passe confirme par une connexion récente avec Google (options.ts).
+ */
 export async function supprimerCompte(_etat: EtatFormulaire, donnees: FormData): Promise<EtatFormulaire> {
-  const resultat = await appelerAuth("/delete-user", { password: champ(donnees, "motDePasse") });
+  const motDePasse = champ(donnees, "motDePasse");
+  const resultat = await appelerAuth("/delete-user", motDePasse ? { password: motDePasse } : {});
   if (!resultat.ok) return { message: resultat.message };
   redirect("/compte/supprime");
 }
