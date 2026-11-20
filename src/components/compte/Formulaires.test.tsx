@@ -93,7 +93,7 @@ describe("FormulaireSuppression", () => {
   it("demande le mot de passe pour confirmer et dit ce qui sera effacé", () => {
     render(<FormulaireSuppression action={vi.fn()} />);
     expect(screen.getByRole("heading", { level: 2, name: "Supprimer mon compte" })).toBeInTheDocument();
-    expect(screen.getByText(/toutes ses données/i)).toHaveTextContent(/îles suivies/);
+    expect(screen.getByText(/toutes ses données/i)).toHaveTextContent(/îles suivies, appareils abonnés aux alertes/);
     expect(screen.getByText(/La suppression est définitive/)).toBeInTheDocument();
     const motDePasse = screen.getByLabelText("Mot de passe actuel");
     expect(motDePasse).toHaveAttribute("type", "password");
