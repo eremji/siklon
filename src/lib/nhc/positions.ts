@@ -129,20 +129,36 @@ export function lirePositionsPrevues(brut: unknown, emplacement: string): Positi
   };
 }
 
-export async function chargerPositionsPrevues(emplacement: string): Promise<PositionsPrevues | null> {
+/**
+ * Lecture brute des positions prévues d'un emplacement : null hors Atlantique ou si rien n'est publié,
+ * rejet en cas d'échec ou de donnée invalide, pour qu'un échec ne soit jamais mis en cache.
+ */
+export async function lirePositions(emplacement: string): Promise<PositionsPrevues | null> {
   const couche = couchePositions(emplacement);
   if (couche === null) return null;
+  const url = new URL(`${URL_SERVICE_PREVISIONS}/${couche}/query`);
+  url.search = new URLSearchParams({
+    where: "1=1",
+    outFields: "binnumber,advisnum,advdate,tau,validtime",
+    outSR: "4326",
+    f: "geojson",
+  }).toString();
+  const reponse = await fetch(url, { redirect: "error", cache: "no-store", signal: AbortSignal.timeout(DELAI_MAX_MS) });
+  if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
+  return lirePositionsPrevues(await reponse.json(), emplacement);
+}
+
+/** Source des positions prévues : le cache partagé en production, la lecture directe par défaut. */
+export type SourcePositions = (emplacement: string) => Promise<PositionsPrevues | null>;
+
+export async function chargerPositionsPrevues(
+  emplacement: string,
+  lire: SourcePositions = lirePositions,
+): Promise<PositionsPrevues | null> {
+  // Seuls AT1 à AT5 sont interrogés : le cache n'a jamais d'autre clé.
+  if (couchePositions(emplacement) === null) return null;
   try {
-    const url = new URL(`${URL_SERVICE_PREVISIONS}/${couche}/query`);
-    url.search = new URLSearchParams({
-      where: "1=1",
-      outFields: "binnumber,advisnum,advdate,tau,validtime",
-      outSR: "4326",
-      f: "geojson",
-    }).toString();
-    const reponse = await fetch(url, { redirect: "error", cache: "no-store", signal: AbortSignal.timeout(DELAI_MAX_MS) });
-    if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
-    return lirePositionsPrevues(await reponse.json(), emplacement);
+    return await lire(emplacement);
   } catch (erreur) {
     console.warn("[nhc] positions prévues indisponibles", { emplacement, raison: raisonEchec(erreur) });
     return null;
@@ -152,8 +168,9 @@ export async function chargerPositionsPrevues(emplacement: string): Promise<Posi
 // Positions prévues disponibles des systèmes actifs, par identifiant de système.
 export async function chargerToutesPositions(
   systemes: { id: string; emplacement: string }[],
+  lire: SourcePositions = lirePositions,
 ): Promise<Record<string, PositionsPrevues>> {
-  const lues = await Promise.all(systemes.map((systeme) => chargerPositionsPrevues(systeme.emplacement)));
+  const lues = await Promise.all(systemes.map((systeme) => chargerPositionsPrevues(systeme.emplacement, lire)));
   return Object.fromEntries(
     systemes.flatMap((systeme, index) => {
       const positions = lues[index];

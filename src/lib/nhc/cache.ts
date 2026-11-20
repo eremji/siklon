@@ -1,10 +1,11 @@
 // Cache partagé entre instances (« use cache: remote ») des flux NHC et NOAA : quel que soit
-// le nombre de visites, le NHC est lu au plus une fois par minute, et chaque prévision
-// ou couche de watches/warnings aussi.
+// le nombre de visites, le NHC est lu au plus une fois par minute, et chaque prévision,
+// couche de positions prévues ou de watches/warnings aussi.
 // Une lecture qui échoue rejette : rien n'est mis en cache et la visite suivante réessaie.
 import "server-only";
 import { cacheLife } from "next/cache";
 import { lireFlux } from "./client";
+import { lirePositions } from "./positions";
 import { lirePrevision } from "./previsions";
 import { lireWatches } from "./watches";
 
@@ -27,4 +28,10 @@ export async function watchesEnCache(emplacement: string) {
   "use cache: remote";
   cacheLife(DUREE_CACHE_NHC);
   return lireWatches(emplacement);
+}
+
+export async function positionsEnCache(emplacement: string) {
+  "use cache: remote";
+  cacheLife(DUREE_CACHE_NHC);
+  return lirePositions(emplacement);
 }

@@ -5,6 +5,7 @@ import {
   chargerPositionsPrevues,
   chargerToutesPositions,
   couchePositions,
+  lirePositions,
   lirePositionsPrevues,
 } from "./positions";
 import { URL_SERVICE_PREVISIONS } from "./previsions";
@@ -108,19 +109,55 @@ describe("lirePositionsPrevues", () => {
   });
 });
 
-describe("chargerPositionsPrevues", () => {
+describe("lirePositions : lecture brute, sans rattrapage d'erreur", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("interroge la couche des positions prévues de l'emplacement, en GeoJSON", async () => {
     const appel = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(points));
 
-    const lues = await chargerPositionsPrevues("AT1");
+    const lues = await lirePositions("AT1");
 
     const url = new URL(String(appel.mock.calls[0][0]));
     expect(`${url.origin}${url.pathname}`).toBe(`${URL_SERVICE_PREVISIONS}/6/query`);
     expect(url.searchParams.get("f")).toBe("geojson");
     expect(url.searchParams.get("outSR")).toBe("4326");
     expect(appel.mock.calls[0][1]).toMatchObject({ redirect: "error", cache: "no-store" });
+    expect(lues?.positions).toHaveLength(8);
+  });
+
+  it("rejette quand le service échoue ou répond mal, pour qu'un échec ne soit jamais mis en cache", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 503 }));
+    await expect(lirePositions("AT1")).rejects.toThrow("HTTP 503");
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(Response.json({ type: "FeatureCollection" }));
+    await expect(lirePositions("AT1")).rejects.toThrow(PositionsInvalidesError);
+  });
+
+  it("ne donne rien, sans interroger le service, hors de l'Atlantique", async () => {
+    const appel = vi.spyOn(globalThis, "fetch");
+
+    expect(await lirePositions("EP1")).toBeNull();
+    expect(appel).not.toHaveBeenCalled();
+  });
+});
+
+describe("chargerPositionsPrevues", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("lit directement le service par défaut", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(points));
+
+    expect((await chargerPositionsPrevues("AT1"))?.positions).toHaveLength(8);
+  });
+
+  it("lit par la source donnée (le cache partagé en production)", async () => {
+    const appel = vi.spyOn(globalThis, "fetch");
+    const source = vi.fn().mockResolvedValue(lirePositionsPrevues(points, "AT1"));
+
+    const lues = await chargerPositionsPrevues("AT1", source);
+
+    expect(source).toHaveBeenCalledWith("AT1");
+    expect(appel).not.toHaveBeenCalled();
     expect(lues?.positions).toHaveLength(8);
   });
 
@@ -131,13 +168,18 @@ describe("chargerPositionsPrevues", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(Response.json({ type: "FeatureCollection" }));
     expect(await chargerPositionsPrevues("AT1")).toBeNull();
+
+    expect(await chargerPositionsPrevues("AT1", () => Promise.reject(new Error("HTTP 503")))).toBeNull();
   });
 
-  it("n'interroge pas le service pour un emplacement hors de l'Atlantique", async () => {
+  it("n'interroge ni le service ni la source pour un emplacement hors de l'Atlantique", async () => {
     const appel = vi.spyOn(globalThis, "fetch");
+    const source = vi.fn();
 
     expect(await chargerPositionsPrevues("EP1")).toBeNull();
+    expect(await chargerPositionsPrevues("EP1", source)).toBeNull();
     expect(appel).not.toHaveBeenCalled();
+    expect(source).not.toHaveBeenCalled();
   });
 });
 
@@ -154,6 +196,21 @@ describe("chargerToutesPositions", () => {
       { id: "al122026", emplacement: "AT2" },
     ]);
 
+    expect(Object.keys(toutes)).toEqual(["al112026"]);
+  });
+
+  it("lit chaque emplacement par la source donnée", async () => {
+    const source = vi.fn(async (emplacement: string) => (emplacement === "AT1" ? lirePositionsPrevues(points, "AT1") : null));
+
+    const toutes = await chargerToutesPositions(
+      [
+        { id: "al112026", emplacement: "AT1" },
+        { id: "al122026", emplacement: "AT2" },
+      ],
+      source,
+    );
+
+    expect(source.mock.calls.map(([emplacement]) => emplacement)).toEqual(["AT1", "AT2"]);
     expect(Object.keys(toutes)).toEqual(["al112026"]);
   });
 });
