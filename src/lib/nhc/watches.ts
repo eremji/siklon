@@ -59,7 +59,7 @@ function estObjet(valeur: unknown): valeur is Record<string, unknown> {
   return typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
 }
 
-function estCode(valeur: unknown): valeur is CodeAlerte {
+export function estCode(valeur: unknown): valeur is CodeAlerte {
   return CODES_ALERTE.some((code) => code === valeur);
 }
 
