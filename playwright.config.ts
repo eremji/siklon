@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { DOSSIER_EMAILS } from "./e2e/emails";
 
 const baseURL = "http://localhost:3000";
 
@@ -26,6 +27,8 @@ export default defineConfig({
       DATABASE_URL_COMPTES: process.env.E2E_DATABASE_URL_COMPTES ?? "postgresql://localhost:5432/siklon_e2e",
       BETTER_AUTH_SECRET: process.env.E2E_BETTER_AUTH_SECRET ?? "secret-des-tests-e2e-uniquement-0123456789",
       BETTER_AUTH_URL: baseURL,
+      // Les emails sont écrits dans un dossier local, jamais envoyés (ignoré sur Vercel).
+      EMAILS_DOSSIER: DOSSIER_EMAILS,
     },
   },
 });

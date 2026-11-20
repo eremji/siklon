@@ -5,7 +5,7 @@ import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireIlesSuivies } from "@/lib/db/ilesSuivies";
 import { connexionComptes } from "@/lib/db/pool";
-import { deconnecter, enregistrerIles, supprimerCompte } from "./actions";
+import { deconnecter, enregistrerIles, renvoyerConfirmation, supprimerCompte } from "./actions";
 
 export const metadata: Metadata = {
   title: "Compte · Siklon",
@@ -23,6 +23,7 @@ async function Contenu() {
       deconnecter={deconnecter}
       supprimer={supprimerCompte}
       enregistrerIles={enregistrerIles}
+      renvoyerConfirmation={renvoyerConfirmation}
     />
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 // Formulaires d'inscription et de connexion (US-05). L'action est une server action passée par la
 // page : sans JavaScript, le formulaire est envoyé normalement ; avec, l'erreur s'affiche sur place.
+import Link from "next/link";
 import { useActionState } from "react";
 import { LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/options";
 import { ILES } from "@/lib/iles";
 
 export interface EtatFormulaire {
   message?: string;
+  confirmation?: string;
   email?: string;
 }
 
@@ -38,12 +40,20 @@ function ChampEmail({ formulaire, defaut }: { formulaire: string; defaut?: strin
   );
 }
 
-function ChampMotDePasse({ formulaire, nouveau }: { formulaire: string; nouveau: boolean }) {
+function ChampMotDePasse({
+  formulaire,
+  nouveau,
+  libelle = "Mot de passe",
+}: {
+  formulaire: string;
+  nouveau: boolean;
+  libelle?: string;
+}) {
   const id = `${formulaire}-mot-de-passe`;
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-base font-bold">
-        Mot de passe
+        {libelle}
       </label>
       <input
         id={id}
@@ -72,6 +82,16 @@ function Erreur({ message }: { message?: string }) {
     </p>
   ) : null;
 }
+
+function Confirmation({ message }: { message?: string }) {
+  return (
+    <p role="status" className="text-base font-bold empty:hidden">
+      {message}
+    </p>
+  );
+}
+
+const LIEN = "inline-flex min-h-11 items-center text-accent underline underline-offset-4";
 
 export function FormulaireInscription({ action }: { action: Action }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
@@ -188,5 +208,91 @@ export function FormulaireIles({ action, suivies }: { action: ActionIles; suivie
         </button>
       </form>
     </section>
+  );
+}
+
+/** Page ouverte depuis le lien de confirmation : un clic confirme l'adresse (US-05). */
+export function FormulaireConfirmationAdresse({ action, jeton }: { action: Action; jeton: string }) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  if (etat.confirmation) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Confirmation message={etat.confirmation} />
+        <Link href="/compte" className={LIEN}>
+          Aller à mon compte
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <Erreur message={etat.message} />
+      <input type="hidden" name="jeton" value={jeton} />
+      <button type="submit" disabled={enCours} className={BOUTON}>
+        {enCours ? "Confirmation en cours…" : "Confirmer mon adresse"}
+      </button>
+    </form>
+  );
+}
+
+/** Page Compte, adresse non confirmée : renvoie le lien (le premier a pu expirer ou se perdre). */
+export function FormulaireRenvoiConfirmation({ action }: { action: Action }) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  return (
+    <form action={envoyer} className="flex flex-col gap-3">
+      <Erreur message={etat.message} />
+      <Confirmation message={etat.confirmation} />
+      <button
+        type="submit"
+        disabled={enCours}
+        className="min-h-12 rounded-full border border-accent px-6 text-base font-bold text-accent disabled:opacity-70"
+      >
+        {enCours ? "Envoi en cours…" : "Renvoyer le lien de confirmation"}
+      </button>
+    </form>
+  );
+}
+
+export function FormulaireMotDePasseOublie({ action }: { action: Action }) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  if (etat.confirmation) return <Confirmation message={etat.confirmation} />;
+  return (
+    <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <Erreur message={etat.message} />
+      <ChampEmail formulaire="oubli" defaut={etat.email} />
+      <button type="submit" disabled={enCours} className={BOUTON}>
+        {enCours ? "Envoi en cours…" : "Recevoir un lien"}
+      </button>
+    </form>
+  );
+}
+
+/** Page ouverte depuis le lien de réinitialisation : choix du nouveau mot de passe. */
+export function FormulaireNouveauMotDePasse({ action, jeton }: { action: Action; jeton: string }) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  if (etat.confirmation) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Confirmation message={etat.confirmation} />
+        <Link href="/compte/connexion" className={LIEN}>
+          Se connecter
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <Erreur message={etat.message} />
+      {etat.message && (
+        <Link href="/compte/mot-de-passe-oublie" className={LIEN}>
+          Demander un nouveau lien
+        </Link>
+      )}
+      <input type="hidden" name="jeton" value={jeton} />
+      <ChampMotDePasse formulaire="nouveau" nouveau libelle="Nouveau mot de passe" />
+      <button type="submit" disabled={enCours} className={BOUTON}>
+        {enCours ? "Enregistrement en cours…" : "Changer mon mot de passe"}
+      </button>
+    </form>
   );
 }

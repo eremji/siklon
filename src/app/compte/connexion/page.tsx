@@ -14,6 +14,9 @@ export default function Page() {
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <h1 className="text-3xl font-bold">Se connecter</h1>
       <FormulaireConnexion action={connecter} />
+      <Link href="/compte/mot-de-passe-oublie" className="inline-flex min-h-11 items-center text-base text-accent underline underline-offset-4">
+        Mot de passe oublié ?
+      </Link>
       <p className="text-base">
         Pas encore de compte ?{" "}
         <Link href="/compte/inscription" className="inline-flex min-h-11 items-center text-accent underline underline-offset-4">
