@@ -2,9 +2,20 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { EtatCompte } from "./EtatCompte";
 
-const actions = { deconnecter: vi.fn(), supprimer: vi.fn(), enregistrerIles: vi.fn() };
+const actions = { deconnecter: vi.fn(), supprimer: vi.fn(), enregistrerIles: vi.fn(), renvoyerConfirmation: vi.fn() };
 
 describe("EtatCompte", () => {
+  it("adresse non confirmée : propose de renvoyer le lien de confirmation", () => {
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, langue: "fr" }} {...actions} />);
+    expect(screen.getByRole("button", { name: "Renvoyer le lien de confirmation" })).toBeInTheDocument();
+  });
+
+  it("adresse confirmée : ne propose plus de lien", () => {
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "fr" }} {...actions} />);
+    expect(screen.getByText("Confirmée")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Renvoyer le lien de confirmation" })).not.toBeInTheDocument();
+  });
+
   it("sans session, propose de se connecter ou de créer un compte", () => {
     render(<EtatCompte utilisateur={null} {...actions} />);
     expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/compte/connexion");

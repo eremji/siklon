@@ -1,15 +1,20 @@
 // Instance Better Auth du site et accès à la session, côté serveur uniquement.
 import "server-only";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { connexionComptes } from "../db/pool";
+import { choisirServiceEmails } from "../emails/configuration";
 import { cookiesDeLaReponse, messageErreur, requeteAuth } from "./appel";
 import { configurationAuth } from "./configuration";
 import { type Langue, optionsAuth } from "./options";
 
 const creerAuth = () => {
   const { secret, baseURL } = configurationAuth(process.env);
-  return betterAuth(optionsAuth({ database: connexionComptes(), secret, baseURL }));
+  const { service: emails } = choisirServiceEmails(process.env);
+  // after : l'email part une fois la réponse envoyée, et Vercel attend la fin de l'envoi.
+  return betterAuth(optionsAuth({ database: connexionComptes(), secret, baseURL, emails, tacheDeFond: (tache) => after(tache) }));
 };
 
 let instance: ReturnType<typeof creerAuth> | undefined;
@@ -35,6 +40,20 @@ export async function appelerAuth(chemin: string, corps: object): Promise<Result
   if (reponse.ok) return { ok: true };
   const contenu: unknown = await reponse.json().catch(() => ({}));
   return { ok: false, message: messageErreur(reponse.status, contenu, reponse.headers) };
+}
+
+/**
+ * Confirme l'adresse avec le jeton du lien reçu par email. Route GET de Better Auth : on l'appelle
+ * côté serveur, depuis la server action du bouton « Confirmer mon adresse ».
+ */
+export async function confirmerEmail(jeton: string): Promise<ResultatAuth> {
+  try {
+    await auth().api.verifyEmail({ query: { token: jeton }, headers: await headers() });
+    return { ok: true };
+  } catch (erreur) {
+    if (!(erreur instanceof APIError)) throw erreur;
+    return { ok: false, message: messageErreur(erreur.statusCode, erreur.body, new Headers()) };
+  }
 }
 
 export interface UtilisateurCourant {

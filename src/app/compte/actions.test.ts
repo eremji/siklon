@@ -8,9 +8,10 @@ const redirect = vi.hoisted(() =>
   }),
 );
 const utilisateurCourant = vi.hoisted(() => vi.fn());
+const confirmerEmail = vi.hoisted(() => vi.fn());
 const ilesSuivies = vi.hoisted(() => ({ enregistrer: vi.fn(), lire: vi.fn() }));
 const pool = vi.hoisted(() => ({ nom: "pool des comptes" }));
-vi.mock("@/lib/auth/serveur", () => ({ appelerAuth, utilisateurCourant }));
+vi.mock("@/lib/auth/serveur", () => ({ appelerAuth, confirmerEmail, utilisateurCourant }));
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/lib/db/pool", () => ({ connexionComptes: () => pool }));
 vi.mock("@/lib/db/ilesSuivies", async (original) => ({
@@ -19,7 +20,17 @@ vi.mock("@/lib/db/ilesSuivies", async (original) => ({
   lireIlesSuivies: ilesSuivies.lire,
 }));
 
-const { connecter, deconnecter, enregistrerIles, inscrire, supprimerCompte } = await import("./actions");
+const {
+  confirmerAdresse,
+  connecter,
+  deconnecter,
+  demanderReinitialisation,
+  enregistrerIles,
+  inscrire,
+  reinitialiserMotDePasse,
+  renvoyerConfirmation,
+  supprimerCompte,
+} = await import("./actions");
 const { IleInconnueError } = await import("@/lib/db/ilesSuivies");
 
 const formulaire = (champs: Record<string, string>) => {
@@ -31,6 +42,7 @@ const formulaire = (champs: Record<string, string>) => {
 beforeEach(() => {
   appelerAuth.mockReset();
   utilisateurCourant.mockReset();
+  confirmerEmail.mockReset();
   ilesSuivies.enregistrer.mockReset();
   ilesSuivies.lire.mockReset();
   redirect.mockClear();
@@ -142,6 +154,88 @@ describe("enregistrerIles", () => {
     expect(await enregistrerIles({ iles: ["guadeloupe"] }, cochees("atlantide"))).toEqual({
       message: "Cette île ne fait pas partie de la liste.",
       iles: ["guadeloupe"],
+    });
+  });
+});
+
+describe("confirmerAdresse", () => {
+  it("confirme l'adresse avec le jeton du lien", async () => {
+    confirmerEmail.mockResolvedValue({ ok: true });
+    expect(await confirmerAdresse({}, formulaire({ jeton: "jeton-1" }))).toEqual({
+      confirmation: "Votre adresse est confirmée.",
+    });
+    expect(confirmerEmail).toHaveBeenCalledWith("jeton-1");
+  });
+
+  it("renvoie le message d'erreur d'un lien expiré", async () => {
+    confirmerEmail.mockResolvedValue({ ok: false, message: "Ce lien a expiré. Demandez-en un nouveau." });
+    expect(await confirmerAdresse({}, formulaire({ jeton: "vieux" }))).toEqual({
+      message: "Ce lien a expiré. Demandez-en un nouveau.",
+    });
+  });
+
+  it("refuse un formulaire sans jeton, sans appeler le serveur d'authentification", async () => {
+    expect(await confirmerAdresse({}, formulaire({}))).toEqual({
+      message: "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.",
+    });
+    expect(confirmerEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("renvoyerConfirmation", () => {
+  it("renvoie un lien à l'adresse de l'utilisateur connecté", async () => {
+    utilisateurCourant.mockResolvedValue({ id: "id-1", email: "a@b.fr", emailVerifie: false, langue: "fr" });
+    appelerAuth.mockResolvedValue({ ok: true });
+    expect(await renvoyerConfirmation()).toEqual({
+      confirmation: "Un nouveau lien vient d'être envoyé à a@b.fr.",
+    });
+    expect(appelerAuth).toHaveBeenCalledWith("/send-verification-email", { email: "a@b.fr" });
+  });
+
+  it("sans session, n'envoie rien", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await renvoyerConfirmation()).toEqual({
+      message: "Votre session a expiré. Reconnectez-vous pour recevoir un nouveau lien.",
+    });
+    expect(appelerAuth).not.toHaveBeenCalled();
+  });
+});
+
+describe("demanderReinitialisation", () => {
+  it("demande le lien et répond pareil, que l'adresse ait un compte ou non", async () => {
+    appelerAuth.mockResolvedValue({ ok: true });
+    expect(await demanderReinitialisation({}, formulaire({ email: " a@b.fr " }))).toEqual({
+      confirmation:
+        "Si un compte existe avec cette adresse, un lien pour choisir un nouveau mot de passe vient de lui être envoyé. Il reste valable 1 heure.",
+    });
+    expect(appelerAuth).toHaveBeenCalledWith("/request-password-reset", { email: "a@b.fr" });
+  });
+
+  it("renvoie le message d'erreur et l'email saisi", async () => {
+    appelerAuth.mockResolvedValue({ ok: false, message: "Trop de tentatives. Réessayez dans 10 minutes." });
+    expect(await demanderReinitialisation({}, formulaire({ email: "a@b.fr" }))).toEqual({
+      message: "Trop de tentatives. Réessayez dans 10 minutes.",
+      email: "a@b.fr",
+    });
+  });
+});
+
+describe("reinitialiserMotDePasse", () => {
+  it("change le mot de passe avec le jeton du lien", async () => {
+    appelerAuth.mockResolvedValue({ ok: true });
+    expect(
+      await reinitialiserMotDePasse({}, formulaire({ jeton: "jeton-1", motDePasse: "un tout nouveau mot de passe" })),
+    ).toEqual({ confirmation: "Votre mot de passe est changé. Connectez-vous avec le nouveau." });
+    expect(appelerAuth).toHaveBeenCalledWith("/reset-password", {
+      token: "jeton-1",
+      newPassword: "un tout nouveau mot de passe",
+    });
+  });
+
+  it("renvoie le message d'erreur d'un lien qui a déjà servi", async () => {
+    appelerAuth.mockResolvedValue({ ok: false, message: "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau." });
+    expect(await reinitialiserMotDePasse({}, formulaire({ jeton: "jeton-1", motDePasse: "x".repeat(12) }))).toEqual({
+      message: "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.",
     });
   });
 });

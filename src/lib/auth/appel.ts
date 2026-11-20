@@ -46,6 +46,10 @@ const MESSAGES: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: "Email ou mot de passe incorrect.",
   INVALID_PASSWORD: "Mot de passe incorrect.",
   PASSWORD_REQUIRED: "Saisissez votre mot de passe pour confirmer.",
+  INVALID_TOKEN: "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.",
+  TOKEN_EXPIRED: "Ce lien a expiré. Demandez-en un nouveau.",
+  USER_NOT_FOUND: "Ce compte n'existe plus.",
+  EMAIL_ALREADY_VERIFIED: "Votre adresse est déjà confirmée.",
 };
 
 /** Message d'erreur en français ; jamais le détail technique renvoyé par le serveur. */

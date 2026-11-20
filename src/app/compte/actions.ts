@@ -4,7 +4,7 @@
 // tentatives et ne reçoit jamais que l'email, le mot de passe et la langue.
 import { redirect } from "next/navigation";
 import type { EtatFormulaire, EtatIles } from "@/components/compte/Formulaires";
-import { appelerAuth, utilisateurCourant } from "@/lib/auth/serveur";
+import { appelerAuth, confirmerEmail, utilisateurCourant } from "@/lib/auth/serveur";
 import { enregistrerIlesSuivies, IleInconnueError, lireIlesSuivies } from "@/lib/db/ilesSuivies";
 import { connexionComptes } from "@/lib/db/pool";
 import { LANGUES, type Langue } from "@/lib/auth/options";
@@ -63,4 +63,45 @@ export async function enregistrerIles(etat: EtatIles, donnees: FormData): Promis
     throw erreur;
   }
   return { confirmation: "Vos îles sont enregistrées.", iles: await lireIlesSuivies(connexionComptes(), utilisateur.id) };
+}
+
+const LIEN_INVALIDE = "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.";
+
+/** Confirme l'adresse : bouton de la page ouverte depuis le lien reçu par email. */
+export async function confirmerAdresse(_etat: EtatFormulaire, donnees: FormData): Promise<EtatFormulaire> {
+  const jeton = champ(donnees, "jeton");
+  if (!jeton) return { message: LIEN_INVALIDE };
+  const resultat = await confirmerEmail(jeton);
+  if (!resultat.ok) return { message: resultat.message };
+  return { confirmation: "Votre adresse est confirmée." };
+}
+
+/** Renvoie le lien de confirmation à l'utilisateur connecté (le premier a pu expirer ou se perdre). */
+export async function renvoyerConfirmation(): Promise<EtatFormulaire> {
+  const utilisateur = await utilisateurCourant();
+  if (!utilisateur) return { message: "Votre session a expiré. Reconnectez-vous pour recevoir un nouveau lien." };
+  const resultat = await appelerAuth("/send-verification-email", { email: utilisateur.email });
+  if (!resultat.ok) return { message: resultat.message };
+  return { confirmation: `Un nouveau lien vient d'être envoyé à ${utilisateur.email}.` };
+}
+
+/** Demande un lien de réinitialisation. Même réponse avec ou sans compte : rien ne trahit une adresse. */
+export async function demanderReinitialisation(_etat: EtatFormulaire, donnees: FormData): Promise<EtatFormulaire> {
+  const email = champ(donnees, "email").trim();
+  const resultat = await appelerAuth("/request-password-reset", { email });
+  if (!resultat.ok) return { message: resultat.message, email };
+  return {
+    confirmation:
+      "Si un compte existe avec cette adresse, un lien pour choisir un nouveau mot de passe vient de lui être envoyé. Il reste valable 1 heure.",
+  };
+}
+
+/** Choisit un nouveau mot de passe avec le jeton du lien ; les sessions ouvertes sont fermées. */
+export async function reinitialiserMotDePasse(_etat: EtatFormulaire, donnees: FormData): Promise<EtatFormulaire> {
+  const resultat = await appelerAuth("/reset-password", {
+    token: champ(donnees, "jeton"),
+    newPassword: champ(donnees, "motDePasse"),
+  });
+  if (!resultat.ok) return { message: resultat.message };
+  return { confirmation: "Votre mot de passe est changé. Connectez-vous avec le nouveau." };
 }

@@ -32,7 +32,8 @@ const enTantQue = async <T>(role: string, action: () => Promise<T>): Promise<T> 
 
 describe("migration des comptes", () => {
   it("crée exactement le schéma attendu par Better Auth", async () => {
-    const options = optionsAuth({ database: poolPglite(db), secret: "s".repeat(32), baseURL: "http://localhost:3000" });
+    const emails = { envoyer: async () => {}, effacer: async () => {} };
+    const options = optionsAuth({ database: poolPglite(db), secret: "s".repeat(32), baseURL: "http://localhost:3000", emails });
     const ecarts = await getMigrations(options);
     expect(ecarts.toBeCreated).toEqual([]);
     expect(ecarts.toBeAdded).toEqual([]);
