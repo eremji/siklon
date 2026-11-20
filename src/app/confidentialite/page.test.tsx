@@ -20,12 +20,26 @@ describe("Page de confidentialité", () => {
     expect(section).toHaveTextContent(/aucune mesure d'audience/i);
   });
 
-  it("annonce un seul cookie, de session, déposé seulement à la connexion", () => {
+  it("annonce le cookie de session, déposé seulement à la connexion, et celui, temporaire, de Google", () => {
     render(<Page />);
-    const section = screen.getByRole("region", { name: "Cookie" });
-    expect(section).toHaveTextContent(/un seul cookie/i);
+    const section = screen.getByRole("region", { name: "Cookies" });
     expect(section).toHaveTextContent(/si vous vous connectez/i);
     expect(section).toHaveTextContent(/7 jours/);
+    expect(section).toHaveTextContent(/avec Google/);
+    expect(section).toHaveTextContent(/quelques minutes/);
+  });
+
+  it("dit ce que Google reçoit et ce que Siklon garde d'une connexion avec Google", () => {
+    render(<Page />);
+    const section = screen.getByRole("region", { name: "Connexion avec Google" });
+    expect(section).toHaveTextContent(/adresse email/);
+    expect(section).toHaveTextContent(/ni votre nom, ni votre photo/);
+    expect(section).toHaveTextContent(/n'accède à rien d'autre/);
+    expect(section).toHaveTextContent(/Google sait que vous utilisez Siklon/);
+    expect(within(section).getByRole("link", { name: /Google/ })).toHaveAttribute(
+      "href",
+      "https://policies.google.com/privacy?hl=fr",
+    );
   });
 
   it("dit où sont gardées les données du compte, et combien de temps", () => {
@@ -71,6 +85,7 @@ describe("Page de confidentialité", () => {
     expect(section).toHaveTextContent(/toutes ses données/i);
     expect(section).toHaveTextContent(/îles suivies/i);
     expect(section).toHaveTextContent(/y compris chez Brevo/);
+    expect(section).toHaveTextContent(/reconnecter avec Google/);
     expect(within(section).getByRole("link", { name: "page Compte" })).toHaveAttribute("href", "/compte");
   });
 
@@ -90,6 +105,6 @@ describe("Page de confidentialité", () => {
 
   it("indique sa date de mise à jour", () => {
     render(<Page />);
-    expect(screen.getByText(/Mise à jour : 19 novembre 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Mise à jour : 20 novembre 2026/)).toBeInTheDocument();
   });
 });
