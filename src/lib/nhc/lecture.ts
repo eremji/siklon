@@ -3,9 +3,10 @@
 import "server-only";
 import type { Emprise } from "@/lib/iles";
 import { type EtatAlertesNhc, chargerAlertesNhc } from "./alertes";
-import { fluxEnCache, watchesEnCache } from "./cache";
+import { fluxEnCache, positionsEnCache, watchesEnCache } from "./cache";
 import { type EtatFlux, chargerSystemesActifs } from "./client";
-import { type NomFixture, etatFixture, watchesFixture } from "./source";
+import { type PositionsPrevues, chargerToutesPositions } from "./positions";
+import { type NomFixture, etatFixture, positionsFixture, watchesFixture } from "./source";
 
 export async function fluxNhc(fixture: NomFixture | null, maintenant: () => Date = () => new Date()): Promise<EtatFlux> {
   if (fixture) return etatFixture(fixture, maintenant().toISOString());
@@ -20,4 +21,13 @@ export async function alertesNhc(
 ): Promise<EtatAlertesNhc> {
   const flux = await fluxNhc(fixture, maintenant);
   return chargerAlertesNhc(flux, emprise, fixture ? watchesFixture(fixture) : watchesEnCache);
+}
+
+/** Positions prévues des systèmes actifs (US-03), par identifiant de système, par la même voie que le flux. */
+export async function positionsNhc(
+  fixture: NomFixture | null,
+  systemes: { id: string; emplacement: string }[],
+): Promise<Record<string, PositionsPrevues>> {
+  if (fixture) return positionsFixture(fixture);
+  return chargerToutesPositions(systemes, positionsEnCache);
 }
