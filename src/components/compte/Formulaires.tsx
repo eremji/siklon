@@ -2,8 +2,10 @@
 // Formulaires d'inscription et de connexion (US-05). L'action est une server action passée par la
 // page : sans JavaScript, le formulaire est envoyé normalement ; avec, l'erreur s'affiche sur place.
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
-import { LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/options";
+import { messageErreurGoogle } from "@/lib/auth/messagesGoogle";
+import { DUREE_REAUTHENTIFICATION_MINUTES, LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/options";
 import { ILES } from "@/lib/iles";
 
 export interface EtatFormulaire {
@@ -21,6 +23,8 @@ export interface EtatIles {
 
 type Action = (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
 type ActionIles = (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
+/** Départ vers Google (server action) : redirige, ne renvoie rien. */
+export type ActionGoogle = (donnees: FormData) => Promise<void>;
 
 const CHAMP = "min-h-12 w-full rounded-xl border border-field bg-surface px-3 text-base text-foreground";
 const BOUTON = "min-h-12 rounded-full bg-accent px-6 text-base font-bold text-on-accent disabled:opacity-70";
@@ -92,8 +96,59 @@ function Confirmation({ message }: { message?: string }) {
 }
 
 const LIEN = "inline-flex min-h-11 items-center text-accent underline underline-offset-4";
+const BOUTON_GOOGLE =
+  "flex min-h-12 items-center justify-center gap-3 rounded-full border border-field bg-surface px-6 text-base font-bold text-foreground";
 
-export function FormulaireInscription({ action }: { action: Action }) {
+// Logo « G » de Google, dans ses couleurs d'origine : ses règles d'usage interdisent de le modifier.
+function LogoGoogle() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 48 48" className="size-5 shrink-0">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+function Separateur() {
+  return (
+    <p className="flex items-center gap-3 text-sm text-muted" aria-hidden="true">
+      <span className="h-px flex-1 bg-field" />
+      ou
+      <span className="h-px flex-1 bg-field" />
+    </p>
+  );
+}
+
+/** Erreur reçue dans l'adresse au retour de Google (?error=…), à afficher sous Suspense. */
+export function AlerteGoogle() {
+  const code = useSearchParams().get("error");
+  return code ? <Erreur message={messageErreurGoogle(code)} /> : null;
+}
+
+/** Bouton « Continuer avec Google » ; `origine` : page où revenir si la connexion échoue. */
+export function FormulaireGoogle({
+  action,
+  origine,
+  libelle = "Continuer avec Google",
+}: {
+  action: ActionGoogle;
+  origine: string;
+  libelle?: string;
+}) {
+  return (
+    <form action={action}>
+      <input type="hidden" name="origine" value={origine} />
+      <button type="submit" className={`${BOUTON_GOOGLE} w-full`}>
+        <LogoGoogle />
+        {libelle}
+      </button>
+    </form>
+  );
+}
+
+export function FormulaireInscription({ action, google }: { action: Action; google?: ActionGoogle }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
@@ -115,6 +170,17 @@ export function FormulaireInscription({ action }: { action: Action }) {
       <button type="submit" disabled={enCours} className={BOUTON}>
         {enCours ? "Création en cours…" : "Créer mon compte"}
       </button>
+      {google && (
+        <>
+          <Separateur />
+          {/* Même formulaire, pour emporter la langue cochée ; formNoValidate : ni email ni mot de passe. */}
+          <input type="hidden" name="origine" value="/compte/inscription" />
+          <button type="submit" formAction={google} formNoValidate className={BOUTON_GOOGLE}>
+            <LogoGoogle />
+            S&apos;inscrire avec Google
+          </button>
+        </>
+      )}
     </form>
   );
 }
@@ -133,7 +199,16 @@ export function FormulaireConnexion({ action }: { action: Action }) {
   );
 }
 
-export function FormulaireSuppression({ action }: { action: Action }) {
+export function FormulaireSuppression({
+  action,
+  motDePasse = true,
+  google,
+}: {
+  action: Action;
+  /** Faux pour un compte Google seul : la confirmation passe par une connexion récente avec Google. */
+  motDePasse?: boolean;
+  google?: ActionGoogle;
+}) {
   const [etat, envoyer, enCours] = useActionState(action, {});
   return (
     <section aria-labelledby="suppression-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
@@ -144,22 +219,33 @@ export function FormulaireSuppression({ action }: { action: Action }) {
         Le compte et toutes ses données (adresse email, langue, îles suivies, mot de passe, sessions) sont
         effacés immédiatement. La suppression est définitive.
       </p>
+      {!motDePasse && (
+        <>
+          <p className="text-base">
+            Votre compte n&apos;a pas de mot de passe : pour confirmer, reconnectez-vous avec Google, puis supprimez votre
+            compte dans les {DUREE_REAUTHENTIFICATION_MINUTES} minutes.
+          </p>
+          {google && <FormulaireGoogle action={google} origine="/compte" libelle="Me reconnecter avec Google" />}
+        </>
+      )}
       <form action={envoyer} className="flex flex-col gap-3">
         <Erreur message={etat.message} />
-        <div className="flex flex-col gap-1">
-          <label htmlFor="suppression-mot-de-passe" className="text-base font-bold">
-            Mot de passe actuel
-          </label>
-          <input
-            id="suppression-mot-de-passe"
-            name="motDePasse"
-            type="password"
-            autoComplete="current-password"
-            required
-            maxLength={LONGUEUR_MAX_MOT_DE_PASSE}
-            className={CHAMP}
-          />
-        </div>
+        {motDePasse && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="suppression-mot-de-passe" className="text-base font-bold">
+              Mot de passe actuel
+            </label>
+            <input
+              id="suppression-mot-de-passe"
+              name="motDePasse"
+              type="password"
+              autoComplete="current-password"
+              required
+              maxLength={LONGUEUR_MAX_MOT_DE_PASSE}
+              className={CHAMP}
+            />
+          </div>
+        )}
         <button
           type="submit"
           disabled={enCours}
