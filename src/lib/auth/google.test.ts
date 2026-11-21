@@ -190,6 +190,16 @@ describe("connexion avec Google", () => {
     expect(rows.map((r) => r.fournisseur)).toEqual(["credential", "google"]);
   });
 
+  it("un retour sans état valable renvoie sur la page de connexion du site, avec un code d'erreur", async () => {
+    const reponse = await auth.handler(
+      new Request(`${BASE}/api/auth/callback/google?code=code-test&state=etat-invente`, { headers: entetes() }),
+    );
+    expect(reponse.status).toBe(302);
+    const retour = new URL(reponse.headers.get("location") ?? "", BASE);
+    expect(retour.origin + retour.pathname).toBe(`${BASE}/compte/connexion`);
+    expect(retour.searchParams.get("error")).toBeTruthy();
+  });
+
   it("ne relie pas Google à un compte dont l'adresse n'est pas confirmée : quelqu'un a pu l'inscrire à la place de son titulaire", async () => {
     const email = nouvelEmail();
     await appeler("/sign-up/email", { email, password: "un mot de passe solide", name: "", langue: "fr" });

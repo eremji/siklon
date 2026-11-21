@@ -43,6 +43,14 @@ export async function appelerAuth(chemin: string, corps: object): Promise<Result
 }
 
 /**
+ * Retour depuis le fournisseur de connexion (Google), sur /api/auth/callback/<fournisseur> : Better
+ * Auth vérifie l'état, échange le code, ouvre la session et redirige vers la page Compte.
+ */
+export function retourFournisseur(requete: Request): Promise<Response> {
+  return auth().handler(requete);
+}
+
+/**
  * Confirme l'adresse avec le jeton du lien reçu par email. Route GET de Better Auth : on l'appelle
  * côté serveur, depuis la server action du bouton « Confirmer mon adresse ».
  */
