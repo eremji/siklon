@@ -1,5 +1,6 @@
 // Contenu de la page Compte selon la session (US-05) : invitation à se connecter, ou résumé du compte.
 import Link from "next/link";
+import { AbonnementAppareil, type ResultatAbonnement } from "@/components/compte/AbonnementAppareil";
 import {
   type EtatFormulaire,
   type EtatIles,
@@ -26,6 +27,9 @@ export function EtatCompte({
   supprimer,
   enregistrerIles,
   renvoyerConfirmation,
+  abonnerAppareil,
+  desabonnerAppareil,
+  clePubliqueVapid,
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
@@ -33,6 +37,10 @@ export function EtatCompte({
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
   renvoyerConfirmation: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
+  abonnerAppareil: (abonnement: unknown) => Promise<ResultatAbonnement>;
+  desabonnerAppareil: (endpoint: unknown) => Promise<ResultatAbonnement>;
+  /** Clé publique VAPID du web push ; `null` s'il n'est pas configuré. */
+  clePubliqueVapid: string | null;
 }) {
   if (!utilisateur) {
     return (
@@ -82,6 +90,10 @@ export function EtatCompte({
         </section>
       )}
       <FormulaireIles action={enregistrerIles} suivies={ilesSuivies} />
+      {/* Les alertes ne partent que vers un compte dont l'adresse est confirmée. */}
+      {utilisateur.emailVerifie && (
+        <AbonnementAppareil clePublique={clePubliqueVapid} abonner={abonnerAppareil} desabonner={desabonnerAppareil} />
+      )}
       <form action={deconnecter}>
         <button type="submit" className={`${LIEN_SECONDAIRE} w-full`}>
           Se déconnecter
