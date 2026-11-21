@@ -32,7 +32,8 @@ describe("politiqueContenu (CSP)", () => {
   it("interdit plugins, changement de base, envoi de formulaire ailleurs et affichage en iframe", () => {
     expect(csp["object-src"]).toEqual(["'none'"]);
     expect(csp["base-uri"]).toEqual(["'self'"]);
-    expect(csp["form-action"]).toEqual(["'self'"]);
+    // Seule exception : le formulaire « Continuer avec Google » est redirigé vers Google (sans JavaScript).
+    expect(csp["form-action"]).toEqual(["'self'", "https://accounts.google.com"]);
     expect(csp["frame-ancestors"]).toEqual(["'none'"]);
     expect(csp["upgrade-insecure-requests"]).toEqual([]);
   });

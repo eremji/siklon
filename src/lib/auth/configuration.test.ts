@@ -34,4 +34,26 @@ describe("configurationAuth", () => {
       expect.objectContaining({ message: expect.not.stringContaining("secret-trop-court") }),
     );
   });
+
+  describe("connexion avec Google", () => {
+    const BASE = { BETTER_AUTH_SECRET: SECRET, BETTER_AUTH_URL: "https://siklon.example" };
+
+    it("active Google quand l'identifiant et le secret du client sont fournis", () => {
+      expect(configurationAuth({ ...BASE, GOOGLE_CLIENT_ID: "id-client", GOOGLE_CLIENT_SECRET: "secret-client" }).google).toEqual({
+        clientId: "id-client",
+        clientSecret: "secret-client",
+      });
+    });
+
+    it("sans eux, laisse Google désactivé (développement, tests)", () => {
+      expect(configurationAuth(BASE).google).toBeUndefined();
+    });
+
+    it("refuse une configuration à moitié faite, sans recopier la valeur fournie", () => {
+      expect(() => configurationAuth({ ...BASE, GOOGLE_CLIENT_ID: "id-client" })).toThrow(/GOOGLE_CLIENT_SECRET/);
+      expect(() => configurationAuth({ ...BASE, GOOGLE_CLIENT_SECRET: "secret-client" })).toThrow(
+        expect.objectContaining({ message: expect.stringMatching(/GOOGLE_CLIENT_ID(?![\s\S]*secret-client)/) }),
+      );
+    });
+  });
 });

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { DUREE_SESSION_JOURS, LIMITES_TENTATIVES } from "@/lib/auth/options";
+import { DUREE_REAUTHENTIFICATION_MINUTES, DUREE_SESSION_JOURS, LIMITES_TENTATIVES } from "@/lib/auth/options";
 
 export const metadata: Metadata = {
   title: "Confidentialité · Siklon",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 // Décrit l'état actuel du site. À mettre à jour à chaque nouvelle donnée collectée
-// (emails, notifications : US-05, US-07, US-13).
+// (emails, connexion Google, notifications : US-05, US-07, US-13).
 
 // Les compteurs de tentatives (clé : adresse IP) sont purgés après la plus longue fenêtre.
 const MINUTES_COMPTEURS = Math.max(...Object.values(LIMITES_TENTATIVES).map((l) => l.window)) / 60;
@@ -67,11 +67,29 @@ export default function Page() {
         </p>
       </Section>
 
-      <Section id="cookie" titre="Cookie">
+      <Section id="connexion-google" titre="Connexion avec Google">
         <p>
-          Siklon dépose un seul cookie, et seulement si vous vous connectez : il garde votre session ouverte pendant{" "}
+          Vous pouvez aussi vous connecter avec votre compte Google. Google transmet alors à Siklon votre adresse email,
+          l&apos;indication qu&apos;elle est confirmée et un identifiant de votre compte Google. Siklon ne garde ni votre
+          nom, ni votre photo, ni aucun jeton d&apos;accès : il n&apos;accède à rien d&apos;autre dans votre compte
+          Google.
+        </p>
+        <p>
+          De son côté, Google sait que vous utilisez Siklon, comme pour tout site où vous vous connectez avec lui. Il
+          traite ces informations selon ses{" "}
+          <LienExterne href="https://policies.google.com/privacy?hl=fr">règles de confidentialité de Google</LienExterne>.
+        </p>
+      </Section>
+
+      <Section id="cookie" titre="Cookies">
+        <p>
+          Siklon dépose un cookie seulement si vous vous connectez : il garde votre session ouverte pendant{" "}
           {DUREE_SESSION_JOURS} jours au plus, et disparaît quand vous vous déconnectez. Il est indispensable à la
           connexion, et ne sert à rien d&apos;autre.
+        </p>
+        <p>
+          Si vous vous connectez avec Google, un second cookie protège l&apos;aller-retour vers Google contre une
+          usurpation ; il s&apos;efface au bout de quelques minutes.
         </p>
       </Section>
 
@@ -98,9 +116,10 @@ export default function Page() {
             page Compte
           </Link>
           , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
-          (adresse email, langue, îles suivies, appareils abonnés aux alertes, empreinte du mot de passe, sessions), y compris chez Brevo, qui efface le
-          journal des emails envoyés à votre adresse. Votre mot de passe vous est demandé pour
-          confirmer.
+          (adresse email, langue, îles suivies, appareils abonnés aux alertes, empreinte du mot de passe, sessions), y
+          compris chez Brevo, qui efface le journal des emails envoyés à votre adresse. Votre mot de passe vous est
+          demandé pour confirmer ; si votre compte n&apos;en a pas, il suffit de vous reconnecter avec Google dans les{" "}
+          {DUREE_REAUTHENTIFICATION_MINUTES} minutes qui précèdent.
         </p>
       </Section>
 
@@ -137,7 +156,7 @@ export default function Page() {
       </Section>
 
       <div className="flex flex-col gap-1 text-sm text-muted">
-        <p>Mise à jour : 20 novembre 2026.</p>
+        <p>Mise à jour : 21 novembre 2026.</p>
         <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
       </div>
     </main>

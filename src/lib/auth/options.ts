@@ -1,7 +1,7 @@
 // Options Better Auth de Siklon (US-05), sans dépendance à Next.js ni à l'environnement :
 // le serveur (serveur.ts) et les tests les construisent avec leur propre base et leur secret.
 import type { BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware, getOAuthState, getSessionFromCtx } from "better-auth/api";
 import type { PostgresPool } from "kysely";
 import { emailConfirmation, emailReinitialisation, VALIDITE_LIEN } from "../emails/messages";
 import type { ServiceEmails } from "../emails/types";
@@ -13,6 +13,12 @@ export const LANGUES = ["fr", "en"] as const;
 export type Langue = (typeof LANGUES)[number];
 
 export const DUREE_SESSION_JOURS = 7;
+
+/**
+ * Un compte sans mot de passe (Google seul) ne peut être supprimé que dans ce délai après une
+ * connexion avec Google : c'est la confirmation qui remplace le mot de passe.
+ */
+export const DUREE_REAUTHENTIFICATION_MINUTES = 10;
 
 /** Limites des tentatives par adresse IP, en secondes. */
 export const LIMITES_TENTATIVES = {
@@ -38,10 +44,15 @@ export interface ParametresAuth {
    * révèle pas, par sa durée, si l'adresse a un compte. Sans elle, l'envoi est attendu (tests).
    */
   tacheDeFond?: (tache: Promise<unknown>) => void;
+  /** Client OAuth de Google ; sans lui, la connexion avec Google est désactivée. */
+  google?: { clientId: string; clientSecret: string };
 }
 
 const langueDe = (utilisateur: object): Langue =>
   "langue" in utilisateur && utilisateur.langue === "en" ? "en" : "fr";
+
+// Jetons OAuth : Siklon n'appelle jamais les API de Google, il n'a aucune raison de les garder.
+const SANS_JETONS = { accessToken: null, refreshToken: null, idToken: null, accessTokenExpiresAt: null, refreshTokenExpiresAt: null };
 
 /**
  * Efface les jetons à usage unique (réinitialisation du mot de passe, suppression du compte) d'un
@@ -58,7 +69,7 @@ async function effacerJetons(database: PostgresPool, utilisateur: { id: string }
   }
 }
 
-export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond }: ParametresAuth) {
+export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond, google }: ParametresAuth) {
   // Le lien mène à une page du site (et non à l'API) : la personne y confirme d'un clic. Un antivirus
   // de messagerie qui ouvre les liens ne consomme donc pas le jeton.
   const lien = (page: string, jeton: string) => `${baseURL}${page}?jeton=${encodeURIComponent(jeton)}`;
@@ -82,6 +93,15 @@ export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond }: 
       sendResetPassword: async ({ user, token }) =>
         emails.envoyer({ a: user.email, ...emailReinitialisation(langueDe(user), lien(PAGES_LIENS.reinitialisation, token)) }),
     },
+    socialProviders: google
+      ? {
+          google: {
+            ...google,
+            // Données minimales (RGPD) : ni le nom ni la photo du profil Google.
+            mapProfileToUser: () => ({ name: "", image: undefined }),
+          },
+        }
+      : {},
     emailVerification: {
       sendOnSignUp: true,
       expiresIn: VALIDITE_LIEN.confirmation,
@@ -121,6 +141,8 @@ export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond }: 
     },
     account: {
       modelName: "comptes_lies",
+      // Ne recopie pas les jetons de Google à chaque connexion (voir SANS_JETONS).
+      updateAccountOnSignIn: false,
       fields: {
         userId: "utilisateur_id",
         providerId: "fournisseur",
@@ -166,13 +188,35 @@ export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond }: 
     hooks: {
       // Better Auth accepte une suppression sans mot de passe si la session a moins d'un jour : Siklon
       // exige toujours le mot de passe, pour qu'un téléphone laissé déverrouillé ne suffise pas.
+      // Un compte Google sans mot de passe confirme en se reconnectant avec Google juste avant.
       before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path === "/delete-user" && !ctx.body?.password) {
+        if (ctx.path !== "/delete-user" || ctx.body?.password) return;
+        const session = await getSessionFromCtx(ctx);
+        if (!session) return; // Better Auth répond 401.
+        const motDePasse = await ctx.context.internalAdapter.findCredentialAccount(session.user.id);
+        if (motDePasse?.password) {
           throw new APIError("BAD_REQUEST", { message: "Password required", code: "PASSWORD_REQUIRED" });
+        }
+        const age = Date.now() - new Date(session.session.createdAt).getTime();
+        if (age > DUREE_REAUTHENTIFICATION_MINUTES * 60 * 1000) {
+          throw new APIError("BAD_REQUEST", { message: "Recent sign-in required", code: "RECENT_SIGN_IN_REQUIRED" });
         }
       }),
     },
     databaseHooks: {
+      user: {
+        create: {
+          // Inscription avec Google : la langue choisie sur le site voyage dans l'état OAuth.
+          before: async (utilisateur) => {
+            const etat = await getOAuthState();
+            if (!etat) return { data: utilisateur };
+            return { data: { ...utilisateur, langue: etat.langue === "en" ? "en" : "fr" } };
+          },
+        },
+      },
+      account: {
+        create: { before: async (compte) => ({ data: { ...compte, ...SANS_JETONS } }) },
+      },
       session: {
         create: {
           // Données minimales (RGPD) : l'IP ne sert qu'à limiter les tentatives, jamais conservée.
