@@ -109,8 +109,30 @@ describe("lireTempete", () => {
     expect(hugo?.points).toEqual(tempete("AL111989", 1989, "HUGO").points);
   });
 
+  it("renvoie exactement la tempête et ses points, avec leurs types (dates, nombres, null)", async () => {
+    const { points } = tempete("AL111989", 1989, "HUGO");
+    expect(await lireTempete(db, "AL111989")).toEqual({ id: "AL111989", nom: "HUGO", annee: 1989, points });
+  });
+
   it("renvoie null pour une tempête inconnue", async () => {
     expect(await lireTempete(db, "AL991999")).toBeNull();
+  });
+
+  it("renvoie une tempête sans point avec une trajectoire vide", async () => {
+    await db.exec("insert into public.hurdat2_tempetes (id, annee, numero, nom) values ('AL012020', 2020, 1, 'ARTHUR')");
+    expect(await lireTempete(db, "AL012020")).toEqual({ id: "AL012020", nom: "ARTHUR", annee: 2020, points: [] });
+  });
+
+  // Entre Vercel (iad1) et Supabase (Paris), chaque aller-retour coûte environ 80 ms.
+  it("ne fait qu'une requête à la base", async () => {
+    const requetes: string[] = [];
+    const compteur = { query: (texte: string, params?: unknown[]) => (requetes.push(texte), db.query(texte, params)) };
+
+    expect(await lireTempete(compteur, "AL111989")).not.toBeNull();
+    expect(requetes).toHaveLength(1);
+    requetes.length = 0;
+    expect(await lireTempete(compteur, "AL991999")).toBeNull();
+    expect(requetes).toHaveLength(1);
   });
 });
 
