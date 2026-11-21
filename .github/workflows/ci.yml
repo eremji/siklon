@@ -103,6 +103,9 @@ jobs:
       DATABASE_URL: postgresql://siklon:ci-seulement@localhost:5432/siklon_e2e
       # Les comptes passent par le rôle du site (siklon_comptes), comme en production.
       E2E_DATABASE_URL_COMPTES: postgresql://siklon_comptes:ci-seulement@localhost:5432/siklon_e2e
+      # Client Google factice, aussi au build : les pages de connexion sont prérendues avec le bouton.
+      GOOGLE_CLIENT_ID: client-e2e.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: secret-client-e2e
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

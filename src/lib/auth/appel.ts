@@ -1,7 +1,7 @@
 // Passerelle entre les server actions et le routeur HTTP de Better Auth. On passe par le routeur
 // (et non par auth.api) parce que c'est lui qui applique la limitation des tentatives.
 import { parseSetCookieHeader, toCookieOptions } from "better-auth/cookies";
-import { LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "./options";
+import { DUREE_REAUTHENTIFICATION_MINUTES, LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "./options";
 
 export const CHEMIN_API_AUTH = "/api/auth";
 
@@ -50,7 +50,10 @@ const MESSAGES: Record<string, string> = {
   TOKEN_EXPIRED: "Ce lien a expiré. Demandez-en un nouveau.",
   USER_NOT_FOUND: "Ce compte n'existe plus.",
   EMAIL_ALREADY_VERIFIED: "Votre adresse est déjà confirmée.",
+  RECENT_SIGN_IN_REQUIRED: `Pour confirmer, reconnectez-vous avec Google, puis supprimez votre compte dans les ${DUREE_REAUTHENTIFICATION_MINUTES} minutes.`,
 };
+
+export { messageErreurGoogle } from "./messagesGoogle";
 
 /** Message d'erreur en français ; jamais le détail technique renvoyé par le serveur. */
 export function messageErreur(statut: number, corps: unknown, entetes: Headers): string {

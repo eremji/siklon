@@ -32,6 +32,9 @@ export default defineConfig({
       // Clé publique VAPID jetable (sa clé privée n'a pas été gardée) : le service push du navigateur
       // est simulé dans les tests, rien n'est envoyé.
       VAPID_PUBLIC_KEY: "BFh258fWvy9FPy97fAgVR2gE7m4aCtYzcwVg2H8P_EvwD0uL61vjnZj7l9bIA7GXPAJ8rcUVANbb9bb4_eVPnuY",
+      // Client Google factice : le bouton s'affiche, et les tests interceptent la page de Google.
+      GOOGLE_CLIENT_ID: "client-e2e.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "secret-client-e2e",
     },
   },
 });

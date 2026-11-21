@@ -11,10 +11,10 @@ import { configurationAuth } from "./configuration";
 import { type Langue, optionsAuth } from "./options";
 
 const creerAuth = () => {
-  const { secret, baseURL } = configurationAuth(process.env);
+  const { secret, baseURL, google } = configurationAuth(process.env);
   const { service: emails } = choisirServiceEmails(process.env);
   // after : l'email part une fois la réponse envoyée, et Vercel attend la fin de l'envoi.
-  return betterAuth(optionsAuth({ database: connexionComptes(), secret, baseURL, emails, tacheDeFond: (tache) => after(tache) }));
+  return betterAuth(optionsAuth({ database: connexionComptes(), secret, baseURL, emails, google, tacheDeFond: (tache) => after(tache) }));
 };
 
 let instance: ReturnType<typeof creerAuth> | undefined;
@@ -25,7 +25,7 @@ function auth() {
   return instance;
 }
 
-export type ResultatAuth = { ok: true } | { ok: false; message: string };
+export type ResultatAuth = { ok: true; corps?: unknown } | { ok: false; message: string };
 
 /**
  * Appelle une route Better Auth au nom du visiteur (cookie et IP), puis recopie les cookies de
@@ -37,7 +37,7 @@ export async function appelerAuth(chemin: string, corps: object): Promise<Result
   const reponse = await auth().handler(requeteAuth(baseURL, chemin, corps, entetes));
   const magasin = await cookies();
   for (const { nom, valeur, options } of cookiesDeLaReponse(reponse.headers)) magasin.set(nom, valeur, options);
-  if (reponse.ok) return { ok: true };
+  if (reponse.ok) return { ok: true, corps: await reponse.json().catch(() => undefined) };
   const contenu: unknown = await reponse.json().catch(() => ({}));
   return { ok: false, message: messageErreur(reponse.status, contenu, reponse.headers) };
 }
@@ -60,6 +60,8 @@ export interface UtilisateurCourant {
   id: string;
   email: string;
   emailVerifie: boolean;
+  /** Faux pour un compte créé avec Google, qui n'a pas de mot de passe. */
+  motDePasse: boolean;
   langue: Langue;
 }
 
@@ -70,5 +72,7 @@ export async function utilisateurCourant(): Promise<UtilisateurCourant | null> {
   const session = await auth().api.getSession({ headers: entetes });
   if (!session) return null;
   const { id, email, emailVerified, langue } = session.user;
-  return { id, email, emailVerifie: emailVerified, langue: langue as Langue };
+  const comptes = await auth().api.listUserAccounts({ headers: entetes });
+  const motDePasse = comptes.some((compte) => compte.providerId === "credential");
+  return { id, email, emailVerifie: emailVerified, motDePasse, langue: langue as Langue };
 }

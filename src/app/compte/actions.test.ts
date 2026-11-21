@@ -31,6 +31,7 @@ const {
   confirmerAdresse,
   desabonnerAppareil,
   connecter,
+  connecterAvecGoogle,
   deconnecter,
   demanderReinitialisation,
   enregistrerIles,
@@ -118,6 +119,12 @@ describe("supprimerCompte", () => {
       "redirection vers /compte/supprime",
     );
     expect(appelerAuth).toHaveBeenCalledWith("/delete-user", { password: "un mot de passe solide" });
+  });
+
+  it("sans champ mot de passe (compte Google seul), demande la suppression sans mot de passe", async () => {
+    appelerAuth.mockResolvedValue({ ok: true });
+    await expect(supprimerCompte({}, formulaire({}))).rejects.toThrow("redirection vers /compte/supprime");
+    expect(appelerAuth).toHaveBeenCalledWith("/delete-user", {});
   });
 
   it("renvoie le message d'erreur sans rien supprimer", async () => {
@@ -316,5 +323,43 @@ describe("desabonnerAppareil", () => {
     utilisateurCourant.mockResolvedValue(UTILISATEUR);
     expect(await desabonnerAppareil(42)).toEqual({ ok: true });
     expect(abonnements.supprimer).not.toHaveBeenCalled();
+  });
+});
+
+describe("connecterAvecGoogle", () => {
+  it("part vers Google avec la langue choisie, puis revient sur la page Compte", async () => {
+    appelerAuth.mockResolvedValue({ ok: true, corps: { url: "https://accounts.google.com/o/oauth2/v2/auth?state=abc" } });
+    await expect(connecterAvecGoogle(formulaire({ langue: "en", origine: "/compte/inscription" }))).rejects.toThrow(
+      "redirection vers https://accounts.google.com/o/oauth2/v2/auth?state=abc",
+    );
+    expect(appelerAuth).toHaveBeenCalledWith("/sign-in/social", {
+      provider: "google",
+      callbackURL: "/compte",
+      errorCallbackURL: "/compte/inscription",
+      additionalData: { langue: "en" },
+    });
+  });
+
+  it("en cas d'échec au retour, revient sur la page de départ ; une page inconnue devient la page de connexion", async () => {
+    appelerAuth.mockResolvedValue({ ok: true, corps: { url: "https://accounts.google.com/x" } });
+    await expect(connecterAvecGoogle(formulaire({ origine: "https://pirate.example" }))).rejects.toThrow();
+    expect(appelerAuth).toHaveBeenCalledWith(
+      "/sign-in/social",
+      expect.objectContaining({ errorCallbackURL: "/compte/connexion", additionalData: { langue: "fr" } }),
+    );
+  });
+
+  it("si Better Auth refuse le départ (trop de tentatives…), revient sur la page avec une erreur", async () => {
+    appelerAuth.mockResolvedValue({ ok: false, message: "Trop de tentatives. Réessayez dans 1 minute." });
+    await expect(connecterAvecGoogle(formulaire({ origine: "/compte/connexion" }))).rejects.toThrow(
+      "redirection vers /compte/connexion?error=depart_impossible",
+    );
+  });
+
+  it("ne suit jamais une adresse de départ qui ne serait pas celle de Google", async () => {
+    appelerAuth.mockResolvedValue({ ok: true, corps: { url: "https://pirate.example/connexion" } });
+    await expect(connecterAvecGoogle(formulaire({ origine: "/compte/connexion" }))).rejects.toThrow(
+      "redirection vers /compte/connexion?error=depart_impossible",
+    );
   });
 });
