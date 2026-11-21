@@ -50,6 +50,12 @@ async function ContenuIle({ params }: Pick<Props, "params">) {
           Alerte en cours
         </Link>
         <Link
+          href={`/iles/${ile.slug}/checklist`}
+          className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
+        >
+          Checklist de préparation
+        </Link>
+        <Link
           href={`/iles/${ile.slug}/historique`}
           className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
         >

@@ -7,7 +7,15 @@ import { connexionGoogleActive } from "@/lib/auth/configuration";
 import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireIlesSuivies } from "@/lib/db/ilesSuivies";
 import { connexionComptes } from "@/lib/db/pool";
-import { connecterAvecGoogle, deconnecter, enregistrerIles, renvoyerConfirmation, supprimerCompte } from "./actions";
+import {
+  abonnerAppareil,
+  connecterAvecGoogle,
+  deconnecter,
+  desabonnerAppareil,
+  enregistrerIles,
+  renvoyerConfirmation,
+  supprimerCompte,
+} from "./actions";
 
 export const metadata: Metadata = {
   title: "Compte · Siklon",
@@ -26,6 +34,10 @@ async function Contenu() {
       supprimer={supprimerCompte}
       enregistrerIles={enregistrerIles}
       renvoyerConfirmation={renvoyerConfirmation}
+      abonnerAppareil={abonnerAppareil}
+      desabonnerAppareil={desabonnerAppareil}
+      // Lue à la requête (pas de NEXT_PUBLIC_) : la clé peut changer sans reconstruire le site.
+      clePubliqueVapid={process.env.VAPID_PUBLIC_KEY || null}
       google={connexionGoogleActive(process.env) ? connecterAvecGoogle : undefined}
     />
   );

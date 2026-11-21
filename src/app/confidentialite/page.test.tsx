@@ -20,6 +20,16 @@ describe("Page de confidentialité", () => {
     expect(section).toHaveTextContent(/aucune mesure d'audience/i);
   });
 
+  it("explique ce que garde un appareil abonné aux alertes, et qui transmet ces alertes", () => {
+    render(<Page />);
+    const section = screen.getByRole("region", { name: "Alertes sur un appareil" });
+    expect(section).toHaveTextContent(/seulement si vous le demandez/i);
+    expect(section).toHaveTextContent(/service de notification de votre navigateur/i);
+    expect(section).toHaveTextContent(/chiffrées/i);
+    expect(section).toHaveTextContent(/se désabonner/i);
+    expect(screen.getByRole("region", { name: "Supprimer vos données" })).toHaveTextContent(/appareils abonnés aux alertes/);
+  });
+
   it("annonce le cookie de session, déposé seulement à la connexion, et celui, temporaire, de Google", () => {
     render(<Page />);
     const section = screen.getByRole("region", { name: "Cookies" });
@@ -105,6 +115,6 @@ describe("Page de confidentialité", () => {
 
   it("indique sa date de mise à jour", () => {
     render(<Page />);
-    expect(screen.getByText(/Mise à jour : 20 novembre 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Mise à jour : 21 novembre 2026/)).toBeInTheDocument();
   });
 });

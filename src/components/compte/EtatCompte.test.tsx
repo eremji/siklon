@@ -2,12 +2,30 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { EtatCompte } from "./EtatCompte";
 
-const actions = { deconnecter: vi.fn(), supprimer: vi.fn(), enregistrerIles: vi.fn(), renvoyerConfirmation: vi.fn() };
+const actions = {
+  deconnecter: vi.fn(),
+  supprimer: vi.fn(),
+  enregistrerIles: vi.fn(),
+  renvoyerConfirmation: vi.fn(),
+  abonnerAppareil: vi.fn(),
+  desabonnerAppareil: vi.fn(),
+  clePubliqueVapid: null,
+};
 
 describe("EtatCompte", () => {
   it("adresse non confirmée : propose de renvoyer le lien de confirmation", () => {
     render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.getByRole("button", { name: "Renvoyer le lien de confirmation" })).toBeInTheDocument();
+  });
+
+  it("adresse non confirmée : ne propose pas encore les alertes sur l'appareil", () => {
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "fr" }} {...actions} />);
+    expect(screen.queryByRole("heading", { name: "Alertes sur cet appareil" })).not.toBeInTheDocument();
+  });
+
+  it("adresse confirmée : propose les alertes sur l'appareil", () => {
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} {...actions} />);
+    expect(screen.getByRole("heading", { name: "Alertes sur cet appareil" })).toBeInTheDocument();
   });
 
   it("adresse confirmée : ne propose plus de lien", () => {

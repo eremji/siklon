@@ -11,6 +11,7 @@ const utilisateurCourant = vi.hoisted(() => vi.fn());
 const confirmerEmail = vi.hoisted(() => vi.fn());
 const ilesSuivies = vi.hoisted(() => ({ enregistrer: vi.fn(), lire: vi.fn() }));
 const pool = vi.hoisted(() => ({ nom: "pool des comptes" }));
+const abonnements = vi.hoisted(() => ({ enregistrer: vi.fn(), supprimer: vi.fn() }));
 vi.mock("@/lib/auth/serveur", () => ({ appelerAuth, confirmerEmail, utilisateurCourant }));
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/lib/db/pool", () => ({ connexionComptes: () => pool }));
@@ -20,8 +21,15 @@ vi.mock("@/lib/db/ilesSuivies", async (original) => ({
   lireIlesSuivies: ilesSuivies.lire,
 }));
 
+vi.mock("@/lib/db/abonnementsPush", () => ({
+  enregistrerAbonnement: abonnements.enregistrer,
+  supprimerAbonnement: abonnements.supprimer,
+}));
+
 const {
+  abonnerAppareil,
   confirmerAdresse,
+  desabonnerAppareil,
   connecter,
   connecterAvecGoogle,
   deconnecter,
@@ -46,6 +54,8 @@ beforeEach(() => {
   confirmerEmail.mockReset();
   ilesSuivies.enregistrer.mockReset();
   ilesSuivies.lire.mockReset();
+  abonnements.enregistrer.mockReset();
+  abonnements.supprimer.mockReset();
   redirect.mockClear();
 });
 
@@ -244,6 +254,75 @@ describe("reinitialiserMotDePasse", () => {
     expect(await reinitialiserMotDePasse({}, formulaire({ jeton: "jeton-1", motDePasse: "x".repeat(12) }))).toEqual({
       message: "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.",
     });
+  });
+});
+
+const UTILISATEUR = { id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "fr" };
+// Forme de PushSubscription.toJSON() : clé P-256 de 65 octets et secret de 16 octets.
+const ABONNEMENT = {
+  endpoint: "https://fcm.googleapis.com/fcm/send/appareil",
+  expirationTime: null,
+  keys: { p256dh: Buffer.alloc(65, 4).toString("base64url"), auth: Buffer.alloc(16, 1).toString("base64url") },
+};
+
+describe("abonnerAppareil", () => {
+  it("enregistre l'appareil pour l'utilisateur connecté", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    expect(await abonnerAppareil(ABONNEMENT)).toEqual({ ok: true });
+    expect(abonnements.enregistrer).toHaveBeenCalledWith(pool, "id-1", {
+      endpoint: ABONNEMENT.endpoint,
+      cles: ABONNEMENT.keys,
+    });
+  });
+
+  it("sans session, n'enregistre rien et invite à se reconnecter", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await abonnerAppareil(ABONNEMENT)).toEqual({
+      ok: false,
+      message: "Votre session a expiré. Reconnectez-vous pour recevoir les alertes.",
+    });
+    expect(abonnements.enregistrer).not.toHaveBeenCalled();
+  });
+
+  it("refuse une adresse non confirmée : les alertes ne partent que vers une adresse confirmée", async () => {
+    utilisateurCourant.mockResolvedValue({ ...UTILISATEUR, emailVerifie: false });
+    expect(await abonnerAppareil(ABONNEMENT)).toEqual({
+      ok: false,
+      message: "Confirmez d'abord votre adresse email pour recevoir les alertes.",
+    });
+    expect(abonnements.enregistrer).not.toHaveBeenCalled();
+  });
+
+  it("refuse un abonnement qui ne vient pas d'un service push de navigateur", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    expect(await abonnerAppareil({ ...ABONNEMENT, endpoint: "https://exemple.org/push" })).toEqual({
+      ok: false,
+      message: "Cet appareil n'a pas pu être abonné. Réessayez plus tard.",
+    });
+    expect(abonnements.enregistrer).not.toHaveBeenCalled();
+  });
+});
+
+describe("desabonnerAppareil", () => {
+  it("retire l'appareil de l'utilisateur connecté", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    expect(await desabonnerAppareil(ABONNEMENT.endpoint)).toEqual({ ok: true });
+    expect(abonnements.supprimer).toHaveBeenCalledWith(pool, "id-1", ABONNEMENT.endpoint);
+  });
+
+  it("sans session, ne retire rien", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await desabonnerAppareil(ABONNEMENT.endpoint)).toEqual({
+      ok: false,
+      message: "Votre session a expiré. Reconnectez-vous pour gérer vos alertes.",
+    });
+    expect(abonnements.supprimer).not.toHaveBeenCalled();
+  });
+
+  it("ignore une valeur qui n'est pas un texte", async () => {
+    utilisateurCourant.mockResolvedValue(UTILISATEUR);
+    expect(await desabonnerAppareil(42)).toEqual({ ok: true });
+    expect(abonnements.supprimer).not.toHaveBeenCalled();
   });
 });
 

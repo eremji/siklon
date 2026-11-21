@@ -54,6 +54,19 @@ export default function Page() {
         </p>
       </Section>
 
+      <Section id="alertes-appareil" titre="Alertes sur un appareil">
+        <p>
+          Seulement si vous le demandez depuis la page Compte, Siklon garde l&apos;adresse d&apos;abonnement que le
+          service de notification de votre navigateur (Google pour Chrome, Mozilla pour Firefox, Apple pour Safari,
+          Microsoft pour Edge) attribue à cet appareil, et les clés qui servent à chiffrer les alertes. Ce service
+          transmet les alertes à votre appareil : elles sont chiffrées, il ne peut pas les lire.
+        </p>
+        <p>
+          L&apos;abonnement est effacé quand vous choisissez « Se désabonner », quand le service de notification
+          signale qu&apos;il n&apos;est plus valable, ou avec votre compte.
+        </p>
+      </Section>
+
       <Section id="connexion-google" titre="Connexion avec Google">
         <p>
           Vous pouvez aussi vous connecter avec votre compte Google. Google transmet alors à Siklon votre adresse email,
@@ -103,10 +116,10 @@ export default function Page() {
             page Compte
           </Link>
           , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
-          (adresse email, langue, îles suivies, empreinte du mot de passe, sessions), y compris chez Brevo, qui efface le
-          journal des emails envoyés à votre adresse. Votre mot de passe vous est demandé pour confirmer ; si votre
-          compte n&apos;en a pas, il suffit de vous reconnecter avec Google dans les {DUREE_REAUTHENTIFICATION_MINUTES}{" "}
-          minutes qui précèdent.
+          (adresse email, langue, îles suivies, appareils abonnés aux alertes, empreinte du mot de passe, sessions), y
+          compris chez Brevo, qui efface le journal des emails envoyés à votre adresse. Votre mot de passe vous est
+          demandé pour confirmer ; si votre compte n&apos;en a pas, il suffit de vous reconnecter avec Google dans les{" "}
+          {DUREE_REAUTHENTIFICATION_MINUTES} minutes qui précèdent.
         </p>
       </Section>
 
@@ -143,7 +156,7 @@ export default function Page() {
       </Section>
 
       <div className="flex flex-col gap-1 text-sm text-muted">
-        <p>Mise à jour : 20 novembre 2026.</p>
+        <p>Mise à jour : 21 novembre 2026.</p>
         <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
       </div>
     </main>

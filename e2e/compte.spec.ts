@@ -324,3 +324,98 @@ test("la page Compte, connecté, respecte WCAG AA", async ({ page }, testInfo) =
   const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(violations).toEqual([]);
 });
+
+// Alertes sur l'appareil (US-07). Chromium sans service push en test : PushManager est simulé, mais le
+// service worker public/sw.js est réellement enregistré, et l'abonnement passe par la vraie server action.
+// Chromium headless répond toujours « denied » à Notification.permission : la demande de permission est
+// simulée aussi, comme si l'utilisateur répondait « Autoriser ».
+async function simulerServicePush(page: Page) {
+  await page.addInitScript(() => {
+    let permission: NotificationPermission = "default";
+    Object.defineProperty(Notification, "permission", { get: () => permission });
+    Notification.requestPermission = async () => (permission = "granted");
+    const json = {
+      endpoint: "https://fcm.googleapis.com/fcm/send/e2e-appareil",
+      expirationTime: null,
+      keys: {
+        p256dh: "BKmIwmr-0tc5C7HbLJLg0wx1Tdcsgks-x8Sl5lVLxIjv3fD_nLWj8x56ijH9lDAE_8SCdK-OBQfWupvp1Q6AAX0",
+        auth: "u7E1AkwHcPfe0opFBPQVxg",
+      },
+    };
+    // L'abonnement survit au rechargement de la page, comme dans un vrai navigateur.
+    const abonnement = {
+      endpoint: json.endpoint,
+      toJSON: () => json,
+      unsubscribe: async () => {
+        sessionStorage.removeItem("abonnement-e2e");
+        return true;
+      },
+    };
+    PushManager.prototype.getSubscription = async () =>
+      (sessionStorage.getItem("abonnement-e2e") ? abonnement : null) as unknown as PushSubscription;
+    PushManager.prototype.subscribe = async () => {
+      sessionStorage.setItem("abonnement-e2e", "1");
+      return abonnement as unknown as PushSubscription;
+    };
+  });
+}
+
+async function compteConfirme(page: Page, email: string) {
+  await inscrire(page, email);
+  await suivreLien(page, email, "Confirmez votre adresse email");
+  await page.getByRole("button", { name: "Confirmer mon adresse" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Votre adresse est confirmée." })).toBeVisible();
+  await page.goto("/compte");
+}
+
+const sectionAppareil = (page: Page) =>
+  page.getByRole("region", { name: "Alertes sur cet appareil" }).filter({ visible: true });
+
+test("recevoir les alertes sur cet appareil, puis se désabonner", async ({ page }, testInfo) => {
+  await simulerServicePush(page);
+  await compteConfirme(page, nouvelEmail(testInfo));
+  const section = sectionAppareil(page);
+
+  await section.getByRole("button", { name: "Recevoir les alertes sur cet appareil" }).click();
+  await expect(section.getByText("Cet appareil reçoit les alertes.")).toBeVisible();
+  await expect(section.getByRole("alert")).toHaveCount(0);
+  expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistration("/"))?.active?.scriptURL)).toMatch(
+    /\/sw\.js$/,
+  );
+
+  await page.reload();
+  await section.getByRole("button", { name: "Se désabonner" }).click();
+  await expect(section.getByRole("status")).toHaveText("Cet appareil ne recevra plus les alertes.");
+  await expect(section.getByRole("button", { name: "Recevoir les alertes sur cet appareil" })).toBeVisible();
+});
+
+test("notifications bloquées : la page explique comment les autoriser", async ({ page }, testInfo) => {
+  await page.addInitScript(() => Object.defineProperty(Notification, "permission", { get: () => "denied" }));
+  await compteConfirme(page, nouvelEmail(testInfo));
+
+  await expect(sectionAppareil(page).getByText(/bloquées dans ce navigateur/)).toBeVisible();
+  await expect(sectionAppareil(page).getByRole("button")).toHaveCount(0);
+});
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`les alertes sur l'appareil respectent WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
+    page,
+  }, testInfo) => {
+    await page.emulateMedia({ colorScheme });
+    await simulerServicePush(page);
+    await compteConfirme(page, nouvelEmail(testInfo));
+    const section = sectionAppareil(page);
+    const bouton = section.getByRole("button", { name: "Recevoir les alertes sur cet appareil" });
+    // Zone tactile d'au moins 44 px (DESIGN.md).
+    expect((await bouton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+
+    for (const etat of ["non abonné", "abonné"]) {
+      if (etat === "abonné") {
+        await bouton.click();
+        await expect(section.getByRole("button", { name: "Se désabonner" })).toBeVisible();
+      }
+      const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+      expect(violations, etat).toEqual([]);
+    }
+  });
+}
