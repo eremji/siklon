@@ -2,9 +2,15 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ILES } from "@/lib/iles";
+
+const parametres = vi.hoisted(() => ({ valeur: new URLSearchParams() }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => parametres.valeur }));
+
 import {
+  AlerteGoogle,
   FormulaireConfirmationAdresse,
   FormulaireConnexion,
+  FormulaireGoogle,
   FormulaireIles,
   FormulaireInscription,
   FormulaireMotDePasseOublie,
@@ -108,6 +114,67 @@ describe("FormulaireSuppression", () => {
     await userEvent.type(screen.getByLabelText("Mot de passe actuel"), "faux mot de passe");
     await userEvent.click(screen.getByRole("button", { name: "Supprimer définitivement mon compte" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Mot de passe incorrect.");
+  });
+});
+
+describe("FormulaireSuppression d'un compte Google sans mot de passe", () => {
+  it("ne demande pas de mot de passe, mais une connexion récente avec Google", async () => {
+    const action = vi.fn(async () => ({}));
+    render(<FormulaireSuppression action={action} motDePasse={false} google={vi.fn()} />);
+    expect(screen.queryByLabelText("Mot de passe actuel")).not.toBeInTheDocument();
+    expect(screen.getByText(/reconnectez-vous avec Google/)).toHaveTextContent(/10 minutes/);
+    expect(screen.getByRole("button", { name: "Me reconnecter avec Google" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Supprimer définitivement mon compte" }));
+    expect(action).toHaveBeenCalled();
+  });
+});
+
+describe("AlerteGoogle", () => {
+  it("affiche le message de l'erreur reçue au retour de Google", () => {
+    parametres.valeur = new URLSearchParams("error=account_not_linked");
+    render(<AlerteGoogle />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/n'est pas confirmée/);
+  });
+
+  it("n'affiche rien sans erreur", () => {
+    parametres.valeur = new URLSearchParams();
+    render(<AlerteGoogle />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("FormulaireGoogle", () => {
+  it("envoie la page de départ, pour y revenir en cas d'échec", async () => {
+    const action = vi.fn<(donnees: FormData) => Promise<void>>(async () => {});
+    render(<FormulaireGoogle action={action} origine="/compte/connexion" />);
+    await userEvent.click(screen.getByRole("button", { name: "Continuer avec Google" }));
+    await vi.waitFor(() => expect(action).toHaveBeenCalled());
+    expect(action.mock.calls[0][0].get("origine")).toBe("/compte/connexion");
+  });
+});
+
+describe("FormulaireInscription avec Google", () => {
+  it("part chez Google avec la langue cochée, sans exiger l'email ni le mot de passe", async () => {
+    const google = vi.fn<(donnees: FormData) => Promise<void>>(async () => {});
+    const action = actionQuiRepond({});
+    render(<FormulaireInscription action={action} google={google} />);
+    await userEvent.click(screen.getByRole("radio", { name: "English" }));
+    const bouton = screen.getByRole("button", { name: "S'inscrire avec Google" });
+    // jsdom ignore formnovalidate (vérifié en e2e dans un vrai navigateur) : on remplit les champs ici.
+    expect(bouton).toHaveAttribute("formnovalidate");
+    await userEvent.type(screen.getByLabelText("Adresse email"), "a@b.fr");
+    await userEvent.type(screen.getByLabelText("Mot de passe"), "un mot de passe solide");
+    await userEvent.click(bouton);
+    await vi.waitFor(() => expect(google).toHaveBeenCalled());
+    expect(action).not.toHaveBeenCalled();
+    const donnees = google.mock.calls[0][0];
+    expect(donnees.get("langue")).toBe("en");
+    expect(donnees.get("origine")).toBe("/compte/inscription");
+  });
+
+  it("sans Google configuré, ne montre pas le bouton", () => {
+    render(<FormulaireInscription action={actionQuiRepond({})} />);
+    expect(screen.queryByRole("button", { name: /Google/ })).not.toBeInTheDocument();
   });
 });
 

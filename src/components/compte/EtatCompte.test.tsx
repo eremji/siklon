@@ -14,22 +14,22 @@ const actions = {
 
 describe("EtatCompte", () => {
   it("adresse non confirmée : propose de renvoyer le lien de confirmation", () => {
-    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, langue: "fr" }} {...actions} />);
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.getByRole("button", { name: "Renvoyer le lien de confirmation" })).toBeInTheDocument();
   });
 
   it("adresse non confirmée : ne propose pas encore les alertes sur l'appareil", () => {
-    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, langue: "fr" }} {...actions} />);
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.queryByRole("heading", { name: "Alertes sur cet appareil" })).not.toBeInTheDocument();
   });
 
   it("adresse confirmée : propose les alertes sur l'appareil", () => {
-    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "fr" }} {...actions} />);
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.getByRole("heading", { name: "Alertes sur cet appareil" })).toBeInTheDocument();
   });
 
   it("adresse confirmée : ne propose plus de lien", () => {
-    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "fr" }} {...actions} />);
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.getByText("Confirmée")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Renvoyer le lien de confirmation" })).not.toBeInTheDocument();
   });
@@ -47,7 +47,7 @@ describe("EtatCompte", () => {
   it("connecté, affiche l'email, la langue, l'adresse non confirmée et la déconnexion", () => {
     render(
       <EtatCompte
-        utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, langue: "en" }}
+        utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "en" }}
         ilesSuivies={["haiti"]}
         {...actions}
       />,
@@ -62,8 +62,20 @@ describe("EtatCompte", () => {
   });
 
   it("affiche une adresse confirmée et la langue française", () => {
-    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "fr" }} ilesSuivies={[]} {...actions} />);
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} ilesSuivies={[]} {...actions} />);
     expect(screen.getByText("Français")).toBeInTheDocument();
     expect(screen.getByText("Confirmée")).toBeInTheDocument();
+  });
+
+  it("compte Google sans mot de passe : la suppression propose de se reconnecter avec Google", () => {
+    render(
+      <EtatCompte
+        utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: false, langue: "fr" }}
+        google={vi.fn()}
+        {...actions}
+      />,
+    );
+    expect(screen.queryByLabelText("Mot de passe actuel")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Me reconnecter avec Google" })).toBeInTheDocument();
   });
 });

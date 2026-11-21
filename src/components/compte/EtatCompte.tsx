@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { AbonnementAppareil, type ResultatAbonnement } from "@/components/compte/AbonnementAppareil";
 import {
+  type ActionGoogle,
   type EtatFormulaire,
   type EtatIles,
   FormulaireIles,
@@ -30,6 +31,7 @@ export function EtatCompte({
   abonnerAppareil,
   desabonnerAppareil,
   clePubliqueVapid,
+  google,
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
@@ -41,6 +43,8 @@ export function EtatCompte({
   desabonnerAppareil: (endpoint: unknown) => Promise<ResultatAbonnement>;
   /** Clé publique VAPID du web push ; `null` s'il n'est pas configuré. */
   clePubliqueVapid: string | null;
+  /** Départ vers Google, si la connexion avec Google est configurée. */
+  google?: ActionGoogle;
 }) {
   if (!utilisateur) {
     return (
@@ -99,7 +103,7 @@ export function EtatCompte({
           Se déconnecter
         </button>
       </form>
-      <FormulaireSuppression action={supprimer} />
+      <FormulaireSuppression action={supprimer} motDePasse={utilisateur.motDePasse} google={google} />
     </div>
   );
 }
