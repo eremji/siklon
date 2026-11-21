@@ -77,6 +77,12 @@ async function AlerteIle({ params }: Pick<Props, "params">) {
           <VigilanceIle ile={ile} fichier={ile.alerte.fichier} />
         </Suspense>
       )}
+      <Link
+        href={`/iles/${ile.slug}/checklist`}
+        className="flex min-h-11 items-center text-base font-bold text-accent underline underline-offset-4"
+      >
+        Checklist de préparation
+      </Link>
     </>
   );
 }
