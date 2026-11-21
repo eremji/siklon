@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { type BrowserContext, expect, type Page, test } from "@playwright/test";
+import { randomInt } from "node:crypto";
 
 // Choisit la fixture de vigilance lue par le serveur (voir src/lib/vigilance/fixtures.ts).
 async function fixtureVigilance(context: BrowserContext, baseURL: string | undefined, nom: string) {
@@ -68,6 +69,74 @@ test("la page d'une île et sa page d'alerte mènent à la checklist", async ({ 
   await page.getByRole("link", { name: "Checklist de préparation" }).filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/iles\/guadeloupe\/checklist$/);
   await expect(titre(page, 3, "Avant la saison cyclonique (juin à novembre)")).toBeVisible();
+});
+
+// Inscription sans confirmer l'adresse : la session est ouverte, cela suffit pour cocher. Chaque test
+// a sa propre adresse IP, pour ne pas cumuler la limitation des tentatives (voir compte.spec.ts).
+async function connecterNouveauCompte(page: Page, projet: string) {
+  const ip = `10.${randomInt(256)}.${randomInt(256)}.${randomInt(1, 255)}`;
+  await page.setExtraHTTPHeaders({ "x-forwarded-for": ip });
+  await page.goto("/compte/inscription");
+  await page.getByLabel("Adresse email", { exact: true }).filter({ visible: true }).fill(`e2e-checklist-${projet}-${Date.now()}-${randomInt(1e6)}@exemple.org`);
+  await page.getByLabel("Mot de passe", { exact: true }).filter({ visible: true }).fill("un mot de passe solide");
+  await page.getByRole("radio", { name: "Français" }).check();
+  await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await expect(page).toHaveURL("/compte");
+}
+
+const caseVisible = (page: Page, nom: string) => page.getByRole("checkbox", { name: nom }).filter({ visible: true });
+
+test("un visiteur voit la checklist sans case à cocher, avec une invitation à se connecter", async ({ page, context, baseURL }) => {
+  await fixtureVigilance(context, baseURL, "orange");
+  await page.goto("/iles/guadeloupe/checklist");
+
+  await expect(titre(page, 3, "Vigilance orange : préparez-vous")).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await page.getByRole("link", { name: "Connectez-vous pour cocher les éléments et garder votre progression" }).click();
+  await expect(page).toHaveURL("/compte/connexion");
+});
+
+test("un utilisateur connecté coche des éléments et les retrouve cochés, sur une autre île aussi", async (
+  { page, context, baseURL },
+  testInfo,
+) => {
+  await fixtureVigilance(context, baseURL, "orange");
+  await connecterNouveauCompte(page, testInfo.project.name);
+  await page.goto("/iles/guadeloupe/checklist");
+
+  await expect(visible(page, /^Connectez-vous pour cocher/)).toHaveCount(0);
+  const carburant = caseVisible(page, "Faire le plein de carburant.");
+  await expect(carburant).not.toBeChecked();
+  await Promise.all([page.waitForResponse((reponse) => reponse.request().method() === "POST"), carburant.check()]);
+  await Promise.all([
+    page.waitForResponse((reponse) => reponse.request().method() === "POST"),
+    caseVisible(page, "Retirer de l'argent liquide.").check(),
+  ]);
+  await Promise.all([
+    page.waitForResponse((reponse) => reponse.request().method() === "POST"),
+    caseVisible(page, "Retirer de l'argent liquide.").uncheck(),
+  ]);
+
+  await page.reload();
+  await expect(caseVisible(page, "Faire le plein de carburant.")).toBeChecked();
+  await expect(caseVisible(page, "Retirer de l'argent liquide.")).not.toBeChecked();
+
+  // L'état vaut pour le foyer : la même case est cochée sur la checklist d'une autre île.
+  await page.goto("/iles/martinique/checklist");
+  await expect(caseVisible(page, "Faire le plein de carburant.")).toBeChecked();
+});
+
+test("la checklist d'un utilisateur connecté respecte WCAG AA", async ({ page, context, baseURL }, testInfo) => {
+  await fixtureVigilance(context, baseURL, "orange");
+  await connecterNouveauCompte(page, testInfo.project.name);
+  await page.goto("/iles/saint-martin/checklist");
+  await caseVisible(page, "Faire le plein de carburant.").check();
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  }
 });
 
 for (const colorScheme of ["light", "dark"] as const) {

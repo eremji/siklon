@@ -4,10 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { Checklist } from "@/components/checklist/Checklist";
+import { Checklist, type CompteChecklist } from "@/components/checklist/Checklist";
 import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { AlertesNhc } from "@/components/vigilance/AlertesNhc";
 import { BandeauVigilance, EnTeteIle } from "@/components/vigilance/BandeauVigilance";
+import { utilisateurCourant } from "@/lib/auth/serveur";
+import { lireElementsCoches } from "@/lib/db/checklist";
+import { connexionComptes } from "@/lib/db/pool";
 import { type Emprise, type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
 import { alertesNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDemandee } from "@/lib/nhc/source";
@@ -15,6 +18,7 @@ import { niveauNhc, niveauVigilance } from "@/lib/notifications/evenements";
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
 import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
 import { chargerVigilance } from "@/lib/vigilance/vigilance";
+import { cocherElementChecklist } from "./actions";
 
 type Props = PageProps<"/iles/[ile]/checklist">;
 
@@ -27,15 +31,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: ile ? `Checklist de préparation : ${ile.nom} · Siklon` : "Île introuvable · Siklon" };
 }
 
+// État de la checklist de l'utilisateur connecté, null pour un visiteur. Si la base des comptes ne
+// répond pas, la checklist de base reste affichée : elle compte plus que l'enregistrement.
+async function compteChecklist(): Promise<CompteChecklist> {
+  try {
+    const utilisateur = await utilisateurCourant();
+    if (!utilisateur) return null;
+    return { coches: await lireElementsCoches(connexionComptes(), utilisateur.id), cocher: cocherElementChecklist };
+  } catch (erreur) {
+    console.warn("[checklist] état du compte indisponible", { raison: erreur instanceof Error ? erreur.message : String(erreur) });
+    return null;
+  }
+}
+
 // Une seule lecture de la vigilance par requête : elle alimente l'en-tête et le choix de la liste.
 async function ChecklistMeteoFrance({ ile, fichier }: { ile: Ile; fichier: FichierVigilance }) {
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
-  const etat = fixture ? etatFixture(fixture) : await chargerVigilance(fichier, SOURCES_METEO_FRANCE);
+  const [etat, compte] = await Promise.all([
+    fixture ? etatFixture(fixture) : chargerVigilance(fichier, SOURCES_METEO_FRANCE),
+    compteChecklist(),
+  ]);
   return (
     <>
       <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />
-      <Checklist nomIle={ile.nom} source="meteo-france" niveau={niveauVigilance(etat)?.niveau ?? null} />
+      <Checklist nomIle={ile.nom} source="meteo-france" niveau={niveauVigilance(etat)?.niveau ?? null} compte={compte} />
     </>
   );
 }
@@ -43,11 +63,11 @@ async function ChecklistMeteoFrance({ ile, fichier }: { ile: Ile; fichier: Fichi
 async function ChecklistNhc({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
   await connection();
   const fixture = fixtureNhcDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE_NHC)?.value);
-  const etat = await alertesNhc(fixture, emprise);
+  const [etat, compte] = await Promise.all([alertesNhc(fixture, emprise), compteChecklist()]);
   return (
     <>
       <AlertesNhc nomIle={ile.nom} etat={etat} />
-      <Checklist nomIle={ile.nom} source="nhc" niveau={niveauNhc(etat)?.niveau ?? null} />
+      <Checklist nomIle={ile.nom} source="nhc" niveau={niveauNhc(etat)?.niveau ?? null} compte={compte} />
     </>
   );
 }
