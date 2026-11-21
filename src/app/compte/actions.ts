@@ -3,11 +3,14 @@
 // Next.js vérifie l'origine de chaque server action ; Better Auth applique la limitation des
 // tentatives et ne reçoit jamais que l'email, le mot de passe et la langue.
 import { redirect } from "next/navigation";
+import type { ResultatAbonnement } from "@/components/compte/AbonnementAppareil";
 import type { EtatFormulaire, EtatIles } from "@/components/compte/Formulaires";
 import { appelerAuth, confirmerEmail, utilisateurCourant } from "@/lib/auth/serveur";
+import { enregistrerAbonnement, supprimerAbonnement } from "@/lib/db/abonnementsPush";
 import { enregistrerIlesSuivies, IleInconnueError, lireIlesSuivies } from "@/lib/db/ilesSuivies";
 import { connexionComptes } from "@/lib/db/pool";
 import { LANGUES, type Langue } from "@/lib/auth/options";
+import { lireAbonnement } from "@/lib/notifications/abonnement";
 
 const champ = (donnees: FormData, nom: string) => {
   const valeur = donnees.get(nom);
@@ -104,4 +107,28 @@ export async function reinitialiserMotDePasse(_etat: EtatFormulaire, donnees: Fo
   });
   if (!resultat.ok) return { message: resultat.message };
   return { confirmation: "Votre mot de passe est changé. Connectez-vous avec le nouveau." };
+}
+
+/**
+ * Abonne l'appareil aux alertes (US-07) : reçoit l'abonnement web push du navigateur
+ * (PushSubscription.toJSON()), vérifié avant l'enregistrement.
+ */
+export async function abonnerAppareil(abonnement: unknown): Promise<ResultatAbonnement> {
+  const utilisateur = await utilisateurCourant();
+  if (!utilisateur) return { ok: false, message: "Votre session a expiré. Reconnectez-vous pour recevoir les alertes." };
+  if (!utilisateur.emailVerifie) {
+    return { ok: false, message: "Confirmez d'abord votre adresse email pour recevoir les alertes." };
+  }
+  const valide = lireAbonnement(abonnement);
+  if (!valide) return { ok: false, message: "Cet appareil n'a pas pu être abonné. Réessayez plus tard." };
+  await enregistrerAbonnement(connexionComptes(), utilisateur.id, valide);
+  return { ok: true };
+}
+
+/** Désabonne l'appareil : seulement s'il appartient à l'utilisateur connecté. */
+export async function desabonnerAppareil(endpoint: unknown): Promise<ResultatAbonnement> {
+  const utilisateur = await utilisateurCourant();
+  if (!utilisateur) return { ok: false, message: "Votre session a expiré. Reconnectez-vous pour gérer vos alertes." };
+  if (typeof endpoint === "string") await supprimerAbonnement(connexionComptes(), utilisateur.id, endpoint);
+  return { ok: true };
 }

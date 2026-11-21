@@ -141,8 +141,8 @@ export function FormulaireSuppression({ action }: { action: Action }) {
         Supprimer mon compte
       </h2>
       <p className="text-base">
-        Le compte et toutes ses données (adresse email, langue, îles suivies, mot de passe, sessions) sont
-        effacés immédiatement. La suppression est définitive.
+        Le compte et toutes ses données (adresse email, langue, îles suivies, appareils abonnés aux alertes, mot de
+        passe, sessions) sont effacés immédiatement. La suppression est définitive.
       </p>
       <form action={envoyer} className="flex flex-col gap-3">
         <Erreur message={etat.message} />
