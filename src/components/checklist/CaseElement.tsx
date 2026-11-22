@@ -2,7 +2,7 @@
 // Case à cocher d'un élément de la checklist (US-08) : la case change tout de suite, puis l'état
 // est enregistré ; en cas d'échec, elle revient en arrière et le message est annoncé.
 import { useState, useTransition } from "react";
-import type { ResultatCoche } from "@/app/iles/[ile]/checklist/actions";
+import type { ResultatCoche } from "@/app/[langue]/iles/[ile]/checklist/actions";
 
 const ECHEC_RESEAU = "Enregistrement impossible. Vérifiez votre connexion et réessayez.";
 

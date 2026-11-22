@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BarreNavigation } from "./BarreNavigation";
 
-const chemin = vi.hoisted(() => ({ actuel: "/" }));
+const chemin = vi.hoisted(() => ({ actuel: "/fr" }));
 vi.mock("next/navigation", () => ({ usePathname: () => chemin.actuel }));
 
 function liens() {
@@ -15,19 +15,19 @@ function liens() {
 }
 
 describe("BarreNavigation", () => {
-  it("mène à la carte de l'accueil, à la liste des îles et au compte", () => {
-    chemin.actuel = "/";
-    render(<BarreNavigation />);
+  it("mène à la carte de l'accueil, à la liste des îles et au compte, dans la langue de la page", () => {
+    chemin.actuel = "/en";
+    render(<BarreNavigation langue="en" />);
 
     const { carte, monIle, compte } = liens();
-    expect(carte).toHaveAttribute("href", "/");
-    expect(monIle).toHaveAttribute("href", "/iles");
-    expect(compte).toHaveAttribute("href", "/compte");
+    expect(carte).toHaveAttribute("href", "/en");
+    expect(monIle).toHaveAttribute("href", "/en/iles");
+    expect(compte).toHaveAttribute("href", "/en/compte");
   });
 
-  it.each(["/compte", "/compte/connexion", "/compte/inscription"])("marque Compte comme page en cours sur %s", (actuel) => {
+  it.each(["/fr/compte", "/fr/compte/connexion", "/en/compte/inscription"])("marque Compte comme page en cours sur %s", (actuel) => {
     chemin.actuel = actuel;
-    render(<BarreNavigation />);
+    render(<BarreNavigation langue="fr" />);
 
     const { carte, monIle, compte } = liens();
     expect(compte).toHaveAttribute("aria-current", "page");
@@ -35,20 +35,20 @@ describe("BarreNavigation", () => {
     expect(monIle).not.toHaveAttribute("aria-current");
   });
 
-  it.each(["/", "/systemes/al112026"])("marque Carte comme page en cours sur %s", (actuel) => {
+  it.each(["/fr", "/en", "/fr/systemes/al112026"])("marque Carte comme page en cours sur %s", (actuel) => {
     chemin.actuel = actuel;
-    render(<BarreNavigation />);
+    render(<BarreNavigation langue="fr" />);
 
     const { carte, monIle } = liens();
     expect(carte).toHaveAttribute("aria-current", "page");
     expect(monIle).not.toHaveAttribute("aria-current");
   });
 
-  it.each(["/iles", "/iles/guadeloupe", "/iles/guadeloupe/alerte", "/historique", "/historique/AL091979"])(
+  it.each(["/fr/iles", "/en/iles/guadeloupe", "/fr/iles/guadeloupe/alerte", "/fr/historique", "/en/historique/AL091979"])(
     "marque Mon île comme page en cours sur %s",
     (actuel) => {
       chemin.actuel = actuel;
-      render(<BarreNavigation />);
+      render(<BarreNavigation langue="fr" />);
 
       const { carte, monIle } = liens();
       expect(monIle).toHaveAttribute("aria-current", "page");

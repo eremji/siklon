@@ -32,7 +32,7 @@ describe("FicheSystemeActif", () => {
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Système introuvable");
     expect(screen.getByText(/n'est plus suivi par le NHC/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Voir les systèmes actifs" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Voir les systèmes actifs" })).toHaveAttribute("href", "/fr");
     expect(screen.getByText(/Source : NHC, flux lu le 10 septembre à 12 h 00/)).toBeInTheDocument();
   });
 

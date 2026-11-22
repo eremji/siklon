@@ -5,12 +5,12 @@ import { APIError, createAuthMiddleware, getOAuthState, getSessionFromCtx } from
 import type { PostgresPool } from "kysely";
 import { emailConfirmation, emailReinitialisation, VALIDITE_LIEN } from "../emails/messages";
 import type { ServiceEmails } from "../emails/types";
+import { chemin, LANGUES, type Langue } from "../langues";
 
 export const LONGUEUR_MIN_MOT_DE_PASSE = 12;
 // Au-delà, le hachage scrypt coûterait cher pour rien (et ouvrirait un déni de service).
 export const LONGUEUR_MAX_MOT_DE_PASSE = 128;
-export const LANGUES = ["fr", "en"] as const;
-export type Langue = (typeof LANGUES)[number];
+export { LANGUES, type Langue };
 
 export const DUREE_SESSION_JOURS = 7;
 
@@ -28,7 +28,7 @@ export const LIMITES_TENTATIVES = {
   emails: { window: 600, max: 3 },
 } as const;
 
-/** Pages du site où mènent les liens envoyés par email. */
+/** Pages du site où mènent les liens envoyés par email, dans la langue du compte. */
 export const PAGES_LIENS = {
   confirmation: "/compte/confirmer",
   reinitialisation: "/compte/nouveau-mot-de-passe",
@@ -72,7 +72,8 @@ async function effacerJetons(database: PostgresPool, utilisateur: { id: string }
 export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond, google }: ParametresAuth) {
   // Le lien mène à une page du site (et non à l'API) : la personne y confirme d'un clic. Un antivirus
   // de messagerie qui ouvre les liens ne consomme donc pas le jeton.
-  const lien = (page: string, jeton: string) => `${baseURL}${page}?jeton=${encodeURIComponent(jeton)}`;
+  const lien = (langue: Langue, page: string, jeton: string) =>
+    `${baseURL}${chemin(langue, page)}?jeton=${encodeURIComponent(jeton)}`;
   return {
     appName: "Siklon",
     database,
@@ -94,7 +95,7 @@ export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond, go
       resetPasswordTokenExpiresIn: VALIDITE_LIEN.reinitialisation,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, token }) =>
-        emails.envoyer({ a: user.email, ...emailReinitialisation(langueDe(user), lien(PAGES_LIENS.reinitialisation, token)) }),
+        emails.envoyer({ a: user.email, ...emailReinitialisation(langueDe(user), lien(langueDe(user), PAGES_LIENS.reinitialisation, token)) }),
     },
     socialProviders: google
       ? {
@@ -109,7 +110,7 @@ export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond, go
       sendOnSignUp: true,
       expiresIn: VALIDITE_LIEN.confirmation,
       sendVerificationEmail: async ({ user, token }) =>
-        emails.envoyer({ a: user.email, ...emailConfirmation(langueDe(user), lien(PAGES_LIENS.confirmation, token)) }),
+        emails.envoyer({ a: user.email, ...emailConfirmation(langueDe(user), lien(langueDe(user), PAGES_LIENS.confirmation, token)) }),
     },
     user: {
       modelName: "utilisateurs",

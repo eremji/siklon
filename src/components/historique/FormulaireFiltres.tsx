@@ -1,6 +1,7 @@
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import { ANNEE_MAX, ANNEE_MIN_HURDAT2, type Filtres } from "@/lib/historique/filtres";
 import type { Ile } from "@/lib/iles";
+import { chemin, type Langue } from "@/lib/langues";
 
 const CATEGORIES = [
   ["", "Toutes"],
@@ -15,14 +16,14 @@ const CATEGORIES = [
 const CHAMP = "min-h-11 w-full rounded-xl border border-field bg-surface px-3 text-base text-foreground";
 
 /** Formulaire GET : les filtres vivent dans l'URL et fonctionnent sans JavaScript. */
-export function FormulaireFiltres({ ile, filtres }: { ile: Ile; filtres: Filtres }) {
-  const action = `/iles/${ile.slug}/historique`;
+export function FormulaireFiltres({ langue, ile, filtres }: { langue: Langue; ile: Ile; filtres: Filtres }) {
+  const page = `/iles/${ile.slug}/historique`;
   return (
     <form
       role="search"
       aria-label="Filtrer l'historique"
       method="get"
-      action={action}
+      action={chemin(langue, page)}
       className="grid grid-cols-2 gap-3 rounded-2xl bg-surface p-4"
     >
       <div className="col-span-2 flex flex-col gap-1">
@@ -71,9 +72,9 @@ export function FormulaireFiltres({ ile, filtres }: { ile: Ile; filtres: Filtres
         <button type="submit" className="min-h-12 rounded-full bg-accent px-6 text-base font-bold text-on-accent">
           Filtrer
         </button>
-        <Link href={action} className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
+        <Lien href={page} className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
           Effacer les filtres
-        </Link>
+        </Lien>
       </div>
     </form>
   );

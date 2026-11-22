@@ -12,12 +12,12 @@ test("la barre de navigation mène de l'accueil à Mon île et retour", async ({
   await expect(barre.getByRole("link", { name: "Carte" })).toHaveAttribute("aria-current", "page");
 
   await barre.getByRole("link", { name: "Mon île" }).click();
-  await expect(page).toHaveURL("/iles");
+  await expect(page).toHaveURL("/fr/iles");
   await expect(barre.getByRole("link", { name: "Mon île" })).toHaveAttribute("aria-current", "page");
   await expect(barre.getByRole("link", { name: "Carte" })).not.toHaveAttribute("aria-current");
 
   await barre.getByRole("link", { name: "Carte" }).click();
-  await expect(page).toHaveURL("/");
+  await expect(page).toHaveURL("/fr");
 });
 
 test("la barre de navigation offre des zones tactiles d'au moins 44 px", async ({ page }) => {
@@ -45,7 +45,7 @@ test("la page alerte d'une île renvoie vers la page de l'île", async ({ page, 
   await page.goto("/iles/guadeloupe/alerte");
 
   await page.getByRole("link", { name: "Guadeloupe : menaces en cours" }).click();
-  await expect(page).toHaveURL("/iles/guadeloupe");
+  await expect(page).toHaveURL("/fr/iles/guadeloupe");
   await expect(page.getByRole("heading", { level: 1, name: "Guadeloupe" })).toBeVisible();
 });
 
