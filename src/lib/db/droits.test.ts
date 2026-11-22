@@ -86,13 +86,11 @@ describe("droits des rôles de l'API Supabase", () => {
     await expect(enTantQue("siklon_comptes", () => db.query("select 1 from public.abonnements_push"))).resolves.toBeDefined();
   });
 
-  it("seul siklon_comptes accède à l'état des checklists (US-08)", async () => {
+  it.each(["checklist_elements", "checklist_elements_perso"])("seul siklon_comptes accède à la table %s (US-08)", async (table) => {
     for (const role of ["anon", "authenticated", "siklon_lecture", "siklon_import"]) {
-      await expect(enTantQue(role, () => db.query("select 1 from public.checklist_elements"))).rejects.toThrow(
-        /permission denied/,
-      );
+      await expect(enTantQue(role, () => db.query(`select 1 from public.${table}`))).rejects.toThrow(/permission denied/);
     }
-    await expect(enTantQue("siklon_comptes", () => db.query("select 1 from public.checklist_elements"))).resolves.toBeDefined();
+    await expect(enTantQue("siklon_comptes", () => db.query(`select 1 from public.${table}`))).resolves.toBeDefined();
   });
 
   it("les rôles du site gardent leurs droits", async () => {
