@@ -159,7 +159,7 @@ describe("Checklist d'un visiteur", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Connectez-vous pour cocher les éléments et garder votre progression" })).toHaveAttribute(
       "href",
-      "/compte/connexion",
+      "/fr/compte/connexion",
     );
   });
 });

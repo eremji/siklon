@@ -51,7 +51,7 @@ describe("AlertesNhc", () => {
     expect(elements).toHaveLength(2);
     expect(within(elements[0]).getByText("Avertissement de tempête tropicale (Tropical Storm Warning)")).toBeInTheDocument();
     expect(within(elements[1]).getByText("Veille d'ouragan (Hurricane Watch)")).toBeInTheDocument();
-    expect(within(elements[0]).getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/systemes/al112026");
+    expect(within(elements[0]).getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/fr/systemes/al112026");
     expect(within(elements[0]).getByText(/Ouragan de catégorie 4/)).toBeInTheDocument();
     expect(within(elements[0]).getByText("Avis n° 14 du NHC, émis le 10 septembre à 11 h 00.")).toBeInTheDocument();
   });

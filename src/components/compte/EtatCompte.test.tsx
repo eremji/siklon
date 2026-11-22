@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { EtatCompte } from "./EtatCompte";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 
 const actions = {
   deconnecter: vi.fn(),
@@ -28,6 +29,16 @@ describe("EtatCompte", () => {
     expect(screen.getByRole("heading", { name: "Alertes sur cet appareil" })).toBeInTheDocument();
   });
 
+  it("transmet la langue de la page à la déconnexion", () => {
+    render(
+      <FournisseurLangue langue="en">
+        <EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} {...actions} />
+      </FournisseurLangue>,
+    );
+    const formulaire = screen.getByRole("button", { name: "Se déconnecter" }).closest("form");
+    expect(formulaire?.querySelector('input[name="langueInterface"]')).toHaveValue("en");
+  });
+
   it("adresse confirmée : ne propose plus de lien", () => {
     render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.getByText("Confirmée")).toBeInTheDocument();
@@ -36,8 +47,8 @@ describe("EtatCompte", () => {
 
   it("sans session, propose de se connecter ou de créer un compte", () => {
     render(<EtatCompte utilisateur={null} {...actions} />);
-    expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/compte/connexion");
-    expect(screen.getByRole("link", { name: "Créer un compte" })).toHaveAttribute("href", "/compte/inscription");
+    expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/fr/compte/connexion");
+    expect(screen.getByRole("link", { name: "Créer un compte" })).toHaveAttribute("href", "/fr/compte/inscription");
     expect(screen.getByText(/sans compte/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Se déconnecter" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Supprimer mon compte" })).not.toBeInTheDocument();

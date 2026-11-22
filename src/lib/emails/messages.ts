@@ -1,5 +1,6 @@
 // Contenu des emails d'authentification (US-05), dans la langue choisie à l'inscription.
 // Texte brut et HTML minimal : lisibles dans tous les clients, même avec les images bloquées.
+import type { Langue } from "../langues";
 
 /** Durée de validité des liens envoyés par email, en secondes. */
 export const VALIDITE_LIEN = {
@@ -7,7 +8,6 @@ export const VALIDITE_LIEN = {
   reinitialisation: 60 * 60,
 } as const;
 
-type Langue = "fr" | "en";
 
 export interface ContenuEmail {
   sujet: string;

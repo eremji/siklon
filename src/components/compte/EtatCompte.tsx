@@ -1,5 +1,6 @@
 // Contenu de la page Compte selon la session (US-05) : invitation à se connecter, ou résumé du compte.
-import Link from "next/link";
+import { ChampLangueInterface } from "@/components/langue/ContexteLangue";
+import { Lien } from "@/components/langue/Lien";
 import { AbonnementAppareil, type ResultatAbonnement } from "@/components/compte/AbonnementAppareil";
 import {
   type ActionGoogle,
@@ -35,7 +36,7 @@ export function EtatCompte({
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
-  deconnecter: () => Promise<void>;
+  deconnecter: (donnees: FormData) => Promise<void>;
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
   renvoyerConfirmation: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
@@ -53,12 +54,12 @@ export function EtatCompte({
           Toutes les informations sur les cyclones se consultent sans compte. Un compte servira à suivre vos îles et à
           recevoir des alertes.
         </p>
-        <Link href="/compte/connexion" className={LIEN_PRINCIPAL}>
+        <Lien href="/compte/connexion" className={LIEN_PRINCIPAL}>
           Se connecter
-        </Link>
-        <Link href="/compte/inscription" className={LIEN_SECONDAIRE}>
+        </Lien>
+        <Lien href="/compte/inscription" className={LIEN_SECONDAIRE}>
           Créer un compte
-        </Link>
+        </Lien>
       </div>
     );
   }
@@ -99,6 +100,7 @@ export function EtatCompte({
         <AbonnementAppareil clePublique={clePubliqueVapid} abonner={abonnerAppareil} desabonner={desabonnerAppareil} />
       )}
       <form action={deconnecter}>
+        <ChampLangueInterface />
         <button type="submit" className={`${LIEN_SECONDAIRE} w-full`}>
           Se déconnecter
         </button>

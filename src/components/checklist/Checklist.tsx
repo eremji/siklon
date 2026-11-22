@@ -1,6 +1,6 @@
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
-import type { EtatAction, ResultatCoche } from "@/app/iles/[ile]/checklist/actions";
+import type { EtatAction, ResultatCoche } from "@/app/[langue]/iles/[ile]/checklist/actions";
 import { CHECKLISTS, type ChecklistNiveau, type ElementChecklist, type IdSource, SOURCES } from "@/lib/checklist/contenu";
 import { etapeChecklist, etapesPrecedentes } from "@/lib/checklist/etapes";
 import { type ElementPerso, LONGUEUR_MAX_TEXTE } from "@/lib/db/checklist";
@@ -194,12 +194,12 @@ export function Checklist({ nomIle, source, niveau, compte }: {
         Checklist de préparation
       </h2>
       {!compte && (
-        <Link
+        <Lien
           href="/compte/connexion"
           className="flex min-h-11 items-center text-base font-bold text-accent underline underline-offset-4"
         >
           Connectez-vous pour cocher les éléments et garder votre progression
-        </Link>
+        </Lien>
       )}
       {source === "nhc" && (
         <p className="text-base">
