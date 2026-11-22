@@ -126,11 +126,63 @@ test("un utilisateur connecté coche des éléments et les retrouve cochés, sur
   await expect(caseVisible(page, "Faire le plein de carburant.")).toBeChecked();
 });
 
+test("un utilisateur masque un élément, le retrouve masqué après rechargement, puis le réaffiche", async (
+  { page, context, baseURL },
+  testInfo,
+) => {
+  await fixtureVigilance(context, baseURL, "orange");
+  await connecterNouveauCompte(page, testInfo.project.name);
+  await page.goto("/iles/guadeloupe/checklist");
+
+  const bateaux = "Mettre les bateaux à l'abri ou les sortir de l'eau.";
+  await page.getByRole("button", { name: `Masquer : ${bateaux}` }).filter({ visible: true }).click();
+  await expect(caseVisible(page, bateaux)).toHaveCount(0);
+  await expect(visible(page, "Éléments masqués (1)")).toBeVisible();
+
+  await page.reload();
+  await expect(caseVisible(page, bateaux)).toHaveCount(0);
+  await visible(page, "Éléments masqués (1)").click();
+  await page.getByRole("button", { name: `Réafficher : ${bateaux}` }).filter({ visible: true }).click();
+  await expect(caseVisible(page, bateaux)).toBeVisible();
+  await expect(visible(page, /^Éléments masqués/)).toHaveCount(0);
+});
+
+test("un utilisateur ajoute ses éléments, les coche et les supprime", async ({ page, context, baseURL }, testInfo) => {
+  await fixtureVigilance(context, baseURL, "jaune");
+  await connecterNouveauCompte(page, testInfo.project.name);
+  await page.goto("/iles/martinique/checklist");
+
+  const champ = page.getByRole("textbox", { name: "Ajouter un élément" }).filter({ visible: true });
+  await champ.fill("Croquettes du chien");
+  await page.getByRole("button", { name: "Ajouter", exact: true }).filter({ visible: true }).click();
+  await expect(caseVisible(page, "Croquettes du chien")).toBeVisible();
+  await expect(champ).toHaveValue("");
+
+  await Promise.all([
+    page.waitForResponse((reponse) => reponse.request().method() === "POST"),
+    caseVisible(page, "Croquettes du chien").check(),
+  ]);
+  // Mes éléments valent pour tous les niveaux et toutes les îles.
+  await fixtureVigilance(context, baseURL, "rouge");
+  await page.goto("/iles/guadeloupe/checklist");
+  await expect(caseVisible(page, "Croquettes du chien")).toBeChecked();
+
+  await page.getByRole("button", { name: "Supprimer : Croquettes du chien" }).filter({ visible: true }).click();
+  await expect(caseVisible(page, "Croquettes du chien")).toHaveCount(0);
+  await page.reload();
+  await expect(caseVisible(page, "Croquettes du chien")).toHaveCount(0);
+});
+
 test("la checklist d'un utilisateur connecté respecte WCAG AA", async ({ page, context, baseURL }, testInfo) => {
   await fixtureVigilance(context, baseURL, "orange");
   await connecterNouveauCompte(page, testInfo.project.name);
   await page.goto("/iles/saint-martin/checklist");
   await caseVisible(page, "Faire le plein de carburant.").check();
+  await page.getByRole("textbox", { name: "Ajouter un élément" }).filter({ visible: true }).fill("Croquettes du chien");
+  await page.getByRole("button", { name: "Ajouter", exact: true }).filter({ visible: true }).click();
+  await page.getByRole("button", { name: "Masquer : Retirer de l'argent liquide." }).filter({ visible: true }).click();
+  await expect(visible(page, "Éléments masqués (1)")).toBeVisible();
+  await visible(page, "Éléments masqués (1)").click();
 
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
