@@ -270,6 +270,17 @@ test("s'inscrire avec Google sans remplir l'email ni le mot de passe", async ({ 
   expect(depart.origin).toBe("https://accounts.google.com");
 });
 
+test("l'adresse de retour de Google existe et renvoie une erreur sur la page de connexion", async ({ page }) => {
+  // Google y renvoie le navigateur après la connexion (« URI de redirection autorisé » du client OAuth).
+  const reponse = await page.request.get("/api/auth/callback/google?code=code-invente&state=etat-invente", {
+    maxRedirects: 0,
+  });
+  expect(reponse.status()).toBe(302);
+  const retour = new URL(reponse.headers().location ?? "", "http://localhost");
+  expect(retour.pathname).toBe("/compte/connexion");
+  expect(retour.searchParams.get("error")).toBeTruthy();
+});
+
 test("au retour de Google, un compte à l'adresse non confirmée est expliqué", async ({ page }) => {
   await page.goto("/compte/connexion?error=account_not_linked");
   await expect(page.getByRole("alert").filter({ hasText: "n'est pas confirmée" })).toBeVisible();

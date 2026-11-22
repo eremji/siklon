@@ -80,6 +80,9 @@ export function optionsAuth({ database, secret, baseURL, emails, tacheDeFond, go
     baseURL,
     basePath: "/api/auth",
     telemetry: { enabled: false },
+    // Erreur au retour de Google (état expiré…) : la page de connexion l'explique (?error=). Sans ce
+    // réglage, Better Auth renverrait vers sa propre page d'erreur, que le site n'expose pas.
+    onAPIError: { errorURL: `${baseURL}/compte/connexion` },
     emailAndPassword: {
       enabled: true,
       minPasswordLength: LONGUEUR_MIN_MOT_DE_PASSE,
