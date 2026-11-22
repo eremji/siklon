@@ -20,7 +20,7 @@ import {
   niveauNhc,
   niveauVigilance,
 } from "./evenements";
-import type { AlertePush, BilanPush } from "./push";
+import type { AlertePush } from "./push";
 import { contenuNotification } from "./textes";
 
 /** Sources lues par la vérification : caches partagés en production, simulées dans les tests. */
@@ -30,6 +30,15 @@ export interface SourcesAlertes {
   vigilance(fichier: FichierVigilance): Promise<EtatVigilance>;
   alertesNhc(ile: Ile, emprise: Emprise, flux: EtatFlux): Promise<EtatAlertesNhc>;
 }
+
+/** Résultat d'un envoi par un canal (web push, e-mail). */
+export interface BilanEnvoi {
+  envoyes: number;
+  echecs: number;
+}
+
+/** Un canal de notification : envoie une alerte à un destinataire, une seule fois par alerte. */
+export type Canal = (alerte: AlertePush) => Promise<BilanEnvoi>;
 
 export interface BilanVerification {
   evenements: number;
@@ -88,7 +97,7 @@ async function evenementNiveau(
 export async function verifierAlertes(
   db: Executeur,
   sources: SourcesAlertes,
-  { envoyer, base }: { envoyer: (alerte: AlertePush) => Promise<BilanPush>; base: string },
+  { canaux, base }: { canaux: Canal[]; base: string },
 ): Promise<BilanVerification> {
   const bilan: BilanVerification = { evenements: 0, envoyes: 0, echecs: 0 };
   const flux = await lireFlux(sources);
@@ -109,13 +118,16 @@ export async function verifierAlertes(
     for (const evenement of evenements) {
       const contenu = contenuNotification(evenement, base);
       for (const destinataire of abonnes) {
-        try {
-          const resultat = await envoyer({ destinataire, cle: evenement.cle, contenu });
-          bilan.envoyes += resultat.envoyes;
-          bilan.echecs += resultat.echecs;
-        } catch (erreur) {
-          bilan.echecs += 1;
-          console.error(`[alertes] échec d'un envoi pour ${ile.slug} (${typeErreur(erreur)})`);
+        // Chaque canal à part : une panne de l'un n'empêche pas l'autre de prévenir.
+        for (const envoyer of canaux) {
+          try {
+            const resultat = await envoyer({ destinataire, cle: evenement.cle, contenu });
+            bilan.envoyes += resultat.envoyes;
+            bilan.echecs += resultat.echecs;
+          } catch (erreur) {
+            bilan.echecs += 1;
+            console.error(`[alertes] échec d'un envoi pour ${ile.slug} (${typeErreur(erreur)})`);
+          }
         }
       }
     }

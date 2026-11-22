@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { EnvoiEmailError, serviceBrevo } from "./brevo";
+import { EnvoiEmailError, QuotaEmailsError, serviceBrevo } from "./brevo";
 
 const EXPEDITEUR = { nom: "Siklon", email: "noreply@siklon.example" };
 const MESSAGE = { a: "personne@exemple.org", sujet: "Sujet", texte: "Texte", html: "<p>HTML</p>" };
@@ -33,6 +33,26 @@ describe("serviceBrevo.envoyer", () => {
     await expect(envoi).rejects.toThrow(EnvoiEmailError);
     await expect(envoi).rejects.toThrow("Brevo a refusé l'envoi (400 invalid_parameter)");
     await expect(envoi).rejects.not.toThrow("personne@exemple.org");
+  });
+
+  // La doc de Brevo cite not_enough_credits pour un 400 de cet appel, et le 402 « Payment Required »
+  // en général, sans dire lequel répond quand le quota quotidien est atteint : les deux sont reconnus.
+  it.each([
+    [400, { code: "not_enough_credits" }],
+    [402, { code: "payment_required" }],
+    [402, {}],
+  ])("signale le quota atteint (%i %j) par une erreur à part, qui reste une erreur d'envoi", async (status, corps) => {
+    const fetch = vi.fn().mockResolvedValue(reponse(status, corps));
+    const envoi = serviceBrevo({ cleApi: "cle", expediteur: EXPEDITEUR, fetch }).envoyer(MESSAGE);
+    await expect(envoi).rejects.toThrow(QuotaEmailsError);
+    await expect(envoi).rejects.toThrow(EnvoiEmailError);
+  });
+
+  it("ne confond pas une autre erreur avec le quota", async () => {
+    const fetch = vi.fn().mockResolvedValue(reponse(429, { code: "too_many_requests" }));
+    await expect(serviceBrevo({ cleApi: "cle", expediteur: EXPEDITEUR, fetch }).envoyer(MESSAGE)).rejects.not.toThrow(
+      QuotaEmailsError,
+    );
   });
 });
 

@@ -44,7 +44,7 @@ async function nouvelUtilisateur() {
     "insert into public.utilisateurs (nom, email, email_verifie, langue) values ('', $1, true, 'fr') returning id",
     [email],
   );
-  return { id, email, langue: "fr" as const };
+  return { id, email, langue: "fr" as const, alertesEmail: false };
 }
 
 function appareil(endpoint: string): AbonnementPush {

@@ -77,13 +77,11 @@ describe("droits des rôles de l'API Supabase", () => {
     }
   });
 
-  it("seul siklon_comptes accède aux abonnements web push (US-07)", async () => {
+  it.each(["abonnements_push", "preferences_alertes"])("seul siklon_comptes accède à %s (US-07)", async (table) => {
     for (const role of ["anon", "authenticated", "siklon_lecture", "siklon_import"]) {
-      await expect(enTantQue(role, () => db.query("select 1 from public.abonnements_push"))).rejects.toThrow(
-        /permission denied/,
-      );
+      await expect(enTantQue(role, () => db.query(`select 1 from public.${table}`))).rejects.toThrow(/permission denied/);
     }
-    await expect(enTantQue("siklon_comptes", () => db.query("select 1 from public.abonnements_push"))).resolves.toBeDefined();
+    await expect(enTantQue("siklon_comptes", () => db.query(`select 1 from public.${table}`))).resolves.toBeDefined();
   });
 
   it.each(["checklist_elements", "checklist_elements_perso"])("seul siklon_comptes accède à la table %s (US-08)", async (table) => {

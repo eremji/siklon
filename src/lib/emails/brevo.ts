@@ -11,16 +11,30 @@ export class EnvoiEmailError extends Error {
   }
 }
 
+/** Brevo refuse faute de crédits : quota quotidien de l'offre gratuite atteint, ou crédits épuisés. */
+export class QuotaEmailsError extends EnvoiEmailError {
+  constructor(message: string) {
+    super(message);
+    this.name = "QuotaEmailsError";
+  }
+}
+
 export interface ParametresBrevo {
   cleApi: string;
   expediteur: { nom: string; email: string };
   fetch?: typeof globalThis.fetch;
 }
 
-async function codeErreur(reponse: Response): Promise<string> {
+async function lireCode(reponse: Response): Promise<string | undefined> {
   const corps: unknown = await reponse.json().catch(() => ({}));
   const code = typeof corps === "object" && corps !== null && "code" in corps ? corps.code : undefined;
-  return typeof code === "string" ? `${reponse.status} ${code}` : String(reponse.status);
+  return typeof code === "string" ? code : undefined;
+}
+
+const libelle = (status: number, code: string | undefined) => (code ? `${status} ${code}` : String(status));
+
+async function codeErreur(reponse: Response): Promise<string> {
+  return libelle(reponse.status, await lireCode(reponse));
 }
 
 export function serviceBrevo({ cleApi, expediteur, fetch = globalThis.fetch }: ParametresBrevo): ServiceEmails {
@@ -50,7 +64,13 @@ export function serviceBrevo({ cleApi, expediteur, fetch = globalThis.fetch }: P
           htmlContent: html,
         }),
       });
-      if (!reponse.ok) throw new EnvoiEmailError(`Brevo a refusé l'envoi (${await codeErreur(reponse)})`);
+      if (!reponse.ok) {
+        const code = await lireCode(reponse);
+        const message = `Brevo a refusé l'envoi (${libelle(reponse.status, code)})`;
+        // La doc cite not_enough_credits (400) et le 402 sans dire lequel répond au quota quotidien.
+        if (reponse.status === 402 || code === "not_enough_credits") throw new QuotaEmailsError(message);
+        throw new EnvoiEmailError(message);
+      }
     },
 
     async effacer(adresse: string) {
