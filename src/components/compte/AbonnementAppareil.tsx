@@ -1,11 +1,30 @@
 "use client";
 // Abonnement de l'appareil aux alertes web push (US-07). La permission n'est demandée qu'au clic sur
 // le bouton (US-13). Le service worker public/sw.js affiche les alertes reçues.
+// Sur iPhone et iPad, Apple ne l'autorise que depuis l'écran d'accueil : la section explique alors
+// comment y ajouter Siklon (US-07c, #110).
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EtapesEcranAccueil } from "@/components/ecranAccueil/EtapesEcranAccueil";
+import {
+  type Appareil,
+  ouvertDepuisEcranAccueil,
+  situationEcranAccueil,
+  VERSION_IOS_MIN,
+} from "@/lib/ecranAccueil/detection";
 
 export type ResultatAbonnement = { ok: true } | { ok: false; message: string };
 
-type Etat = "verification" | "non-pris-en-charge" | "non-configure" | "refuse" | "non-abonne" | "abonne";
+type Etat =
+  | "verification"
+  | "ios-a-installer"
+  | "ios-trop-ancien"
+  | "ios-autre-navigateur"
+  | "non-pris-en-charge"
+  | "non-configure"
+  | "refuse"
+  | "non-abonne"
+  | "abonne";
 
 const BOUTON = "min-h-12 rounded-full bg-accent px-6 text-base font-bold text-on-accent disabled:opacity-70";
 const BOUTON_SECONDAIRE =
@@ -13,6 +32,9 @@ const BOUTON_SECONDAIRE =
 
 const TEXTES: Partial<Record<Etat, string>> = {
   verification: "Vérification de cet appareil…",
+  "ios-trop-ancien": `Mettez à jour iOS (${VERSION_IOS_MIN} ou plus récent) pour recevoir les alertes sur cet appareil.`,
+  "ios-autre-navigateur":
+    "Pour recevoir les alertes sur cet appareil, ouvrez Siklon dans Safari, puis ajoutez-le à l'écran d'accueil.",
   "non-pris-en-charge": "Ce navigateur ne permet pas de recevoir les alertes sur cet appareil.",
   "non-configure": "Les alertes sur appareil ne sont pas encore disponibles.",
   refuse:
@@ -38,7 +60,14 @@ function octets(base64url: string): Uint8Array<ArrayBuffer> {
 async function etatAppareil(
   clePublique: string | null,
   abonner: (abonnement: unknown) => Promise<ResultatAbonnement>,
-): Promise<{ etat: Etat; message?: string }> {
+): Promise<{ etat: Etat; appareil?: Appareil; message?: string }> {
+  const situation = situationEcranAccueil({
+    agent: navigator.userAgent,
+    pointsTactiles: navigator.maxTouchPoints ?? 0,
+    installe: typeof window.matchMedia === "function" && ouvertDepuisEcranAccueil(window),
+  });
+  if (situation.etat === "a-installer") return { etat: "ios-a-installer", appareil: situation.appareil };
+  if (situation.etat === "ios-trop-ancien" || situation.etat === "ios-autre-navigateur") return { etat: situation.etat };
   if (!pushPrisEnCharge()) return { etat: "non-pris-en-charge" };
   if (!clePublique) return { etat: "non-configure" };
   if (Notification.permission === "denied") return { etat: "refuse" };
@@ -59,6 +88,7 @@ export function AbonnementAppareil({
   desabonner: (endpoint: unknown) => Promise<ResultatAbonnement>;
 }) {
   const [etat, setEtat] = useState<Etat>("verification");
+  const [appareil, setAppareil] = useState<Appareil>("iphone");
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -69,6 +99,7 @@ export function AbonnementAppareil({
       const initial = await etatAppareil(clePublique, abonner).catch(() => ({ etat: "non-pris-en-charge" as const }));
       if (!actif) return;
       setEtat(initial.etat);
+      if ("appareil" in initial && initial.appareil) setAppareil(initial.appareil);
       if ("message" in initial && initial.message) setErreur(initial.message);
     })();
     return () => {
@@ -132,6 +163,23 @@ export function AbonnementAppareil({
         même quand Siklon est fermé.
       </p>
       {texte && <p className={etat === "verification" ? "text-base text-muted" : "text-base font-bold"}>{texte}</p>}
+      {etat === "ios-a-installer" && (
+        <>
+          <div className="flex flex-col gap-3 rounded-xl bg-soft p-4">
+            <p className="text-lg font-bold">
+              Sur {appareil === "ipad" ? "iPad" : "iPhone"}, ajoutez d&apos;abord Siklon à l&apos;écran d&apos;accueil
+            </p>
+            <p className="text-base text-muted">
+              Apple n&apos;autorise les notifications que pour les sites ajoutés à l&apos;écran d&apos;accueil (iOS{" "}
+              {VERSION_IOS_MIN} ou plus récent).
+            </p>
+            <EtapesEcranAccueil appareil={appareil} />
+          </div>
+          <Link href="/compte/ecran-accueil" className={`flex items-center justify-center ${BOUTON_SECONDAIRE}`}>
+            Voir l&apos;aide en images
+          </Link>
+        </>
+      )}
       {etat === "non-abonne" && (
         <button type="button" onClick={activer} disabled={enCours} aria-busy={enCours} className={BOUTON}>
           Recevoir les alertes sur cet appareil

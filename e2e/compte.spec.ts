@@ -430,3 +430,41 @@ for (const colorScheme of ["light", "dark"] as const) {
     }
   });
 }
+
+// Sur iPhone et iPad, Apple n'autorise le web push que depuis l'écran d'accueil (US-07c, #110).
+test.describe("sur iPhone, dans un onglet Safari", () => {
+  test.use({
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+  });
+
+  test("la page Compte montre les étapes pour ajouter Siklon à l'écran d'accueil, puis l'aide en images", async ({
+    page,
+  }, testInfo) => {
+    await compteConfirme(page, nouvelEmail(testInfo));
+    const section = sectionAppareil(page);
+
+    await expect(section.getByText("Sur iPhone, ajoutez d'abord Siklon à l'écran d'accueil")).toBeVisible();
+    await expect(section.getByRole("listitem")).toHaveCount(4);
+    await expect(section.getByText(/ce navigateur ne permet pas/i)).toHaveCount(0);
+    await expect(section.getByRole("button")).toHaveCount(0);
+
+    const aide = section.getByRole("link", { name: "Voir l'aide en images" });
+    expect((await aide.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await aide.click();
+    await expect(page).toHaveURL("/compte/ecran-accueil");
+    await expect(page.getByRole("heading", { level: 1, name: "Ajouter Siklon à l'écran d'accueil" })).toBeVisible();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`les étapes respectent WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
+      page,
+    }, testInfo) => {
+      await page.emulateMedia({ colorScheme });
+      await compteConfirme(page, nouvelEmail(testInfo));
+      await expect(sectionAppareil(page).getByRole("link", { name: "Voir l'aide en images" })).toBeVisible();
+      const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+      expect(violations).toEqual([]);
+    });
+  }
+});
