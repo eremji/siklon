@@ -12,6 +12,8 @@ export interface Destinataire {
   id: string;
   email: string;
   langue: "fr" | "en";
+  /** Accord explicite pour recevoir les alertes par e-mail (US-13) ; non par défaut. */
+  alertesEmail: boolean;
 }
 
 function estNiveauAlerte(valeur: string): valeur is NiveauAlerte {
@@ -58,8 +60,10 @@ export async function enregistrerNiveau(
 /** Utilisateurs qui suivent l'île, dont l'adresse est confirmée (SPEC.md, US-05). */
 export async function destinataires(db: Executeur, ile: string): Promise<Destinataire[]> {
   const { rows } = await db.query(
-    `select u.id, u.email, u.langue
-     from public.iles_suivies s join public.utilisateurs u on u.id = s.utilisateur_id
+    `select u.id, u.email, u.langue, coalesce(p.email, false) as "alertesEmail"
+     from public.iles_suivies s
+       join public.utilisateurs u on u.id = s.utilisateur_id
+       left join public.preferences_alertes p on p.utilisateur_id = u.id
      where s.ile = $1 and u.email_verifie
      order by u.cree_le, u.id`,
     [ile],
@@ -78,4 +82,22 @@ export async function reserverEnvoi(db: Executeur, utilisateurId: string, cle: s
     [utilisateurId, cle, canal],
   );
   return rows.length === 1;
+}
+
+/** Donne ou retire l'accord de l'utilisateur pour les alertes par e-mail. */
+export async function enregistrerAccordEmail(db: Executeur, utilisateurId: string, accord: boolean): Promise<void> {
+  await db.query(
+    `insert into public.preferences_alertes (utilisateur_id, email) values ($1, $2)
+     on conflict (utilisateur_id) do update set email = excluded.email, modifie_le = current_timestamp`,
+    [utilisateurId, accord],
+  );
+}
+
+/** E-mails d'alerte réservés depuis minuit (UTC) : ils comptent dans le quota quotidien de Brevo. */
+export async function compterEmailsAlerteDuJour(db: Executeur): Promise<number> {
+  const { rows } = await db.query(
+    `select count(*)::int as nombre from public.notifications_envoyees
+     where canal = 'email' and cree_le >= date_trunc('day', now() at time zone 'utc') at time zone 'utc'`,
+  );
+  return (rows as { nombre: number }[])[0].nombre;
 }

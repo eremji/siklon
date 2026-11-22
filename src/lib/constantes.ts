@@ -8,3 +8,9 @@ export const RADIUS_WATCH_KM = 300;
 
 /** Rayon terrestre moyen (UGGI), pour les distances orthodromiques. */
 export const RAYON_TERRE_KM = 6371.0088;
+
+/** E-mails par jour de l'offre gratuite de Brevo (SPEC.md, choix techniques). */
+export const QUOTA_EMAILS_JOUR = 300;
+
+/** Part du quota quotidien jamais prise par les alertes : les e-mails de connexion restent prioritaires. */
+export const RESERVE_EMAILS_AUTH = 50;
