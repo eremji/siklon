@@ -9,7 +9,7 @@ import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { AlertesNhc } from "@/components/vigilance/AlertesNhc";
 import { BandeauVigilance, EnTeteIle } from "@/components/vigilance/BandeauVigilance";
 import { utilisateurCourant } from "@/lib/auth/serveur";
-import { lireElementsCoches } from "@/lib/db/checklist";
+import { lireElementsCoches, lireElementsMasques, lireElementsPerso } from "@/lib/db/checklist";
 import { connexionComptes } from "@/lib/db/pool";
 import { type Emprise, type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
 import { alertesNhc } from "@/lib/nhc/lecture";
@@ -18,7 +18,13 @@ import { niveauNhc, niveauVigilance } from "@/lib/notifications/evenements";
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
 import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
 import { chargerVigilance } from "@/lib/vigilance/vigilance";
-import { cocherElementChecklist } from "./actions";
+import {
+  ajouterElementChecklist,
+  cocherElementChecklist,
+  cocherElementPersoChecklist,
+  masquerElementChecklist,
+  supprimerElementChecklist,
+} from "./actions";
 
 type Props = PageProps<"/iles/[ile]/checklist">;
 
@@ -37,7 +43,22 @@ async function compteChecklist(): Promise<CompteChecklist> {
   try {
     const utilisateur = await utilisateurCourant();
     if (!utilisateur) return null;
-    return { coches: await lireElementsCoches(connexionComptes(), utilisateur.id), cocher: cocherElementChecklist };
+    const db = connexionComptes();
+    const [coches, masques, perso] = await Promise.all([
+      lireElementsCoches(db, utilisateur.id),
+      lireElementsMasques(db, utilisateur.id),
+      lireElementsPerso(db, utilisateur.id),
+    ]);
+    return {
+      coches,
+      masques,
+      perso,
+      cocher: cocherElementChecklist,
+      cocherPerso: cocherElementPersoChecklist,
+      masquer: masquerElementChecklist,
+      ajouter: ajouterElementChecklist,
+      supprimer: supprimerElementChecklist,
+    };
   } catch (erreur) {
     console.warn("[checklist] état du compte indisponible", { raison: erreur instanceof Error ? erreur.message : String(erreur) });
     return null;

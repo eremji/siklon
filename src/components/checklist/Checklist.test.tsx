@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { Checklist } from "./Checklist";
+import { Checklist, type CompteChecklist } from "./Checklist";
 
 const guadeloupe = { nomIle: "Guadeloupe", source: "meteo-france" } as const;
 const dominique = { nomIle: "Dominique", source: "nhc" } as const;
@@ -91,8 +91,23 @@ describe("Checklist", () => {
   });
 });
 
+// État complet d'un utilisateur connecté, avec des actions factices qui réussissent.
+function compteComplet(etat: Partial<NonNullable<CompteChecklist>> = {}): NonNullable<CompteChecklist> {
+  return {
+    coches: [],
+    masques: [],
+    perso: [],
+    cocher: vi.fn().mockResolvedValue({ ok: true }),
+    cocherPerso: vi.fn().mockResolvedValue({ ok: true }),
+    masquer: vi.fn().mockResolvedValue({}),
+    ajouter: vi.fn().mockResolvedValue({ ajoute: true }),
+    supprimer: vi.fn().mockResolvedValue({}),
+    ...etat,
+  };
+}
+
 describe("Checklist d'un utilisateur connecté", () => {
-  const compte = (coches: string[] = [], cocher = vi.fn().mockResolvedValue({ ok: true })) => ({ coches, cocher });
+  const compte = (coches: string[] = [], cocher = vi.fn().mockResolvedValue({ ok: true })) => compteComplet({ coches, cocher });
 
   it("affiche une case à cocher par élément, dans l'état enregistré", () => {
     render(<Checklist {...guadeloupe} niveau="orange" compte={compte(["orange-carburant"])} />);
@@ -146,5 +161,113 @@ describe("Checklist d'un visiteur", () => {
       "href",
       "/compte/connexion",
     );
+  });
+});
+
+describe("masquage des éléments de base", () => {
+  it("propose de masquer chaque élément, avec un libellé qui le nomme", () => {
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet()} />);
+
+    expect(within(listeEnCours()).getAllByRole("button", { name: /^Masquer : / })).toHaveLength(12);
+    expect(screen.getByRole("button", { name: "Masquer : Mettre les bateaux à l'abri ou les sortir de l'eau." })).toBeInTheDocument();
+  });
+
+  it("envoie l'élément à masquer", async () => {
+    const masquer = vi.fn().mockResolvedValue({});
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ masquer })} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Masquer : Mettre les bateaux à l'abri ou les sortir de l'eau." }));
+
+    const donnees = masquer.mock.calls[0][1] as FormData;
+    expect(Object.fromEntries(donnees)).toEqual({ element: "orange-bateaux", masque: "1" });
+  });
+
+  it("retire les éléments masqués des listes et les regroupe, repliés, pour les réafficher", async () => {
+    const masquer = vi.fn().mockResolvedValue({});
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ masques: ["orange-bateaux", "vert-loisirs"], masquer })} />);
+
+    expect(within(listeEnCours()).getAllByRole("listitem")).toHaveLength(11);
+    const masques = screen.getByText("Éléments masqués (2)").closest("details")!;
+    expect(masques).not.toHaveAttribute("open");
+    await userEvent.click(within(masques).getByRole("button", { name: "Réafficher : Jeux, livres, bloc-notes." }));
+
+    expect(Object.fromEntries(masquer.mock.calls[0][1] as FormData)).toEqual({ element: "vert-loisirs", masque: "0" });
+  });
+
+  it("n'affiche pas la section des éléments masqués quand il n'y en a aucun", () => {
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet()} />);
+    expect(screen.queryByText(/^Éléments masqués/)).not.toBeInTheDocument();
+  });
+
+  it("annonce l'échec du masquage", async () => {
+    const masquer = vi.fn().mockResolvedValue({ message: "Votre session a expiré." });
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ masquer })} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Masquer : Retirer de l'argent liquide." }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Votre session a expiré.");
+  });
+});
+
+describe("éléments ajoutés par l'utilisateur", () => {
+  const perso = [
+    { id: "11111111-1111-1111-1111-111111111111", texte: "Croquettes du chien", coche: true },
+    { id: "22222222-2222-2222-2222-222222222222", texte: "Lunettes de rechange", coche: false },
+  ];
+
+  it("affiche ses éléments, cochables, sous la liste en cours", async () => {
+    const cocherPerso = vi.fn().mockResolvedValue({ ok: true });
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ perso, cocherPerso })} />);
+
+    const liste = screen.getByRole("list", { name: "Mes éléments" });
+    expect(screen.getByRole("heading", { level: 3, name: "Mes éléments" })).toBeInTheDocument();
+    expect(within(liste).getByRole("checkbox", { name: "Croquettes du chien" })).toBeChecked();
+    await userEvent.click(within(liste).getByRole("checkbox", { name: "Lunettes de rechange" }));
+    expect(cocherPerso).toHaveBeenCalledWith("22222222-2222-2222-2222-222222222222", true);
+  });
+
+  it("supprime un élément ajouté", async () => {
+    const supprimer = vi.fn().mockResolvedValue({});
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ perso, supprimer })} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Supprimer : Croquettes du chien" }));
+    expect(Object.fromEntries(supprimer.mock.calls[0][1] as FormData)).toEqual({ id: "11111111-1111-1111-1111-111111111111" });
+  });
+
+  it("ajoute un élément avec le formulaire, limité à 200 caractères", async () => {
+    const ajouter = vi.fn().mockResolvedValue({ ajoute: true });
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ ajouter })} />);
+
+    const champ = screen.getByRole("textbox", { name: "Ajouter un élément" });
+    expect(champ).toHaveAttribute("maxlength", "200");
+    await userEvent.type(champ, "Croquettes du chien");
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
+
+    expect(Object.fromEntries(ajouter.mock.calls[0][1] as FormData)).toEqual({ texte: "Croquettes du chien" });
+  });
+
+  it("annonce un ajout refusé et garde la saisie", async () => {
+    const ajouter = vi.fn().mockResolvedValue({ message: "Écrivez un élément de 1 à 200 caractères.", texte: "   " });
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ ajouter })} />);
+
+    await userEvent.type(screen.getByRole("textbox", { name: "Ajouter un élément" }), "   ");
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Écrivez un élément de 1 à 200 caractères.");
+    expect(screen.getByRole("textbox", { name: "Ajouter un élément" })).toHaveAccessibleDescription(
+      "Écrivez un élément de 1 à 200 caractères.",
+    );
+  });
+
+  it("indique qu'aucun élément n'a encore été ajouté", () => {
+    render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet()} />);
+    expect(screen.getByText("Ajoutez ce qui manque pour votre foyer : il apparaîtra à chaque niveau d'alerte.")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Mes éléments" })).not.toBeInTheDocument();
+  });
+
+  it("ne propose ni masquage ni ajout à un visiteur", () => {
+    render(<Checklist {...guadeloupe} niveau="orange" compte={null} />);
+    expect(screen.queryByRole("button", { name: /^Masquer/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Mes éléments" })).not.toBeInTheDocument();
   });
 });
