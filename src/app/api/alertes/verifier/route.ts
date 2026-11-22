@@ -4,10 +4,12 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { configurationAuth } from "@/lib/auth/configuration";
 import { connexionComptes } from "@/lib/db/pool";
+import { choisirServiceEmails } from "@/lib/emails/configuration";
+import { canalEmail } from "@/lib/notifications/email";
 import { lireClesVapid } from "@/lib/notifications/configurationPush";
 import { envoyerPush } from "@/lib/notifications/push";
 import { sourcesAlertes } from "@/lib/notifications/sources";
-import { verifierAlertes } from "@/lib/notifications/verification";
+import { type Canal, verifierAlertes } from "@/lib/notifications/verification";
 
 // Les sources sont en cache ; c'est l'envoi aux abonnés qui peut prendre du temps.
 export const maxDuration = 60;
@@ -28,15 +30,16 @@ export async function POST(request: Request): Promise<Response> {
   if (secret.length < LONGUEUR_MIN_SECRET) return erreur("Vérification des alertes non configurée.", 503);
   if (!autorise(request.headers.get("authorization"), secret)) return erreur("Non autorisé.", 401);
 
-  const vapid = lireClesVapid(process.env);
-  if (!vapid) return erreur("Aucun canal de notification configuré.", 503);
   const { baseURL } = configurationAuth(process.env);
   const db = connexionComptes();
+  // Web push s'il est configuré ; e-mail toujours (Brevo en production, terminal en développement).
+  const vapid = lireClesVapid(process.env);
+  const canaux: Canal[] = [
+    ...(vapid ? [(alerte: Parameters<Canal>[0]) => envoyerPush(db, alerte, { vapid })] : []),
+    canalEmail(db, { service: choisirServiceEmails(process.env).service, base: baseURL }),
+  ];
 
-  const bilan = await verifierAlertes(db, sourcesAlertes(process.env), {
-    envoyer: (alerte) => envoyerPush(db, alerte, { vapid }),
-    base: baseURL,
-  });
+  const bilan = await verifierAlertes(db, sourcesAlertes(process.env), { canaux, base: baseURL });
   console.info(
     `[alertes] ${bilan.evenements} événement(s), ${bilan.envoyes} notification(s) envoyée(s), ${bilan.echecs} échec(s)`,
   );

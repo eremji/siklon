@@ -15,7 +15,7 @@ export interface ContenuEmail {
   html: string;
 }
 
-const echapper = (texte: string) =>
+export const echapper = (texte: string) =>
   texte.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
 interface Gabarit {

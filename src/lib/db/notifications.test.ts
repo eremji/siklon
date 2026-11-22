@@ -4,7 +4,14 @@ import type { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { baseMigree } from "../test/poolPglite";
 import { enregistrerIlesSuivies } from "./ilesSuivies";
-import { destinataires, enregistrerNiveau, lireNiveauxIles, reserverEnvoi } from "./notifications";
+import {
+  compterEmailsAlerteDuJour,
+  destinataires,
+  enregistrerAccordEmail,
+  enregistrerNiveau,
+  lireNiveauxIles,
+  reserverEnvoi,
+} from "./notifications";
 
 const DEMARRAGE_PGLITE_MS = 30_000;
 
@@ -80,7 +87,31 @@ describe("destinataires d'une île", () => {
     await enregistrerIlesSuivies(db, nonConfirme.id, ["barbade"]);
     await enregistrerIlesSuivies(db, autreIle.id, ["jamaique"]);
 
-    expect(await destinataires(db, "barbade")).toEqual([{ id: suit.id, email: suit.email, langue: "en" }]);
+    expect(await destinataires(db, "barbade")).toEqual([{ id: suit.id, email: suit.email, langue: "en", alertesEmail: false }]);
+  });
+});
+
+describe("accord pour les alertes par e-mail (US-13)", () => {
+  it("n'est pas donné par défaut, puis suit le choix de l'utilisateur", async () => {
+    const { id } = await nouvelUtilisateur();
+    await enregistrerIlesSuivies(db, id, ["haiti"]);
+    const accord = async () => (await destinataires(db, "haiti")).find((d) => d.id === id)?.alertesEmail;
+
+    expect(await accord()).toBe(false);
+    await enregistrerAccordEmail(db, id, true);
+    expect(await accord()).toBe(true);
+    await enregistrerAccordEmail(db, id, false);
+    expect(await accord()).toBe(false);
+  });
+
+  it("est effacé avec le compte", async () => {
+    const { id } = await nouvelUtilisateur();
+    await enregistrerAccordEmail(db, id, true);
+
+    await db.query("delete from public.utilisateurs where id = $1", [id]);
+
+    const { rows } = await db.query("select 1 from public.preferences_alertes where utilisateur_id = $1", [id]);
+    expect(rows).toEqual([]);
   });
 });
 
@@ -99,6 +130,22 @@ describe("journal des envois", () => {
 
     expect(await reserverEnvoi(db, a.id, "niveau:martinique:jaune:2026-09-10T16:00:00Z", "push")).toBe(true);
     expect(await reserverEnvoi(db, b.id, "niveau:martinique:jaune:2026-09-10T16:00:00Z", "push")).toBe(true);
+  });
+
+  it("compte les e-mails d'alerte réservés depuis minuit (UTC), sans les envois push", async () => {
+    const avant = await compterEmailsAlerteDuJour(db);
+    const { id } = await nouvelUtilisateur();
+    await reserverEnvoi(db, id, "rayon:haiti:al072026", "email");
+    await reserverEnvoi(db, id, "rayon:cuba:al072026", "email");
+    await reserverEnvoi(db, id, "rayon:haiti:al072026", "push");
+    await db.exec("reset role");
+    await db.query(
+      "insert into public.notifications_envoyees (utilisateur_id, cle, canal, cree_le) values ($1, 'hier', 'email', date_trunc('day', now() at time zone 'utc') at time zone 'utc' - interval '1 minute')",
+      [id],
+    );
+    await db.exec("set role siklon_comptes");
+
+    expect(await compterEmailsAlerteDuJour(db)).toBe(avant + 2);
   });
 
   it("refuse un canal inconnu", async () => {
