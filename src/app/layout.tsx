@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible } from "next/font/google";
 import { Suspense } from "react";
 import { BarreNavigation, BarreNavigationSansSection } from "@/components/navigation/BarreNavigation";
 import { PiedDePage } from "@/components/PiedDePage";
+import { APPLE_WEB_APP, COULEURS_THEME } from "@/lib/pwa/metadonnees";
 import "./globals.css";
 
 const atkinson = Atkinson_Hyperlegible({
@@ -14,6 +15,12 @@ const atkinson = Atkinson_Hyperlegible({
 export const metadata: Metadata = {
   title: "Siklon",
   description: "Suivi des cyclones tropicaux pour les Antilles.",
+  // Application installée sur l'écran d'accueil (US-07b) ; le manifeste est src/app/manifest.ts.
+  appleWebApp: APPLE_WEB_APP,
+};
+
+export const viewport: Viewport = {
+  themeColor: COULEURS_THEME,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
