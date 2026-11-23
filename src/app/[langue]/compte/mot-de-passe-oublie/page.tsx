@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { FormulaireMotDePasseOublie } from "@/components/compte/Formulaires";
-import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { demanderReinitialisation } from "../actions";
 
 export const metadata: Metadata = {

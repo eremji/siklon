@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { RADIUS_WATCH_KM } from "@/lib/constantes";
 import { ILES } from "@/lib/iles";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 export const metadata: Metadata = {
   title: "Mon île · Siklon",
@@ -28,9 +29,7 @@ export default function Page() {
           </li>
         ))}
       </ul>
-      <p className="mt-auto text-sm text-muted">
-        Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.
-      </p>
+      <MentionOfficielle />
     </main>
   );
 }

@@ -56,7 +56,8 @@ test("créer un compte, se déconnecter, puis se reconnecter", async ({ page, co
   await expect(page).toHaveURL("/fr/compte");
   await expect(texteVisible(page, email)).toBeVisible();
   await expect(texteVisible(page, "Non confirmée")).toBeVisible();
-  await expect(texteVisible(page, "English")).toBeVisible();
+  // Langue du compte, dans le résumé (le pied de page a aussi un lien « English »).
+  await expect(page.getByRole("main").getByText("English", { exact: true })).toBeVisible();
 
   // Un seul cookie, celui de la session, protégé du JavaScript de la page.
   const cookies = (await context.cookies()).filter((c) => c.name.startsWith("siklon."));

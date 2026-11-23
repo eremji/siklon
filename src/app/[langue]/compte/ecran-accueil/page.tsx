@@ -3,7 +3,7 @@
 import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
-import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { IconeEcranAccueil, IconePartager } from "@/components/ecranAccueil/icones";
 
 export const metadata: Metadata = {

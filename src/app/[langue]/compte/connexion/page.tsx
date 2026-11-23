@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { Suspense } from "react";
 import { AlerteGoogle, FormulaireConnexion, FormulaireGoogle } from "@/components/compte/Formulaires";
-import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { connexionGoogleActive } from "@/lib/auth/configuration";
 import { connecter, connecterAvecGoogle } from "../actions";
 

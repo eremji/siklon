@@ -1,4 +1,5 @@
 import type { DernierImport } from "@/lib/db/historique";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 const URL_HURDAT2 = "https://www.nhc.noaa.gov/data/#hurdat";
 
@@ -22,7 +23,7 @@ export function SourceHurdat2({ dernierImport }: { dernierImport: DernierImport 
           Données HURDAT2 sur le site du NHC
         </a>
       </p>
-      <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
+      <MentionOfficielle className="" />
     </footer>
   );
 }

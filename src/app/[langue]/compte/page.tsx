@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EtatCompte } from "@/components/compte/EtatCompte";
 import { AlerteGoogle } from "@/components/compte/Formulaires";
-import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { connexionGoogleActive } from "@/lib/auth/configuration";
 import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireIlesSuivies } from "@/lib/db/ilesSuivies";

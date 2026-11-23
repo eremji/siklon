@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { FicheSystemeActif } from "@/components/systemes/FicheSystemeActif";
 import { fluxNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 export const metadata: Metadata = { title: "Fiche d'un système actif · Siklon" };
 
@@ -22,9 +23,7 @@ export default function Page({ params }: PageProps<"/[langue]/systemes/[id]">) {
       <Suspense fallback={<p className="text-base text-muted">Chargement de la fiche…</p>}>
         <Fiche params={params} />
       </Suspense>
-      <p className="mt-auto text-sm text-muted">
-        Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.
-      </p>
+      <MentionOfficielle />
     </main>
   );
 }

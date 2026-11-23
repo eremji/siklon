@@ -8,6 +8,7 @@ import { MenaceIle } from "@/components/menace/MenaceIle";
 import { ILES, type Ile, trouverIle } from "@/lib/iles";
 import { fluxNhc, positionsNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 type Props = PageProps<"/[langue]/iles/[ile]">;
 
@@ -83,9 +84,7 @@ export default function PageIle({ params }: Props) {
       <Suspense fallback={<Chargement texte="Chargement de l'île…" />}>
         <ContenuIle params={params} />
       </Suspense>
-      <p className="mt-auto text-sm text-muted">
-        Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.
-      </p>
+      <MentionOfficielle />
     </main>
   );
 }
