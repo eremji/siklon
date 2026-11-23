@@ -67,6 +67,16 @@ export default function Page() {
         </p>
       </Section>
 
+      <Section id="alertes-email" titre="Alertes par e-mail">
+        <p>
+          Siklon vous envoie les alertes par e-mail seulement si vous cochez « Recevoir les alertes par e-mail » sur la
+          page Compte. Elles partent par{" "}
+          <LienExterne href="https://www.brevo.com/fr/legal/privacypolicy/">Brevo</LienExterne>, le service qui envoie
+          déjà les emails du compte.
+        </p>
+        <p>Pour ne plus les recevoir, décochez la case : votre choix est gardé avec votre compte.</p>
+      </Section>
+
       <Section id="connexion-google" titre="Connexion avec Google">
         <p>
           Vous pouvez aussi vous connecter avec votre compte Google. Google transmet alors à Siklon votre adresse email,
@@ -116,7 +126,7 @@ export default function Page() {
             page Compte
           </Lien>
           , une fois connecté, vous pouvez supprimer votre compte : il est effacé immédiatement avec toutes ses données
-          (adresse email, langue, îles suivies, appareils abonnés aux alertes, empreinte du mot de passe, sessions), y
+          (adresse email, langue, îles suivies, appareils abonnés aux alertes, accord pour les alertes par e-mail, empreinte du mot de passe, sessions), y
           compris chez Brevo, qui efface le journal des emails envoyés à votre adresse. Votre mot de passe vous est
           demandé pour confirmer ; si votre compte n&apos;en a pas, il suffit de vous reconnecter avec Google dans les{" "}
           {DUREE_REAUTHENTIFICATION_MINUTES} minutes qui précèdent.
@@ -156,7 +166,7 @@ export default function Page() {
       </Section>
 
       <div className="flex flex-col gap-1 text-sm text-muted">
-        <p>Mise à jour : 21 novembre 2026.</p>
+        <p>Mise à jour : 23 novembre 2026.</p>
         <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
       </div>
     </main>

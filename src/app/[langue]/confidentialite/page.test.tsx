@@ -30,6 +30,14 @@ describe("Page de confidentialité", () => {
     expect(screen.getByRole("region", { name: "Supprimer vos données" })).toHaveTextContent(/appareils abonnés aux alertes/);
   });
 
+  it("explique les alertes par e-mail : avec votre accord seulement, envoyées par Brevo, accord retirable", () => {
+    render(<Page />);
+    const section = screen.getByRole("region", { name: "Alertes par e-mail" });
+    expect(section).toHaveTextContent(/seulement si vous cochez « Recevoir les alertes par e-mail »/);
+    expect(section).toHaveTextContent(/Brevo/);
+    expect(section).toHaveTextContent(/décochez/);
+  });
+
   it("annonce le cookie de session, déposé seulement à la connexion, et celui, temporaire, de Google", () => {
     render(<Page />);
     const section = screen.getByRole("region", { name: "Cookies" });
@@ -115,6 +123,6 @@ describe("Page de confidentialité", () => {
 
   it("indique sa date de mise à jour", () => {
     render(<Page />);
-    expect(screen.getByText(/Mise à jour : 21 novembre 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Mise à jour : 23 novembre 2026/)).toBeInTheDocument();
   });
 });

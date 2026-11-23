@@ -9,6 +9,7 @@ import {
   destinataires,
   enregistrerAccordEmail,
   enregistrerNiveau,
+  lireAccordEmail,
   lireNiveauxIles,
   reserverEnvoi,
 } from "./notifications";
@@ -102,6 +103,16 @@ describe("accord pour les alertes par e-mail (US-13)", () => {
     expect(await accord()).toBe(true);
     await enregistrerAccordEmail(db, id, false);
     expect(await accord()).toBe(false);
+  });
+
+  it("se relit pour la page Compte : non par défaut, puis le dernier choix", async () => {
+    const { id } = await nouvelUtilisateur();
+
+    expect(await lireAccordEmail(db, id)).toBe(false);
+    await enregistrerAccordEmail(db, id, true);
+    expect(await lireAccordEmail(db, id)).toBe(true);
+    await enregistrerAccordEmail(db, id, false);
+    expect(await lireAccordEmail(db, id)).toBe(false);
   });
 
   it("est effacé avec le compte", async () => {

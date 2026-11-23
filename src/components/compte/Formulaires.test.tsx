@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({ useSearchParams: () => parametres.valeur }))
 
 import {
   AlerteGoogle,
+  FormulaireAlertesEmail,
   FormulaireConfirmationAdresse,
   FormulaireConnexion,
   FormulaireGoogle,
@@ -217,6 +218,45 @@ describe("FormulaireIles", () => {
     const action = vi.fn(async () => ({ message: "Votre session a expiré. Reconnectez-vous pour enregistrer vos îles." }));
     render(<FormulaireIles action={action} suivies={[]} />);
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer mes îles" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Votre session a expiré.");
+  });
+});
+
+describe("FormulaireAlertesEmail", () => {
+  type EtatAlertes = { message?: string; confirmation?: string; accord?: boolean };
+
+  it("propose de recevoir les alertes à l'adresse du compte, case décochée par défaut", () => {
+    render(<FormulaireAlertesEmail action={vi.fn()} accord={false} email="a@b.fr" />);
+    expect(screen.getByRole("heading", { level: 2, name: "Alertes par e-mail" })).toBeInTheDocument();
+    expect(screen.getByText(/a@b\.fr/)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Recevoir les alertes par e-mail" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeInTheDocument();
+  });
+
+  it("coche la case si l'accord est déjà donné", () => {
+    render(<FormulaireAlertesEmail action={vi.fn()} accord email="a@b.fr" />);
+    expect(screen.getByRole("checkbox", { name: "Recevoir les alertes par e-mail" })).toBeChecked();
+  });
+
+  it("envoie le choix, puis confirme et garde la case dans l'état enregistré", async () => {
+    const action = vi.fn<(etat: EtatAlertes, donnees: FormData) => Promise<EtatAlertes>>(async () => ({
+      confirmation: "Vous recevrez les alertes par e-mail.",
+      accord: true,
+    }));
+    render(<FormulaireAlertesEmail action={action} accord={false} email="a@b.fr" />);
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Recevoir les alertes par e-mail" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Vous recevrez les alertes par e-mail.");
+    expect(action.mock.calls[0][1].get("email")).toBe("oui");
+    expect(screen.getByRole("checkbox", { name: "Recevoir les alertes par e-mail" })).toBeChecked();
+  });
+
+  it("affiche l'erreur renvoyée par le serveur", async () => {
+    const action = vi.fn(async () => ({ message: "Votre session a expiré. Reconnectez-vous pour gérer vos alertes." }));
+    render(<FormulaireAlertesEmail action={action} accord={false} email="a@b.fr" />);
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Votre session a expiré.");
   });
 });

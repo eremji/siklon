@@ -4,10 +4,11 @@
 // tentatives et ne reçoit jamais que l'email, le mot de passe et la langue.
 import { redirect } from "next/navigation";
 import type { ResultatAbonnement } from "@/components/compte/AbonnementAppareil";
-import type { EtatFormulaire, EtatIles } from "@/components/compte/Formulaires";
+import type { EtatAlertesEmail, EtatFormulaire, EtatIles } from "@/components/compte/Formulaires";
 import { appelerAuth, confirmerEmail, utilisateurCourant } from "@/lib/auth/serveur";
 import { enregistrerAbonnement, supprimerAbonnement } from "@/lib/db/abonnementsPush";
 import { enregistrerIlesSuivies, IleInconnueError, lireIlesSuivies } from "@/lib/db/ilesSuivies";
+import { enregistrerAccordEmail } from "@/lib/db/notifications";
 import { connexionComptes } from "@/lib/db/pool";
 import { chemin, estLangue, LANGUE_PAR_DEFAUT, type Langue } from "@/lib/langues";
 import { lireAbonnement } from "@/lib/notifications/abonnement";
@@ -166,4 +167,19 @@ export async function desabonnerAppareil(endpoint: unknown): Promise<ResultatAbo
   if (!utilisateur) return { ok: false, message: "Votre session a expiré. Reconnectez-vous pour gérer vos alertes." };
   if (typeof endpoint === "string") await supprimerAbonnement(connexionComptes(), utilisateur.id, endpoint);
   return { ok: true };
+}
+
+/** Donne ou retire l'accord pour les alertes par e-mail (US-07, US-13) : case « email » cochée ou non. */
+export async function enregistrerAlertesEmail(etat: EtatAlertesEmail, donnees: FormData): Promise<EtatAlertesEmail> {
+  const utilisateur = await utilisateurCourant();
+  if (!utilisateur) return { message: "Votre session a expiré. Reconnectez-vous pour gérer vos alertes.", accord: etat.accord };
+  if (!utilisateur.emailVerifie) {
+    return { message: "Confirmez d'abord votre adresse email pour recevoir les alertes.", accord: etat.accord };
+  }
+  const accord = donnees.has("email");
+  await enregistrerAccordEmail(connexionComptes(), utilisateur.id, accord);
+  return {
+    confirmation: accord ? "Vous recevrez les alertes par e-mail." : "Vous ne recevrez plus les alertes par e-mail.",
+    accord,
+  };
 }

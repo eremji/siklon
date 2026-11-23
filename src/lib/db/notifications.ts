@@ -93,6 +93,12 @@ export async function enregistrerAccordEmail(db: Executeur, utilisateurId: strin
   );
 }
 
+/** Accord de l'utilisateur pour les alertes par e-mail : non tant qu'il ne l'a pas donné (US-13). */
+export async function lireAccordEmail(db: Executeur, utilisateurId: string): Promise<boolean> {
+  const { rows } = await db.query(`select email from public.preferences_alertes where utilisateur_id = $1`, [utilisateurId]);
+  return (rows as { email: boolean }[])[0]?.email ?? false;
+}
+
 /** E-mails d'alerte réservés depuis minuit (UTC) : ils comptent dans le quota quotidien de Brevo. */
 export async function compterEmailsAlerteDuJour(db: Executeur): Promise<number> {
   const { rows } = await db.query(

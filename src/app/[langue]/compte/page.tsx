@@ -6,12 +6,14 @@ import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { connexionGoogleActive } from "@/lib/auth/configuration";
 import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireIlesSuivies } from "@/lib/db/ilesSuivies";
+import { lireAccordEmail } from "@/lib/db/notifications";
 import { connexionComptes } from "@/lib/db/pool";
 import {
   abonnerAppareil,
   connecterAvecGoogle,
   deconnecter,
   desabonnerAppareil,
+  enregistrerAlertesEmail,
   enregistrerIles,
   renvoyerConfirmation,
   supprimerCompte,
@@ -25,17 +27,21 @@ export const metadata: Metadata = {
 // Lit la session : rendu à la requête, sous la frontière <Suspense> (Cache Components).
 async function Contenu() {
   const utilisateur = await utilisateurCourant();
-  const ilesSuivies = utilisateur ? await lireIlesSuivies(connexionComptes(), utilisateur.id) : [];
+  const [ilesSuivies, accordEmail] = utilisateur
+    ? await Promise.all([lireIlesSuivies(connexionComptes(), utilisateur.id), lireAccordEmail(connexionComptes(), utilisateur.id)])
+    : [[], false];
   return (
     <EtatCompte
       utilisateur={utilisateur}
       ilesSuivies={ilesSuivies}
+      accordEmail={accordEmail}
       deconnecter={deconnecter}
       supprimer={supprimerCompte}
       enregistrerIles={enregistrerIles}
       renvoyerConfirmation={renvoyerConfirmation}
       abonnerAppareil={abonnerAppareil}
       desabonnerAppareil={desabonnerAppareil}
+      enregistrerAlertesEmail={enregistrerAlertesEmail}
       // Lue à la requête (pas de NEXT_PUBLIC_) : la clé peut changer sans reconstruire le site.
       clePubliqueVapid={process.env.VAPID_PUBLIC_KEY || null}
       google={connexionGoogleActive(process.env) ? connecterAvecGoogle : undefined}

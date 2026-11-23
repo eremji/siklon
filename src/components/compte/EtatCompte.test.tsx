@@ -10,6 +10,7 @@ const actions = {
   renvoyerConfirmation: vi.fn(),
   abonnerAppareil: vi.fn(),
   desabonnerAppareil: vi.fn(),
+  enregistrerAlertesEmail: vi.fn(),
   clePubliqueVapid: null,
 };
 
@@ -27,6 +28,23 @@ describe("EtatCompte", () => {
   it("adresse confirmée : propose les alertes sur l'appareil", () => {
     render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }} {...actions} />);
     expect(screen.getByRole("heading", { name: "Alertes sur cet appareil" })).toBeInTheDocument();
+  });
+
+  it("adresse non confirmée : ne propose pas encore les alertes par e-mail", () => {
+    render(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "fr" }} {...actions} />);
+    expect(screen.queryByRole("heading", { name: "Alertes par e-mail" })).not.toBeInTheDocument();
+  });
+
+  it("adresse confirmée : propose les alertes par e-mail, selon l'accord enregistré", () => {
+    render(
+      <EtatCompte
+        utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "fr" }}
+        accordEmail
+        {...actions}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Alertes par e-mail" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Recevoir les alertes par e-mail" })).toBeChecked();
   });
 
   it("transmet la langue de la page à la déconnexion", () => {
