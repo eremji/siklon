@@ -19,7 +19,7 @@ export function DelaiPassage({ heure }: { heure: string }) {
   const minute = useSyncExternalStore(abonner, minuteCourante, minuteServeur);
   return (
     <p className="min-h-14 text-[44px] leading-tight font-bold">
-      {minute === null ? null : formaterDelai(heure, new Date(minute * MINUTE_MS))}
+      {minute === null ? null : formaterDelai(heure, new Date(minute * MINUTE_MS), "fr")}
     </p>
   );
 }

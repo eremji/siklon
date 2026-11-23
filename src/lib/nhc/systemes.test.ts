@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import actifs from "./__fixtures__/current-storms-actifs.json";
 import vide from "./__fixtures__/current-storms-vide.json";
-import { FluxInvalideError, categorieSaffirSimpson, libelleType, lireCurrentStorms } from "./systemes";
+import { FluxInvalideError, type SystemeActif, categorieSaffirSimpson, descriptionSysteme, libelleType, lireCurrentStorms } from "./systemes";
 
 // Copie modifiable du premier système de la fixture.
 function fluxAvec(modifier: (systeme: Record<string, unknown>) => void) {
@@ -185,6 +185,41 @@ describe("libelleType", () => {
     ["HU", "Ouragan"],
     ["PTC", "Cyclone potentiel ou post-tropical"],
   ] as const)("traduit %s", (code, libelle) => {
-    expect(libelleType(code)).toBe(libelle);
+    expect(libelleType(code, "fr")).toBe(libelle);
+  });
+
+  it.each([
+    ["TD", "Tropical depression"],
+    ["STD", "Subtropical depression"],
+    ["TS", "Tropical storm"],
+    ["STS", "Subtropical storm"],
+    ["HU", "Hurricane"],
+    ["PTC", "Potential or post-tropical cyclone"],
+  ] as const)("traduit %s en anglais (US-10)", (code, libelle) => {
+    expect(libelleType(code, "en")).toBe(libelle);
+  });
+});
+
+describe("descriptionSysteme", () => {
+  const systeme = (classification: SystemeActif["classification"], ventKt: number): SystemeActif => ({
+    id: "al112026",
+    emplacement: "AT1",
+    nom: "Kyle",
+    classification,
+    ventKt,
+    pressionHpa: 950,
+    latitude: 16,
+    longitude: -60,
+    avis: { numero: "14", emisLe: "2026-09-10T15:00:00.000Z" },
+  });
+
+  it("donne la catégorie d'un ouragan", () => {
+    expect(descriptionSysteme(systeme("HU", 120), "fr")).toBe("Ouragan de catégorie 4");
+    expect(descriptionSysteme(systeme("HU", 120), "en")).toBe("Category 4 hurricane");
+  });
+
+  it("donne le type seul pour un autre système", () => {
+    expect(descriptionSysteme(systeme("TS", 50), "fr")).toBe("Tempête tropicale");
+    expect(descriptionSysteme(systeme("TS", 50), "en")).toBe("Tropical storm");
   });
 });

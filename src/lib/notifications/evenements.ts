@@ -48,7 +48,7 @@ export function entreesRayon(ile: Ile, menaces: Menace<SystemeActif>[]): Eveneme
     type: "entree-rayon",
     cle: `rayon:${ile.slug}:${systeme.id}`,
     ile,
-    systeme: { id: systeme.id, nom: systeme.nom, description: descriptionSysteme(systeme) },
+    systeme: { id: systeme.id, nom: systeme.nom, description: descriptionSysteme(systeme, "fr") },
     passage,
     avis: systeme.avis,
   }));

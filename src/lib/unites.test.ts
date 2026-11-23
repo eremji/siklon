@@ -46,16 +46,34 @@ describe("directionDeplacement", () => {
     [340, "vers le nord-nord-ouest"],
     [350, "vers le nord"],
   ])("%i° se lit « %s »", (degres, texte) => {
-    expect(directionDeplacement(degres)).toBe(texte);
+    expect(directionDeplacement(degres, "fr")).toBe(texte);
   });
 });
 
 describe("formaterPosition", () => {
   it("écrit latitude et longitude en degrés décimaux avec les points cardinaux", () => {
-    expect(formaterPosition(16.8, -58.2)).toBe("16,8° N, 58,2° O");
+    expect(formaterPosition(16.8, -58.2, "fr")).toBe("16,8° N, 58,2° O");
   });
 
   it("gère l'hémisphère sud et l'est, et garde une décimale", () => {
-    expect(formaterPosition(-5, 12.25)).toBe("5,0° S, 12,3° E");
+    expect(formaterPosition(-5, 12.25, "fr")).toBe("5,0° S, 12,3° E");
+  });
+});
+
+describe("en anglais (US-10)", () => {
+  it.each([
+    [0, "toward the north"],
+    [45, "toward the northeast"],
+    [112, "toward the east-southeast"],
+    [200, "toward the south-southwest"],
+    [285, "toward the west-northwest"],
+    [340, "toward the north-northwest"],
+  ])("%i° se lit « %s »", (degres, texte) => {
+    expect(directionDeplacement(degres, "en")).toBe(texte);
+  });
+
+  it("écrit la position avec un point décimal et W pour l'ouest", () => {
+    expect(formaterPosition(16.8, -58.2, "en")).toBe("16.8° N, 58.2° W");
+    expect(formaterPosition(-5, 12.25, "en")).toBe("5.0° S, 12.3° E");
   });
 });

@@ -9,7 +9,7 @@ import { Pastille } from "./Pastille";
 
 function Source({ systemes, luLe }: { systemes: SystemeActif[]; luLe: string }) {
   const dernierAvis = avisLePlusRecent(systemes.map((systeme) => systeme.avis.emisLe));
-  const heure = dernierAvis ? `dernier avis le ${formaterHeureAntilles(dernierAvis)}` : `flux lu le ${formaterHeureAntilles(luLe)}`;
+  const heure = dernierAvis ? `dernier avis le ${formaterHeureAntilles(dernierAvis, "fr")}` : `flux lu le ${formaterHeureAntilles(luLe, "fr")}`;
   return <p className="text-sm text-muted">Source : NHC, {heure} (heure des Antilles françaises).</p>;
 }
 
@@ -55,9 +55,9 @@ export function ListeSystemes({
                 >
                   {systeme.nom}
                 </Lien>
-                <span className="text-base text-muted">{descriptionSysteme(systeme)}</span>
+                <span className="text-base text-muted">{descriptionSysteme(systeme, "fr")}</span>
                 <span className="text-sm text-muted">
-                  Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe)}
+                  Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe, "fr")}
                 </span>
                 <span className="text-sm text-muted">
                   {previsions[systeme.id]

@@ -1,4 +1,5 @@
 // Conversion des unités du NHC (nœuds, mph, degrés) vers le système métrique.
+import type { Langue } from "./langues";
 
 const KMH_PAR_KT = 1.852;
 const MPH_PAR_KT = 1.150779;
@@ -24,36 +25,64 @@ export function mphVersKmh(mph: number): number {
 }
 
 // Rose des vents à 16 directions, à partir du nord, dans le sens horaire.
-const DIRECTIONS = [
-  "nord",
-  "nord-nord-est",
-  "nord-est",
-  "est-nord-est",
-  "est",
-  "est-sud-est",
-  "sud-est",
-  "sud-sud-est",
-  "sud",
-  "sud-sud-ouest",
-  "sud-ouest",
-  "ouest-sud-ouest",
-  "ouest",
-  "ouest-nord-ouest",
-  "nord-ouest",
-  "nord-nord-ouest",
-] as const;
+const DIRECTIONS: Record<Langue, readonly string[]> = {
+  fr: [
+    "nord",
+    "nord-nord-est",
+    "nord-est",
+    "est-nord-est",
+    "est",
+    "est-sud-est",
+    "sud-est",
+    "sud-sud-est",
+    "sud",
+    "sud-sud-ouest",
+    "sud-ouest",
+    "ouest-sud-ouest",
+    "ouest",
+    "ouest-nord-ouest",
+    "nord-ouest",
+    "nord-nord-ouest",
+  ],
+  en: [
+    "north",
+    "north-northeast",
+    "northeast",
+    "east-northeast",
+    "east",
+    "east-southeast",
+    "southeast",
+    "south-southeast",
+    "south",
+    "south-southwest",
+    "southwest",
+    "west-southwest",
+    "west",
+    "west-northwest",
+    "northwest",
+    "north-northwest",
+  ],
+};
 
 // Le NHC donne la direction vers laquelle le système se déplace, en degrés.
-export function directionDeplacement(degres: number): string {
-  const index = Math.round((((degres % 360) + 360) % 360) / 22.5) % DIRECTIONS.length;
-  const direction = DIRECTIONS[index];
+export function directionDeplacement(degres: number, langue: Langue): string {
+  const index = Math.round((((degres % 360) + 360) % 360) / 22.5) % 16;
+  const direction = DIRECTIONS[langue][index];
+  if (langue === "en") return `toward the ${direction}`;
   return /^[eo]/.test(direction) ? `vers l'${direction}` : `vers le ${direction}`;
 }
 
-const UNE_DECIMALE = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const UNE_DECIMALE: Record<Langue, Intl.NumberFormat> = {
+  fr: new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+  en: new Intl.NumberFormat("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+};
 
-export function formaterPosition(latitude: number, longitude: number): string {
-  const lat = `${UNE_DECIMALE.format(Math.abs(latitude))}° ${latitude < 0 ? "S" : "N"}`;
-  const lon = `${UNE_DECIMALE.format(Math.abs(longitude))}° ${longitude < 0 ? "O" : "E"}`;
+// Ouest : « O » en français, « W » en anglais.
+const OUEST: Record<Langue, string> = { fr: "O", en: "W" };
+
+export function formaterPosition(latitude: number, longitude: number, langue: Langue): string {
+  const format = UNE_DECIMALE[langue];
+  const lat = `${format.format(Math.abs(latitude))}° ${latitude < 0 ? "S" : "N"}`;
+  const lon = `${format.format(Math.abs(longitude))}° ${longitude < 0 ? OUEST[langue] : "E"}`;
   return `${lat}, ${lon}`;
 }

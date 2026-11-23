@@ -25,7 +25,7 @@ function Source({ luLe }: { luLe?: string }) {
     <div className="flex flex-col gap-1">
       <p className="text-sm text-muted">
         {luLe
-          ? `Source : NHC, données lues le ${formaterHeureAntilles(luLe)} (heure des Antilles françaises).`
+          ? `Source : NHC, données lues le ${formaterHeureAntilles(luLe, "fr")} (heure des Antilles françaises).`
           : "Source : NHC."}
       </p>
       <a
@@ -85,7 +85,7 @@ export function AlertesNhc({ nomIle, etat }: { nomIle: string; etat: EtatAlertes
               ({systeme.description})
             </p>
             <p className="text-sm text-muted">
-              Avis n° {avis.numero} du NHC, émis le {formaterHeureAntilles(avis.emisLe)}.
+              Avis n° {avis.numero} du NHC, émis le {formaterHeureAntilles(avis.emisLe, "fr")}.
             </p>
           </li>
         ))}
