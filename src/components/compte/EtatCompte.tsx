@@ -4,8 +4,10 @@ import { Lien } from "@/components/langue/Lien";
 import { AbonnementAppareil, type ResultatAbonnement } from "@/components/compte/AbonnementAppareil";
 import {
   type ActionGoogle,
+  type EtatAlertesEmail,
   type EtatFormulaire,
   type EtatIles,
+  FormulaireAlertesEmail,
   FormulaireIles,
   FormulaireRenvoiConfirmation,
   FormulaireSuppression,
@@ -25,23 +27,28 @@ const LIEN_SECONDAIRE =
 export function EtatCompte({
   utilisateur,
   ilesSuivies = [],
+  accordEmail = false,
   deconnecter,
   supprimer,
   enregistrerIles,
   renvoyerConfirmation,
   abonnerAppareil,
   desabonnerAppareil,
+  enregistrerAlertesEmail,
   clePubliqueVapid,
   google,
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
+  /** Accord enregistré pour les alertes par e-mail (non par défaut). */
+  accordEmail?: boolean;
   deconnecter: (donnees: FormData) => Promise<void>;
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
   renvoyerConfirmation: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   abonnerAppareil: (abonnement: unknown) => Promise<ResultatAbonnement>;
   desabonnerAppareil: (endpoint: unknown) => Promise<ResultatAbonnement>;
+  enregistrerAlertesEmail: (etat: EtatAlertesEmail, donnees: FormData) => Promise<EtatAlertesEmail>;
   /** Clé publique VAPID du web push ; `null` s'il n'est pas configuré. */
   clePubliqueVapid: string | null;
   /** Départ vers Google, si la connexion avec Google est configurée. */
@@ -97,7 +104,10 @@ export function EtatCompte({
       <FormulaireIles action={enregistrerIles} suivies={ilesSuivies} />
       {/* Les alertes ne partent que vers un compte dont l'adresse est confirmée. */}
       {utilisateur.emailVerifie && (
-        <AbonnementAppareil clePublique={clePubliqueVapid} abonner={abonnerAppareil} desabonner={desabonnerAppareil} />
+        <>
+          <AbonnementAppareil clePublique={clePubliqueVapid} abonner={abonnerAppareil} desabonner={desabonnerAppareil} />
+          <FormulaireAlertesEmail action={enregistrerAlertesEmail} accord={accordEmail} email={utilisateur.email} />
+        </>
       )}
       <form action={deconnecter}>
         <ChampLangueInterface />

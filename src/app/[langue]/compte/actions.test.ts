@@ -12,6 +12,7 @@ const confirmerEmail = vi.hoisted(() => vi.fn());
 const ilesSuivies = vi.hoisted(() => ({ enregistrer: vi.fn(), lire: vi.fn() }));
 const pool = vi.hoisted(() => ({ nom: "pool des comptes" }));
 const abonnements = vi.hoisted(() => ({ enregistrer: vi.fn(), supprimer: vi.fn() }));
+const enregistrerAccordEmail = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth/serveur", () => ({ appelerAuth, confirmerEmail, utilisateurCourant }));
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/lib/db/pool", () => ({ connexionComptes: () => pool }));
@@ -20,6 +21,8 @@ vi.mock("@/lib/db/ilesSuivies", async (original) => ({
   enregistrerIlesSuivies: ilesSuivies.enregistrer,
   lireIlesSuivies: ilesSuivies.lire,
 }));
+
+vi.mock("@/lib/db/notifications", () => ({ enregistrerAccordEmail }));
 
 vi.mock("@/lib/db/abonnementsPush", () => ({
   enregistrerAbonnement: abonnements.enregistrer,
@@ -34,6 +37,7 @@ const {
   connecterAvecGoogle,
   deconnecter,
   demanderReinitialisation,
+  enregistrerAlertesEmail,
   enregistrerIles,
   inscrire,
   reinitialiserMotDePasse,
@@ -56,6 +60,7 @@ beforeEach(() => {
   ilesSuivies.lire.mockReset();
   abonnements.enregistrer.mockReset();
   abonnements.supprimer.mockReset();
+  enregistrerAccordEmail.mockReset();
   redirect.mockClear();
 });
 
@@ -176,6 +181,51 @@ describe("enregistrerIles", () => {
       message: "Cette île ne fait pas partie de la liste.",
       iles: ["guadeloupe"],
     });
+  });
+});
+
+describe("enregistrerAlertesEmail", () => {
+  const CONFIRME = { id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "fr" };
+  const formulaireAlertes = (coche: boolean) => {
+    const donnees = new FormData();
+    if (coche) donnees.set("email", "oui");
+    return donnees;
+  };
+
+  it("case cochée : enregistre l'accord et confirme", async () => {
+    utilisateurCourant.mockResolvedValue(CONFIRME);
+    expect(await enregistrerAlertesEmail({}, formulaireAlertes(true))).toEqual({
+      confirmation: "Vous recevrez les alertes par e-mail.",
+      accord: true,
+    });
+    expect(enregistrerAccordEmail).toHaveBeenCalledWith(pool, "id-1", true);
+  });
+
+  it("case décochée : retire l'accord et confirme", async () => {
+    utilisateurCourant.mockResolvedValue(CONFIRME);
+    expect(await enregistrerAlertesEmail({ accord: true }, formulaireAlertes(false))).toEqual({
+      confirmation: "Vous ne recevrez plus les alertes par e-mail.",
+      accord: false,
+    });
+    expect(enregistrerAccordEmail).toHaveBeenCalledWith(pool, "id-1", false);
+  });
+
+  it("sans session, n'enregistre rien et invite à se reconnecter", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await enregistrerAlertesEmail({ accord: false }, formulaireAlertes(true))).toEqual({
+      message: "Votre session a expiré. Reconnectez-vous pour gérer vos alertes.",
+      accord: false,
+    });
+    expect(enregistrerAccordEmail).not.toHaveBeenCalled();
+  });
+
+  it("adresse non confirmée : n'enregistre rien", async () => {
+    utilisateurCourant.mockResolvedValue({ ...CONFIRME, emailVerifie: false });
+    expect(await enregistrerAlertesEmail({ accord: false }, formulaireAlertes(true))).toEqual({
+      message: "Confirmez d'abord votre adresse email pour recevoir les alertes.",
+      accord: false,
+    });
+    expect(enregistrerAccordEmail).not.toHaveBeenCalled();
   });
 });
 

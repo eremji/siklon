@@ -22,8 +22,16 @@ export interface EtatIles {
   iles?: string[];
 }
 
+/** État du formulaire des alertes par e-mail : accord enregistré, confirmation ou erreur. */
+export interface EtatAlertesEmail {
+  message?: string;
+  confirmation?: string;
+  accord?: boolean;
+}
+
 type Action = (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
 type ActionIles = (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
+type ActionAlertesEmail = (etat: EtatAlertesEmail, donnees: FormData) => Promise<EtatAlertesEmail>;
 /** Départ vers Google (server action) : redirige, ne renvoie rien. */
 export type ActionGoogle = (donnees: FormData) => Promise<void>;
 
@@ -296,6 +304,45 @@ export function FormulaireIles({ action, suivies }: { action: ActionIles; suivie
         </p>
         <button type="submit" disabled={enCours} className={BOUTON}>
           {enCours ? "Enregistrement en cours…" : "Enregistrer mes îles"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+/** Alertes par e-mail (US-07) : jamais sans l'accord de l'utilisateur, case décochée par défaut (US-13). */
+export function FormulaireAlertesEmail({
+  action,
+  accord,
+  email,
+}: {
+  action: ActionAlertesEmail;
+  accord: boolean;
+  email: string;
+}) {
+  const [etat, envoyer, enCours] = useActionState(action, {});
+  const coche = etat.accord ?? accord;
+  return (
+    <section aria-labelledby="alertes-email-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
+      <h2 id="alertes-email-titre" className="text-xl font-bold">
+        Alertes par e-mail
+      </h2>
+      <p className="text-base">
+        En plus des alertes sur vos appareils, Siklon peut les envoyer à <span className="font-bold break-all">{email}</span>.
+        Vous pouvez changer d&apos;avis à tout moment.
+      </p>
+      <form action={envoyer} className="flex flex-col gap-3">
+        <Erreur message={etat.message} />
+        {/* key : React vide le formulaire après l'envoi ; on remet la case dans l'état enregistré. */}
+        <label key={String(coche)} className="flex min-h-11 items-center gap-3 text-base">
+          <input type="checkbox" name="email" value="oui" defaultChecked={coche} className="size-5 accent-accent" />
+          Recevoir les alertes par e-mail
+        </label>
+        <p role="status" className="text-base font-bold empty:hidden">
+          {etat.confirmation}
+        </p>
+        <button type="submit" disabled={enCours} className={BOUTON}>
+          {enCours ? "Enregistrement en cours…" : "Enregistrer"}
         </button>
       </form>
     </section>

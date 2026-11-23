@@ -468,3 +468,42 @@ test.describe("sur iPhone, dans un onglet Safari", () => {
     });
   }
 });
+
+// Alertes par e-mail (US-07) : jamais sans l'accord de l'utilisateur, case décochée par défaut (US-13).
+const sectionEmail = (page: Page) => page.getByRole("region", { name: "Alertes par e-mail" }).filter({ visible: true });
+
+test("accepter les alertes par e-mail, puis y renoncer : le choix reste après rechargement", async ({ page }, testInfo) => {
+  await compteConfirme(page, nouvelEmail(testInfo));
+  const section = sectionEmail(page);
+  const caseEmail = section.getByRole("checkbox", { name: "Recevoir les alertes par e-mail" });
+  const enregistrer = async (confirmation: string) => {
+    await section.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    await expect(section.getByRole("status")).toHaveText(confirmation);
+  };
+
+  await expect(caseEmail).not.toBeChecked();
+  await caseEmail.check();
+  await enregistrer("Vous recevrez les alertes par e-mail.");
+  await page.reload();
+  await expect(caseEmail).toBeChecked();
+
+  await caseEmail.uncheck();
+  await enregistrer("Vous ne recevrez plus les alertes par e-mail.");
+  await page.reload();
+  await expect(caseEmail).not.toBeChecked();
+});
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`les alertes par e-mail respectent WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
+    page,
+  }, testInfo) => {
+    await page.emulateMedia({ colorScheme });
+    await compteConfirme(page, nouvelEmail(testInfo));
+    const section = sectionEmail(page);
+    // Zones tactiles d'au moins 44 px (DESIGN.md).
+    expect((await section.getByText("Recevoir les alertes par e-mail").boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    expect((await section.getByRole("button", { name: "Enregistrer", exact: true }).boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+}
