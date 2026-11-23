@@ -18,6 +18,7 @@ export function proxy(request: NextRequest): NextResponse {
 
 export const config = {
   // Ni les pages qui ont déjà leur langue, ni l'API, ni les fichiers de Next, ni les fichiers
-  // statiques (tout chemin qui contient un point : sw.js, favicon.ico…).
-  matcher: ["/((?!(?:fr|en|api)(?:/|$)|_next/|.*\\.).*)"],
+  // statiques (tout chemin qui contient un point : sw.js, favicon.ico…), ni l'icône Apple générée
+  // par src/app/apple-icon.tsx, servie sans extension (/apple-icon?<empreinte>).
+  matcher: ["/((?!(?:fr|en|api|apple-icon)(?:/|$)|_next/|.*\\.).*)"],
 };
