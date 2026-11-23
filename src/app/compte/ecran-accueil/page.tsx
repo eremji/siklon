@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
-import { IconeEcranAccueil, IconePartager, IconePlus } from "@/components/ecranAccueil/icones";
+import { IconeEcranAccueil, IconePartager } from "@/components/ecranAccueil/icones";
 
 export const metadata: Metadata = {
   title: "Ajouter Siklon à l'écran d'accueil · Siklon",
@@ -67,8 +67,7 @@ export default function Page() {
           </Illustration>
           <p className="text-base text-muted">
             Un carré avec une flèche vers le haut : en bas de l&apos;écran sur iPhone, en haut à droite sur iPad. Vous
-            ne le voyez pas ? Touchez « ⋯ » <IconePlus taille={18} className="inline align-[-3px]" /> à côté de
-            l&apos;adresse.
+            ne le voyez pas ? Touchez « ⋯ » à côté de l&apos;adresse.
           </p>
         </Etape>
         <Etape numero={2} titre="Touchez « Sur l'écran d'accueil »">

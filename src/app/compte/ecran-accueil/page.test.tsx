@@ -30,7 +30,9 @@ describe("écran d'aide : ajouter Siklon à l'écran d'accueil (US-07c)", () => 
     const premiere = within(screen.getByRole("list", { name: "Étapes" })).getAllByRole("listitem")[0];
     expect(premiere).toHaveTextContent(/en bas de l'écran sur iphone/i);
     expect(premiere).toHaveTextContent(/en haut à droite sur ipad/i);
-    expect(premiere).toHaveTextContent("« ⋯ »");
+    expect(premiere).toHaveTextContent("Touchez « ⋯ » à côté de l'adresse.");
+    // Les points ne sont écrits qu'une fois (pas de texte doublé d'une icône).
+    expect(premiere.textContent?.match(/⋯/g)).toHaveLength(1);
   });
 
   it("les illustrations sont décoratives : le texte des étapes suffit", () => {

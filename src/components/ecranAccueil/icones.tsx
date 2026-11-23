@@ -28,14 +28,3 @@ export function IconeEcranAccueil({ taille = 22, className }: { taille?: number;
     </svg>
   );
 }
-
-/** Bouton « ⋯ » de la barre d'adresse de Safari. */
-export function IconePlus({ taille = 22, className }: { taille?: number; className?: string }) {
-  return (
-    <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
-      <circle cx="5" cy="12" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="19" cy="12" r="1.8" />
-    </svg>
-  );
-}
