@@ -6,8 +6,10 @@ import { Suspense } from "react";
 import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { BarreNavigation, BarreNavigationSansSection } from "@/components/navigation/BarreNavigation";
 import { PiedDePage } from "@/components/PiedDePage";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
 import { estLangue, LANGUES } from "@/lib/langues";
 import { APPLE_WEB_APP, COULEURS_THEME } from "@/lib/pwa/metadonnees";
+import { COMMUN } from "@/lib/textes/commun";
 import "./globals.css";
 
 const atkinson = Atkinson_Hyperlegible({
@@ -16,12 +18,14 @@ const atkinson = Atkinson_Hyperlegible({
   weight: ["400", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Siklon",
-  description: "Suivi des cyclones tropicaux pour les Antilles.",
-  // Application installée sur l'écran d'accueil (US-07b) ; le manifeste est src/app/manifest.ts.
-  appleWebApp: APPLE_WEB_APP,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Siklon",
+    description: COMMUN[await langueDeLaPage()].description,
+    // Application installée sur l'écran d'accueil (US-07b) ; le manifeste est src/app/manifest.ts.
+    appleWebApp: APPLE_WEB_APP,
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: COULEURS_THEME,

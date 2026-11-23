@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { SystemesActifs } from "@/components/systemes/SystemesActifs";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 export default function Home() {
   return (
@@ -13,9 +14,7 @@ export default function Home() {
           <SystemesActifs />
         </Suspense>
       </section>
-      <p className="mt-auto text-sm text-muted">
-        Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.
-      </p>
+      <MentionOfficielle />
     </main>
   );
 }

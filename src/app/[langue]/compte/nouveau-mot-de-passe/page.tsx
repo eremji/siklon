@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { Suspense } from "react";
 import { FormulaireNouveauMotDePasse } from "@/components/compte/Formulaires";
-import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { reinitialiserMotDePasse } from "../actions";
 
 // Le jeton est dans l'adresse : ni transmis aux autres sites, ni indexé.

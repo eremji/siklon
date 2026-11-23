@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
-import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 export const metadata: Metadata = {
   title: "Compte supprimé · Siklon",

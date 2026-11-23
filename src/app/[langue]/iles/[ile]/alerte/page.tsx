@@ -12,6 +12,7 @@ import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDema
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
 import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
 import { chargerVigilance } from "@/lib/vigilance/vigilance";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 type Props = PageProps<"/[langue]/iles/[ile]/alerte">;
 
@@ -93,9 +94,7 @@ export default function PageAlerte({ params }: Props) {
       <Suspense fallback={<Chargement texte="Chargement de l'île…" />}>
         <AlerteIle params={params} />
       </Suspense>
-      <p className="mt-auto text-sm text-muted">
-        Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.
-      </p>
+      <MentionOfficielle />
     </main>
   );
 }

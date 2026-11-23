@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
 import { DUREE_REAUTHENTIFICATION_MINUTES, DUREE_SESSION_JOURS, LIMITES_TENTATIVES } from "@/lib/auth/options";
+import { MentionOfficielle } from "@/components/MentionOfficielle";
 
 export const metadata: Metadata = {
   title: "Confidentialité · Siklon",
@@ -167,7 +168,7 @@ export default function Page() {
 
       <div className="flex flex-col gap-1 text-sm text-muted">
         <p>Mise à jour : 23 novembre 2026.</p>
-        <p>Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.</p>
+        <MentionOfficielle className="" />
       </div>
     </main>
   );

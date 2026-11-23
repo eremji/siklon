@@ -3,21 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { chemin as cheminDans, decouperChemin, type Langue } from "@/lib/langues";
+import { COMMUN } from "@/lib/textes/commun";
 
 // DESIGN.md : barre flottante en pilule, onglet actif sur --accent. L'entrée Alertes viendra
 // avec sa page (US-07, US-09).
 const ENTREES = [
-  { href: "/", libelle: "Carte", section: (chemin: string) => chemin === "/" || chemin.startsWith("/systemes") },
-  { href: "/iles", libelle: "Mon île", section: (chemin: string) => /^\/(iles|historique)(\/|$)/.test(chemin) },
-  { href: "/compte", libelle: "Compte", section: (chemin: string) => /^\/compte(\/|$)/.test(chemin) },
+  { href: "/", libelle: "carte", section: (chemin: string) => chemin === "/" || chemin.startsWith("/systemes") },
+  { href: "/iles", libelle: "monIle", section: (chemin: string) => /^\/(iles|historique)(\/|$)/.test(chemin) },
+  { href: "/compte", libelle: "compte", section: (chemin: string) => /^\/compte(\/|$)/.test(chemin) },
 ] as const;
 
 function Barre({ langue, chemin }: { langue: Langue; chemin?: string }) {
   // Les sections se reconnaissent au chemin sans la langue : /en/iles → /iles.
   const page = chemin === undefined ? undefined : decouperChemin(chemin).reste;
+  const textes = COMMUN[langue].navigation;
   return (
     <nav
-      aria-label="Navigation principale"
+      aria-label={textes.nom}
       className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 mx-auto flex w-fit gap-1 rounded-full bg-surface p-1.5 shadow-lg shadow-foreground/15"
     >
       {ENTREES.map(({ href, libelle, section }) => {
@@ -31,7 +33,7 @@ function Barre({ langue, chemin }: { langue: Langue; chemin?: string }) {
               actif ? "bg-accent text-on-accent" : "text-foreground"
             }`}
           >
-            {libelle}
+            {textes[libelle]}
           </Link>
         );
       })}
