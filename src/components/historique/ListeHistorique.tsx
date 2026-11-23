@@ -22,19 +22,19 @@ export function ListeHistorique({ entrees, ile }: { entrees: readonly EntreeHist
             className="flex min-h-11 items-center text-accent underline underline-offset-4"
           >
             <h3 className="text-lg font-bold">
-              {nomTempete(entree.nom, entree.tempeteId)} <span className="font-normal">{entree.annee}</span>
+              {nomTempete(entree.nom, entree.tempeteId, "fr")} <span className="font-normal">{entree.annee}</span>
             </h3>
           </Lien>
           <dl className="mt-2 grid grid-cols-1 gap-y-1 text-base sm:grid-cols-[auto_1fr] sm:gap-x-4">
             <dt className="text-muted">Intensité près de l&apos;île</dt>
             <dd className="flex flex-wrap gap-x-2">
-              <span className="font-bold">{libelleCategorie(entree.categorie)}</span>
-              {entree.ventMaxKt !== null && <span>{formaterVent(entree.ventMaxKt)}</span>}
+              <span className="font-bold">{libelleCategorie(entree.categorie, "fr")}</span>
+              {entree.ventMaxKt !== null && <span>{formaterVent(entree.ventMaxKt, "fr")}</span>}
             </dd>
             <dt className="text-muted">Distance minimale</dt>
-            <dd>{formaterDistance(entree.distanceMinKm)}</dd>
+            <dd>{formaterDistance(entree.distanceMinKm, "fr")}</dd>
             <dt className="text-muted">Plus proche passage</dt>
-            <dd>{formaterDate(entree.horodatage, ile.fuseau)}</dd>
+            <dd>{formaterDate(entree.horodatage, ile.fuseau, "fr")}</dd>
           </dl>
         </li>
       ))}

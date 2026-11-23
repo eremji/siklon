@@ -55,7 +55,7 @@ async function Fiche({ params, searchParams }: PageProps<"/[langue]/historique/[
   }
   if (!tempete || tempete.points.length === 0) notFound();
 
-  const titre = `${nomTempete(tempete.nom, tempete.id)} (${tempete.annee})`;
+  const titre = `${nomTempete(tempete.nom, tempete.id, "fr")} (${tempete.annee})`;
   const vents = tempete.points.flatMap((p) => (p.ventKt === null ? [] : [p.ventKt]));
   const ventMax = vents.length > 0 ? Math.max(...vents) : null;
   const passage = ile ? calculerPassage(tempete, ile) : null;
@@ -74,20 +74,20 @@ async function Fiche({ params, searchParams }: PageProps<"/[langue]/historique/[
       <dl className="grid grid-cols-1 gap-y-1 rounded-2xl bg-surface p-4 text-base">
         <dt className="text-muted">Intensité maximale</dt>
         <dd>
-          <span className="font-bold">{libelleCategorie(categorieVent(ventMax))}</span>
-          {ventMax !== null && <> · {formaterVent(ventMax)}</>}
+          <span className="font-bold">{libelleCategorie(categorieVent(ventMax), "fr")}</span>
+          {ventMax !== null && <> · {formaterVent(ventMax, "fr")}</>}
         </dd>
         <dt className="text-muted">Période suivie</dt>
         <dd>
-          du {formaterDateHeureUtc(tempete.points[0].horodatage)} au{" "}
-          {formaterDateHeureUtc(tempete.points[tempete.points.length - 1].horodatage)}
+          du {formaterDateHeureUtc(tempete.points[0].horodatage, "fr")} au{" "}
+          {formaterDateHeureUtc(tempete.points[tempete.points.length - 1].horodatage, "fr")}
         </dd>
         {ile && passage && (
           <>
             <dt className="text-muted">Près de {ile.nom}</dt>
             <dd>
-              {formaterDistance(passage.distanceMinKm)} de {ile.pointReference.nom} le{" "}
-              {formaterDate(passage.horodatage, ile.fuseau)} ({libelleCategorie(passage.categorie)})
+              {formaterDistance(passage.distanceMinKm, "fr")} de {ile.pointReference.nom} le{" "}
+              {formaterDate(passage.horodatage, ile.fuseau, "fr")} ({libelleCategorie(passage.categorie, "fr")})
             </dd>
           </>
         )}

@@ -102,7 +102,7 @@ export function CarteSystemes({
           const element = document.createElement("div");
           // Marqueur non cliquable : MapLibre en ferait un « button » nommé « Map marker ».
           element.setAttribute("role", "group");
-          element.setAttribute("aria-label", `${systeme.nom}, ${descriptionSysteme(systeme)}`);
+          element.setAttribute("aria-label", `${systeme.nom}, ${descriptionSysteme(systeme, "fr")}`);
           new Marker({ element }).setLngLat([systeme.longitude, systeme.latitude]).addTo(carte!);
           return { systeme, element };
         });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ILES, trouverIle } from "./iles";
+import { ILES, nomIle, nomVille, trouverIle } from "./iles";
 
 // Table « Îles et points de référence » de SPEC.md.
 const SPEC = [
@@ -96,5 +96,36 @@ describe("trouverIle", () => {
 
   it("ne confond pas un slug avec une propriété héritée", () => {
     expect(trouverIle("constructor")).toBeUndefined();
+  });
+});
+
+describe("noms des îles et des villes en anglais (US-10)", () => {
+  const ile = (slug: string) => trouverIle(slug)!;
+
+  it.each([
+    ["guadeloupe", "Guadeloupe", "Guadeloupe"],
+    ["martinique", "Martinique", "Martinique"],
+    ["saint-martin", "Saint-Martin", "Saint Martin"],
+    ["saint-barthelemy", "Saint-Barthélemy", "Saint Barthélemy"],
+    ["dominique", "Dominique", "Dominica"],
+    ["sainte-lucie", "Sainte-Lucie", "Saint Lucia"],
+    ["barbade", "Barbade", "Barbados"],
+    ["trinite", "Trinité", "Trinidad"],
+    ["porto-rico", "Porto Rico", "Puerto Rico"],
+    ["haiti", "Haïti", "Haiti"],
+    ["republique-dominicaine", "République dominicaine", "Dominican Republic"],
+    ["jamaique", "Jamaïque", "Jamaica"],
+    ["cuba", "Cuba", "Cuba"],
+  ])("%s : « %s », « %s »", (slug, francais, anglais) => {
+    expect(nomIle(ile(slug), "fr")).toBe(francais);
+    expect(nomIle(ile(slug), "en")).toBe(anglais);
+  });
+
+  it("traduit les villes qui ont un nom anglais, garde les autres", () => {
+    expect(nomVille(ile("republique-dominicaine"), "fr")).toBe("Saint-Domingue");
+    expect(nomVille(ile("republique-dominicaine"), "en")).toBe("Santo Domingo");
+    expect(nomVille(ile("cuba"), "en")).toBe("Havana");
+    expect(nomVille(ile("guadeloupe"), "en")).toBe("Pointe-à-Pitre");
+    expect(nomVille(ile("trinite"), "en")).toBe("Port of Spain");
   });
 });

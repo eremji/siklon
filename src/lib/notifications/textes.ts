@@ -29,8 +29,8 @@ function contenuRayon({ ile, systeme, passage, avis }: EvenementRayon, base: str
     corps: [
       `Ce système est prévu à moins de ${RADIUS_WATCH_KM} km de votre île.`,
       "Pour un cyclone de taille moyenne, cette alerte arrive avant que les vents de tempête n'atteignent l'île : c'est le moment de se préparer.",
-      `Plus proche passage estimé : ${formaterHeurePassage(passage.heure, ile.fuseau)}, à ${formaterDistance(passage.distanceKm)}.`,
-      `Estimation d'après l'avis NHC n° ${avis.numero} du ${formaterHeureAvis(avis.emisLe, ile.fuseau)}.`,
+      `Plus proche passage estimé : ${formaterHeurePassage(passage.heure, ile.fuseau, "fr")}, à ${formaterDistance(passage.distanceKm, "fr")}.`,
+      `Estimation d'après l'avis NHC n° ${avis.numero} du ${formaterHeureAvis(avis.emisLe, ile.fuseau, "fr")}.`,
     ].join(" "),
     lien: `${base}/systemes/${systeme.id}`,
     source: { nom: "NHC", url: avis.url ?? SITE_NHC },
@@ -42,7 +42,7 @@ function lienAlerte(ile: Ile, base: string): string {
 }
 
 function contenuNiveau({ ile, precedent, niveau, misAJour }: EvenementNiveau, base: string): ContenuNotification {
-  const heure = formaterHeureAvis(misAJour, ile.fuseau);
+  const heure = formaterHeureAvis(misAJour, ile.fuseau, "fr");
 
   if (ile.alerte.source === "meteo-france" && estNiveau(niveau) && estNiveau(precedent)) {
     const { libelle, consigne } = infoNiveau(niveau);

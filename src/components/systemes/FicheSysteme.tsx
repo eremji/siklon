@@ -39,7 +39,7 @@ function Origine({ libelle, children }: { libelle: string; children: ReactNode }
 function deplacementMetrique({ deplacement }: SystemeActif): string {
   if (!deplacement) return "Non communiqué par le NHC";
   if (deplacement.vitesseMph === 0) return "Stationnaire";
-  const direction = directionDeplacement(deplacement.directionDeg);
+  const direction = directionDeplacement(deplacement.directionDeg, "fr");
   return `${direction.charAt(0).toUpperCase()}${direction.slice(1)} à ${mphVersKmh(deplacement.vitesseMph)} km/h`;
 }
 
@@ -58,7 +58,7 @@ export function FicheSysteme({ systeme }: { systeme: SystemeActif }) {
         <Pastille systeme={systeme} />
         <div className="flex flex-col">
           <h1 className="text-3xl font-bold">{systeme.nom}</h1>
-          <p className="text-base text-muted">{descriptionSysteme(systeme)}</p>
+          <p className="text-base text-muted">{descriptionSysteme(systeme, "fr")}</p>
         </div>
       </header>
       <AlerteObsolescence emisLe={avis.emisLe} />
@@ -72,7 +72,7 @@ export function FicheSysteme({ systeme }: { systeme: SystemeActif }) {
             {ktVersKmh(systeme.ventKt)} km/h
           </Mesure>
           <Mesure libelle="Pression centrale">{systeme.pressionHpa} hPa</Mesure>
-          <Mesure libelle="Position">{formaterPosition(systeme.latitude, systeme.longitude)}</Mesure>
+          <Mesure libelle="Position">{formaterPosition(systeme.latitude, systeme.longitude, "fr")}</Mesure>
           <Mesure libelle="Déplacement" large>
             {deplacementMetrique(systeme)}
           </Mesure>
@@ -110,7 +110,7 @@ export function FicheSysteme({ systeme }: { systeme: SystemeActif }) {
 
       <footer className="flex flex-col gap-1 text-sm text-muted">
         <p>
-          Source : NHC, avis n° {avis.numero} du {formaterHeureAntilles(avis.emisLe)} (heure des Antilles
+          Source : NHC, avis n° {avis.numero} du {formaterHeureAntilles(avis.emisLe, "fr")} (heure des Antilles
           françaises).
         </p>
         <p>

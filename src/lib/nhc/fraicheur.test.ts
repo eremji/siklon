@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEUIL_OBSOLESCENCE_H, avisLePlusRecent, estObsolete, formaterHeureAntilles } from "./fraicheur";
+import { SEUIL_OBSOLESCENCE_H, avisLePlusRecent, estObsolete, formaterHeureAntilles, libelleHeureAntilles } from "./fraicheur";
 
 const emisLe = "2026-09-10T15:00:00.000Z";
 
@@ -20,11 +20,11 @@ describe("estObsolete", () => {
 
 describe("formaterHeureAntilles", () => {
   it("affiche l'heure des Antilles françaises (UTC−4)", () => {
-    expect(formaterHeureAntilles(emisLe)).toBe("10 septembre à 11 h 00");
+    expect(formaterHeureAntilles(emisLe, "fr")).toBe("10 septembre à 11 h 00");
   });
 
   it("change de jour quand il le faut", () => {
-    expect(formaterHeureAntilles("2026-09-11T02:30:00.000Z")).toBe("10 septembre à 22 h 30");
+    expect(formaterHeureAntilles("2026-09-11T02:30:00.000Z", "fr")).toBe("10 septembre à 22 h 30");
   });
 });
 
@@ -32,5 +32,16 @@ describe("avisLePlusRecent", () => {
   it("renvoie l'heure d'avis la plus récente, ou null sans avis", () => {
     expect(avisLePlusRecent(["2026-09-10T12:00:00.000Z", emisLe, "2026-09-09T21:00:00.000Z"])).toBe(emisLe);
     expect(avisLePlusRecent([])).toBeNull();
+  });
+});
+
+describe("heure des Antilles en anglais (US-10)", () => {
+  it("écrit la date et l'heure sur 12 h", () => {
+    expect(formaterHeureAntilles("2026-09-10T15:00:00.000Z", "en")).toBe("10 September at 11:00 am");
+  });
+
+  it("nomme le fuseau dans chaque langue", () => {
+    expect(libelleHeureAntilles("fr")).toBe("heure des Antilles françaises");
+    expect(libelleHeureAntilles("en")).toBe("Atlantic Standard Time, UTC−4");
   });
 });

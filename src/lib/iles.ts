@@ -1,5 +1,6 @@
 // Table « Îles et points de référence » de SPEC.md.
 import type { Position } from "./distance";
+import type { Langue } from "./langues";
 
 /** Fichiers JSON du flux vigilance Météo-France (section « Flux vigilance Météo-France » de SPEC.md). */
 export type FichierVigilance = "CDPV85TFFR" | "CDPV85TFFF" | "CDPV85TFFJ";
@@ -154,4 +155,29 @@ export const ILES: readonly Ile[] = [
 /** Île correspondant au slug, ou undefined (le slug vient souvent d'une URL : donnée non fiable). */
 export function trouverIle(slug: string): Ile | undefined {
   return ILES.find((ile) => ile.slug === slug);
+}
+
+// Noms anglais (US-10), seulement quand ils diffèrent du français. Les identifiants d'URL ne changent pas.
+const NOMS_ANGLAIS: Readonly<Record<string, { ile?: string; ville?: string }>> = {
+  "saint-martin": { ile: "Saint Martin" },
+  "saint-barthelemy": { ile: "Saint Barthélemy" },
+  dominique: { ile: "Dominica" },
+  "sainte-lucie": { ile: "Saint Lucia" },
+  barbade: { ile: "Barbados" },
+  trinite: { ile: "Trinidad" },
+  "porto-rico": { ile: "Puerto Rico" },
+  haiti: { ile: "Haiti" },
+  "republique-dominicaine": { ile: "Dominican Republic", ville: "Santo Domingo" },
+  jamaique: { ile: "Jamaica" },
+  cuba: { ville: "Havana" },
+};
+
+/** Nom de l'île dans la langue de la page. */
+export function nomIle(ile: Ile, langue: Langue): string {
+  return (langue === "en" && NOMS_ANGLAIS[ile.slug]?.ile) || ile.nom;
+}
+
+/** Nom de la ville de référence de l'île dans la langue de la page. */
+export function nomVille(ile: Ile, langue: Langue): string {
+  return (langue === "en" && NOMS_ANGLAIS[ile.slug]?.ville) || ile.pointReference.nom;
 }

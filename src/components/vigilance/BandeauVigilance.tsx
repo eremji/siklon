@@ -33,7 +33,7 @@ function Source({ fichier, misAJour }: { fichier: FichierVigilance; misAJour?: s
     <div className="flex flex-col gap-1">
       <p className="text-sm text-muted">
         {misAJour
-          ? `Source : Météo-France, mise à jour du ${formaterHeureAntilles(misAJour)} (heure des Antilles françaises).`
+          ? `Source : Météo-France, mise à jour du ${formaterHeureAntilles(misAJour, "fr")} (heure des Antilles françaises).`
           : "Source : Météo-France."}
       </p>
       <a
