@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import { LienNhc } from "@/components/LienNhc";
 import type { EtatFlux } from "@/lib/nhc/client";
 import { formaterHeureAntilles } from "@/lib/nhc/fraicheur";
@@ -28,9 +28,9 @@ export function FicheSystemeActif({ flux, id }: { flux: EtatFlux; id: string }) 
       <p className="rounded-2xl bg-surface p-4 text-base">
         Ce système n&apos;est plus suivi par le NHC, ou n&apos;existe pas.
       </p>
-      <Link href="/" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
+      <Lien href="/" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
         Voir les systèmes actifs
-      </Link>
+      </Lien>
       <p className="text-sm text-muted">
         Source : NHC, flux lu le {formaterHeureAntilles(flux.luLe)} (heure des Antilles françaises).
       </p>

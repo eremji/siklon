@@ -2,7 +2,7 @@
 // Bouton qui envoie un petit formulaire à une server action de la checklist (masquer, réafficher,
 // supprimer). Fonctionne sans JavaScript ; l'échec éventuel est annoncé sous le bouton.
 import { useActionState } from "react";
-import type { EtatAction } from "@/app/iles/[ile]/checklist/actions";
+import type { EtatAction } from "@/app/[langue]/iles/[ile]/checklist/actions";
 
 export function BoutonAction({ action, champs, libelle, description }: {
   action: (etat: EtatAction, donnees: FormData) => Promise<EtatAction>;

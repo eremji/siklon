@@ -43,7 +43,7 @@ test("la barre de navigation mène à la page Compte, qui invite à se connecter
   await page.goto("/");
   await page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Compte" }).click();
 
-  await expect(page).toHaveURL("/compte");
+  await expect(page).toHaveURL("/fr/compte");
   await expect(page.getByRole("heading", { level: 1, name: "Compte" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Se connecter" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Créer un compte" })).toBeVisible();
@@ -53,7 +53,7 @@ test("créer un compte, se déconnecter, puis se reconnecter", async ({ page, co
   const email = nouvelEmail(testInfo);
   await inscrire(page, email, "English");
 
-  await expect(page).toHaveURL("/compte");
+  await expect(page).toHaveURL("/fr/compte");
   await expect(texteVisible(page, email)).toBeVisible();
   await expect(texteVisible(page, "Non confirmée")).toBeVisible();
   await expect(texteVisible(page, "English")).toBeVisible();
@@ -72,7 +72,7 @@ test("créer un compte, se déconnecter, puis se reconnecter", async ({ page, co
   await champ(page, "Adresse email").fill(email);
   await champ(page, "Mot de passe").fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page).toHaveURL("/compte");
+  await expect(page).toHaveURL("/fr/compte");
   await expect(texteVisible(page, email)).toBeVisible();
 });
 
@@ -82,7 +82,7 @@ test("le navigateur refuse un mot de passe de moins de 12 caractères", async ({
   await champ(page, "Mot de passe").fill("onze-caract");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
 
-  await expect(page).toHaveURL("/compte/inscription");
+  await expect(page).toHaveURL("/fr/compte/inscription");
   expect(await champ(page, "Mot de passe").evaluate((champ: HTMLInputElement) => champ.validity.tooShort)).toBe(true);
 });
 
@@ -145,7 +145,7 @@ test("supprimer son compte efface tout : on ne peut plus s'y connecter", async (
 
   await champ(page, "Mot de passe actuel").fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Supprimer définitivement mon compte" }).click();
-  await expect(page).toHaveURL("/compte/supprime");
+  await expect(page).toHaveURL("/fr/compte/supprime");
   await expect(page.getByRole("status")).toContainText("toutes ses données ont été effacés");
   expect((await context.cookies()).filter((c) => c.name.startsWith("siklon."))).toEqual([]);
   // Le service d'envoi (ici le dossier local, Brevo en production) a effacé ses emails.
@@ -216,7 +216,7 @@ test("mot de passe oublié : choisir un nouveau mot de passe avec le lien reçu,
   await champ(page, "Adresse email").fill(email);
   await champ(page, "Mot de passe").fill(nouveau);
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page).toHaveURL("/compte");
+  await expect(page).toHaveURL("/fr/compte");
   await expect(texteVisible(page, email)).toBeVisible();
 });
 
@@ -293,7 +293,7 @@ test.describe("sans JavaScript", () => {
 
   test("l'inscription crée le compte et ouvre la session", async ({ page, context }, testInfo) => {
     await inscrire(page, nouvelEmail(testInfo));
-    await expect(page).toHaveURL("/compte");
+    await expect(page).toHaveURL("/fr/compte");
     expect((await context.cookies()).map((c) => c.name)).toContain("siklon.session_token");
   });
 

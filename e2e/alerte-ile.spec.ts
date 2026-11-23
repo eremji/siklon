@@ -62,7 +62,7 @@ test("la page d'une île non française affiche le warning NHC en cours, son sys
 
   const alertes = page.getByRole("list", { name: "Veilles et avertissements NHC en cours" }).getByRole("listitem");
   await expect(alertes).toHaveCount(1);
-  await expect(alertes.first().getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/systemes/al112026");
+  await expect(alertes.first().getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/fr/systemes/al112026");
   await expect(alertes.first().getByText("(Ouragan de catégorie 4)")).toBeVisible();
   await expect(alertes.first().getByText("Avis n° 14 du NHC, émis le 10 septembre à 11 h 00.")).toBeVisible();
   await expect(page.getByText(/^Source : NHC, données lues le .+ \(heure des Antilles françaises\)\.$/)).toBeVisible();

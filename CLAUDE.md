@@ -45,6 +45,10 @@ Application web de suivi des cyclones tropicaux pour les Antilles.
   (`RADIUS_IMPACT_KM`, `RADIUS_WATCH_KM`), jamais de valeur en dur.
 - Interface : suivre DESIGN.md (jetons de couleur clair/sombre, typo,
   règles des couleurs de vigilance) ; aucune couleur hors jetons.
+- Langues (US-10) : pages sous `src/app/[langue]/` (`/fr/…`, `/en/…`), `src/proxy.ts`
+  redirige les adresses sans langue. Liens internes avec `<Lien href="/iles">`
+  (`components/langue/Lien.tsx`), jamais `next/link` en direct ; un formulaire dont la
+  server action redirige porte `<ChampLangueInterface />`.
 
 ## Workflow
 - 1 user story = 1 issue (template « User story ») ; pas de code sans issue.

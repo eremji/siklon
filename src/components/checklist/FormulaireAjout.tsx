@@ -2,7 +2,7 @@
 // Formulaire d'ajout d'un élément personnel à la checklist (US-08). Sans JavaScript, il est envoyé
 // comme un formulaire classique ; en cas de refus, la saisie est gardée et le message annoncé.
 import { useActionState } from "react";
-import type { EtatAction } from "@/app/iles/[ile]/checklist/actions";
+import type { EtatAction } from "@/app/[langue]/iles/[ile]/checklist/actions";
 
 // Identifiants fixes : le champ n'existe que sur la page de la checklist (pas de useId, CLAUDE.md).
 const CHAMP = "ajout-element-checklist";

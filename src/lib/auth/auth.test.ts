@@ -263,13 +263,13 @@ const confirmer = (jeton: string) =>
   auth.handler(new Request(`${BASE}/api/auth/verify-email?token=${encodeURIComponent(jeton)}`, { headers: { "x-forwarded-for": ip } }));
 
 describe("confirmation de l'adresse", () => {
-  it("envoie à l'inscription un lien vers la page de confirmation du site, dans la langue choisie", async () => {
+  it("envoie à l'inscription un lien vers la page de confirmation du site, dans la langue choisie (texte et page)", async () => {
     const email = nouvelEmail();
     await inscrire(email, "un mot de passe solide", "en");
     expect(envoyes).toHaveLength(1);
     expect(envoyes[0].sujet).toBe("Confirm your email address · Siklon");
     const lien = lienEnvoye(email);
-    expect(`${lien.origin}${lien.pathname}`).toBe(`${BASE}/compte/confirmer`);
+    expect(`${lien.origin}${lien.pathname}`).toBe(`${BASE}/en/compte/confirmer`);
     expect(lien.searchParams.get("jeton")).toBeTruthy();
   });
 
@@ -319,13 +319,13 @@ describe("réinitialisation du mot de passe", () => {
     return appeler("/request-password-reset", { email });
   }
 
-  it("envoie un lien vers la page du site, dans la langue du compte", async () => {
+  it("envoie un lien vers la page du site, dans la langue du compte (texte et page)", async () => {
     const email = nouvelEmail();
     await inscrire(email, ANCIEN, "en");
     expect((await demander(email)).status).toBe(200);
     expect(envoyes.map((envoye) => envoye.sujet)).toEqual(["Reset your password · Siklon"]);
     const lien = lienEnvoye(email);
-    expect(`${lien.origin}${lien.pathname}`).toBe(`${BASE}/compte/nouveau-mot-de-passe`);
+    expect(`${lien.origin}${lien.pathname}`).toBe(`${BASE}/en/compte/nouveau-mot-de-passe`);
   });
 
   it("répond de la même façon pour une adresse inconnue, sans rien envoyer", async () => {
