@@ -77,8 +77,11 @@ test("le formulaire de filtres de l'historique reste envoyable sous la CSP", asy
   const violations = await surveillerCsp(page);
   await page.goto("/iles/guadeloupe/historique");
   // Sans base locale, la page affiche « indisponible » sans formulaire : rien à vérifier ici.
+  // Les résultats arrivent en streaming : attendre l'un ou l'autre avant de décider (isVisible n'attend pas).
   const filtrer = page.getByRole("button", { name: "Filtrer" });
-  test.skip(!(await filtrer.isVisible()), "historique indisponible sans base Postgres");
+  const indisponible = page.getByText("L'historique est momentanément indisponible.", { exact: false });
+  await expect(filtrer.or(indisponible)).toBeVisible();
+  test.skip(await indisponible.isVisible(), "historique indisponible sans base Postgres");
 
   await page.getByLabel("De (année)").fill("1990");
   await filtrer.click();
