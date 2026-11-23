@@ -3,6 +3,7 @@ import { Atkinson_Hyperlegible } from "next/font/google";
 import { notFound } from "next/navigation";
 import { langue } from "next/root-params";
 import { Suspense } from "react";
+import { PropositionHorsPagesAlertes } from "@/components/ecranAccueil/PropositionEcranAccueil";
 import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { BarreNavigation, BarreNavigationSansSection } from "@/components/navigation/BarreNavigation";
 import { PiedDePage } from "@/components/PiedDePage";
@@ -44,7 +45,13 @@ export default async function RootLayout({ children }: LayoutProps<"/[langue]">)
     <html lang={valeur} className={`${atkinson.variable} h-full font-sans antialiased`}>
       {/* pb-24 : la barre de navigation flottante ne masque jamais le pied de page. */}
       <body className="flex min-h-full flex-col pb-24">
-        <FournisseurLangue langue={valeur}>{children}</FournisseurLangue>
+        <FournisseurLangue langue={valeur}>
+          {children}
+          {/* Sur iPhone et iPad, proposer d'ajouter Siklon à l'écran d'accueil (US-07c). */}
+          <Suspense fallback={null}>
+            <PropositionHorsPagesAlertes />
+          </Suspense>
+        </FournisseurLangue>
         <PiedDePage langue={valeur} />
         {/* usePathname suspend sur les pages à paramètre inconnu au build (Cache Components). */}
         <Suspense fallback={<BarreNavigationSansSection langue={valeur} />}>

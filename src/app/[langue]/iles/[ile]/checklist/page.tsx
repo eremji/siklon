@@ -6,11 +6,13 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { Checklist, type CompteChecklist } from "@/components/checklist/Checklist";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
+import { PropositionEcranAccueil } from "@/components/ecranAccueil/PropositionEcranAccueil";
 import { AlertesNhc } from "@/components/vigilance/AlertesNhc";
 import { BandeauVigilance, EnTeteIle } from "@/components/vigilance/BandeauVigilance";
 import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireElementsCoches, lireElementsMasques, lireElementsPerso } from "@/lib/db/checklist";
 import { connexionComptes } from "@/lib/db/pool";
+import { alertesNhcEnCours, vigilanceEnCours } from "@/lib/ecranAccueil/alerteEnCours";
 import { type Emprise, type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
 import { alertesNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDemandee } from "@/lib/nhc/source";
@@ -76,6 +78,7 @@ async function ChecklistMeteoFrance({ ile, fichier }: { ile: Ile; fichier: Fichi
   return (
     <>
       <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />
+      <PropositionEcranAccueil alerteEnCours={vigilanceEnCours(etat)} />
       <Checklist nomIle={ile.nom} source="meteo-france" niveau={niveauVigilance(etat)?.niveau ?? null} compte={compte} />
     </>
   );
@@ -88,6 +91,7 @@ async function ChecklistNhc({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
   return (
     <>
       <AlertesNhc nomIle={ile.nom} etat={etat} />
+      <PropositionEcranAccueil alerteEnCours={alertesNhcEnCours(etat)} />
       <Checklist nomIle={ile.nom} source="nhc" niveau={niveauNhc(etat)?.niveau ?? null} compte={compte} />
     </>
   );

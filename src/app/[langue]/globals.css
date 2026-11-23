@@ -115,6 +115,16 @@
   --color-on-vig-clair: var(--on-vig-clair);
   --color-on-vig-fonce: var(--on-vig-fonce);
   --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  /* Feuille du bas (US-07c) : monte du bas de l'écran, seulement sans prefers-reduced-motion. */
+  --animate-monter: monter 220ms ease-out;
+  @keyframes monter {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }
 
 body {
