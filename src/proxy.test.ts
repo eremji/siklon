@@ -67,4 +67,13 @@ describe("proxy : chemins concernés", () => {
     expect(passe("/sw.js")).toBe(false);
     expect(passe("/favicon.ico")).toBe(false);
   });
+
+  it("ne touche pas aux fichiers de l'application installée (US-07b), même sans extension", () => {
+    expect(passe("/manifest.webmanifest")).toBe(false);
+    expect(passe("/icones/192.png")).toBe(false);
+    // Next sert l'icône Apple générée (src/app/apple-icon.tsx) à /apple-icon?<empreinte>.
+    expect(passe("/apple-icon")).toBe(false);
+    expect(passe("/apple-icon?c3a1f0b2")).toBe(false);
+    expect(passe("/apple-iconographie")).toBe(true);
+  });
 });
