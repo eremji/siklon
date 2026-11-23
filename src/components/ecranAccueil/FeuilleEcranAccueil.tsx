@@ -3,8 +3,10 @@
 // ou d'un iPad (US-07c, #110, maquette B). Boîte de dialogue modale du navigateur (<dialog>) : le reste
 // de la page devient inerte et Échap la ferme ; le focus va sur le titre et y reste jusqu'à la fermeture.
 import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { useLangue } from "@/components/langue/ContexteLangue";
 import { Lien } from "@/components/langue/Lien";
 import type { Appareil } from "@/lib/ecranAccueil/detection";
+import { ECRAN_ACCUEIL } from "@/lib/textes/ecranAccueil";
 import { IconeEcranAccueil, IconePartager } from "./icones";
 
 /** Glissement vers le bas, en pixels, au-delà duquel la feuille se ferme. */
@@ -14,16 +16,6 @@ const BOUTON_PRINCIPAL =
   "flex min-h-12 flex-1 items-center justify-center rounded-full bg-accent px-5 text-base font-bold text-on-accent";
 const BOUTON_SECONDAIRE =
   "flex min-h-12 flex-1 items-center justify-center rounded-full border-2 border-accent px-5 text-base font-bold text-accent";
-
-export const TEXTES_FEUILLE = {
-  titre: (appareil: Appareil) => `Recevez les alertes de votre île sur votre ${appareil === "ipad" ? "iPad" : "iPhone"}`,
-  pourquoi: "Ajoutez Siklon à l'écran d'accueil pour recevoir les alertes de votre île, même quand l'app est fermée.",
-  partager: "Touchez Partager",
-  ecranAccueil: "Puis « Sur l'écran d'accueil »",
-  aide: "Voir en images",
-  plusTard: "Plus tard",
-  fermer: "Fermer",
-};
 
 function Geste({ numero, children }: { numero: number; children: ReactNode }) {
   return (
@@ -50,6 +42,7 @@ export function FeuilleEcranAccueil({
   const titre = useRef<HTMLHeadingElement>(null);
   const depart = useRef<number | null>(null);
   const [decalage, setDecalage] = useState(0);
+  const textes = ECRAN_ACCUEIL[useLangue()].feuille;
 
   useEffect(() => {
     const precedent = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -96,7 +89,7 @@ export function FeuilleEcranAccueil({
     if (parcours > SEUIL_GLISSEMENT) onFermer({ refus: true });
   }
 
-  const libelle = TEXTES_FEUILLE.titre(appareil);
+  const libelle = textes.titre(appareil);
   return (
     <dialog
       ref={feuille}
@@ -129,7 +122,7 @@ export function FeuilleEcranAccueil({
         </span>
         <button
           type="button"
-          aria-label={TEXTES_FEUILLE.fermer}
+          aria-label={textes.fermer}
           onClick={() => onFermer({ refus: true })}
           className="flex size-11 items-center justify-center rounded-full bg-soft text-foreground"
         >
@@ -141,21 +134,21 @@ export function FeuilleEcranAccueil({
       <h2 ref={titre} tabIndex={-1} className="text-2xl leading-tight font-bold outline-none">
         {libelle}
       </h2>
-      <p className="text-base text-muted">{TEXTES_FEUILLE.pourquoi}</p>
+      <p className="text-base text-muted">{textes.pourquoi}</p>
       <ol className="flex flex-col gap-2">
         <Geste numero={1}>
-          {TEXTES_FEUILLE.partager} <IconePartager className="text-accent" />
+          {textes.partager} <IconePartager className="text-accent" />
         </Geste>
         <Geste numero={2}>
-          {TEXTES_FEUILLE.ecranAccueil} <IconeEcranAccueil className="text-accent" />
+          {textes.ecranAccueil} <IconeEcranAccueil className="text-accent" />
         </Geste>
       </ol>
       <div className="flex gap-2">
         <Lien href="/compte/ecran-accueil" onClick={() => onFermer({ refus: false })} className={BOUTON_PRINCIPAL}>
-          {TEXTES_FEUILLE.aide}
+          {textes.aide}
         </Lien>
         <button type="button" onClick={() => onFermer({ refus: true })} className={BOUTON_SECONDAIRE}>
-          {TEXTES_FEUILLE.plusTard}
+          {textes.plusTard}
         </button>
       </div>
     </dialog>

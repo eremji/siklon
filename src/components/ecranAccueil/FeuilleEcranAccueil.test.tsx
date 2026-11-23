@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { FeuilleEcranAccueil } from "./FeuilleEcranAccueil";
 
 // jsdom n'ouvre pas les <dialog> modaux : showModal et close sont simulés (le vrai comportement,
@@ -103,5 +104,18 @@ describe("FeuilleEcranAccueil (US-07c)", () => {
     expect(within(feuille()).getByRole("button", { name: "Fermer" }).className).toMatch(/size-11/);
     expect(within(feuille()).getByRole("button", { name: "Plus tard" }).className).toMatch(/min-h-12/);
     expect(within(feuille()).getByRole("link", { name: "Voir en images" }).className).toMatch(/min-h-12/);
+  });
+
+  it("en anglais, nomme les menus d'iOS comme iOS en anglais et garde la langue dans le lien", () => {
+    render(
+      <FournisseurLangue langue="en">
+        <FeuilleEcranAccueil appareil="iphone" onFermer={() => {}} />
+      </FournisseurLangue>,
+    );
+    const dialogue = screen.getByRole("dialog", { name: "Get alerts for your island on your iPhone" });
+    expect(dialogue).toHaveTextContent("“Add to Home Screen”");
+    expect(within(dialogue).getByRole("button", { name: "Not now" })).toBeInTheDocument();
+    expect(within(dialogue).getByRole("button", { name: "Close" })).toBeInTheDocument();
+    expect(within(dialogue).getByRole("link", { name: "See in pictures" })).toHaveAttribute("href", "/en/compte/ecran-accueil");
   });
 });

@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { BandeauEcranAccueil } from "./BandeauEcranAccueil";
 
 describe("BandeauEcranAccueil (US-07c)", () => {
@@ -18,5 +19,16 @@ describe("BandeauEcranAccueil (US-07c)", () => {
     const lien = within(region).getByRole("link", { name: "Voir comment faire" });
     expect(lien).toHaveAttribute("href", "/fr/compte/ecran-accueil");
     expect(lien.className).toMatch(/min-h-11/);
+  });
+
+  it("en anglais", () => {
+    render(
+      <FournisseurLangue langue="en">
+        <BandeauEcranAccueil appareil="iphone" />
+      </FournisseurLangue>,
+    );
+    const region = screen.getByRole("region", { name: "Add Siklon to your Home Screen" });
+    expect(region).toHaveTextContent(/on iphone, add siklon to your home screen/i);
+    expect(within(region).getByRole("link", { name: "See how" })).toHaveAttribute("href", "/en/compte/ecran-accueil");
   });
 });
