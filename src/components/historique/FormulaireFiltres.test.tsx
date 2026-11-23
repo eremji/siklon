@@ -6,15 +6,15 @@ import { FormulaireFiltres } from "./FormulaireFiltres";
 const guadeloupe = trouverIle("guadeloupe")!;
 
 describe("FormulaireFiltres", () => {
-  it("envoie les filtres dans l'URL de la page de l'île (formulaire GET, sans JavaScript)", () => {
-    render(<FormulaireFiltres ile={guadeloupe} filtres={{}} />);
+  it("envoie les filtres dans l'URL de la page de l'île, dans sa langue (formulaire GET, sans JavaScript)", () => {
+    render(<FormulaireFiltres langue="en" ile={guadeloupe} filtres={{}} />);
     const formulaire = screen.getByRole("search", { name: "Filtrer l'historique" });
     expect(formulaire).toHaveAttribute("method", "get");
-    expect(formulaire).toHaveAttribute("action", "/iles/guadeloupe/historique");
+    expect(formulaire).toHaveAttribute("action", "/en/iles/guadeloupe/historique");
   });
 
   it("propose les catégories minimales, de toutes jusqu'à la catégorie 5", () => {
-    render(<FormulaireFiltres ile={guadeloupe} filtres={{}} />);
+    render(<FormulaireFiltres langue="fr" ile={guadeloupe} filtres={{}} />);
     const select = screen.getByLabelText("Intensité minimale");
     expect(select).toHaveAttribute("name", "categorie");
     expect(screen.getAllByRole("option").map((o) => [o.getAttribute("value"), o.textContent])).toEqual([
@@ -29,21 +29,21 @@ describe("FormulaireFiltres", () => {
   });
 
   it("préremplit les filtres en cours", () => {
-    render(<FormulaireFiltres ile={guadeloupe} filtres={{ categorieMin: 3, anneeMin: 1950, anneeMax: 2000 }} />);
+    render(<FormulaireFiltres langue="fr" ile={guadeloupe} filtres={{ categorieMin: 3, anneeMin: 1950, anneeMax: 2000 }} />);
     expect(screen.getByLabelText("Intensité minimale")).toHaveValue("3");
     expect(screen.getByLabelText("De (année)")).toHaveValue(1950);
     expect(screen.getByLabelText("À (année)")).toHaveValue(2000);
   });
 
   it("nomme les champs de période de et a", () => {
-    render(<FormulaireFiltres ile={guadeloupe} filtres={{}} />);
+    render(<FormulaireFiltres langue="fr" ile={guadeloupe} filtres={{}} />);
     expect(screen.getByLabelText("De (année)")).toHaveAttribute("name", "de");
     expect(screen.getByLabelText("À (année)")).toHaveAttribute("name", "a");
   });
 
   it("permet d'appliquer et d'effacer les filtres", () => {
-    render(<FormulaireFiltres ile={guadeloupe} filtres={{ categorieMin: 3 }} />);
+    render(<FormulaireFiltres langue="fr" ile={guadeloupe} filtres={{ categorieMin: 3 }} />);
     expect(screen.getByRole("button", { name: "Filtrer" })).toHaveAttribute("type", "submit");
-    expect(screen.getByRole("link", { name: "Effacer les filtres" })).toHaveAttribute("href", "/iles/guadeloupe/historique");
+    expect(screen.getByRole("link", { name: "Effacer les filtres" })).toHaveAttribute("href", "/fr/iles/guadeloupe/historique");
   });
 });

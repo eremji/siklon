@@ -54,7 +54,7 @@ describe("ListeHistorique", () => {
 
   it("renvoie vers la fiche du cyclone, en gardant l'île", () => {
     render(<ListeHistorique entrees={entrees} ile={guadeloupe} />);
-    expect(screen.getByRole("link", { name: /Maria 2017/ })).toHaveAttribute("href", "/historique/AL152017?ile=guadeloupe");
+    expect(screen.getByRole("link", { name: /Maria 2017/ })).toHaveAttribute("href", "/fr/historique/AL152017?ile=guadeloupe");
   });
 
   it("explique l'absence de résultat avec le rayon et le point de référence", () => {

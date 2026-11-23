@@ -81,7 +81,7 @@ async function connecterNouveauCompte(page: Page, projet: string) {
   await page.getByLabel("Mot de passe", { exact: true }).filter({ visible: true }).fill("un mot de passe solide");
   await page.getByRole("radio", { name: "Français" }).check();
   await page.getByRole("button", { name: "Créer mon compte" }).click();
-  await expect(page).toHaveURL("/compte");
+  await expect(page).toHaveURL("/fr/compte");
 }
 
 const caseVisible = (page: Page, nom: string) => page.getByRole("checkbox", { name: nom }).filter({ visible: true });
@@ -93,7 +93,7 @@ test("un visiteur voit la checklist sans case à cocher, avec une invitation à 
   await expect(titre(page, 3, "Vigilance orange : préparez-vous")).toBeVisible();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await page.getByRole("link", { name: "Connectez-vous pour cocher les éléments et garder votre progression" }).click();
-  await expect(page).toHaveURL("/compte/connexion");
+  await expect(page).toHaveURL("/fr/compte/connexion");
 });
 
 test("un utilisateur connecté coche des éléments et les retrouve cochés, sur une autre île aussi", async (

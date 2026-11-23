@@ -219,6 +219,8 @@ Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.
 |---|---|---|
 | `RADIUS_IMPACT_KM` | 120 | « La tempête est passée sur l'île ». Équivaut aux 65 milles nautiques du rayon de recherche par défaut de l'outil Historical Hurricane Tracks de la NOAA. |
 | `RADIUS_WATCH_KM` | 300 | Rayon de surveillance et d'alerte. Choix produit : les vents de force tempête peuvent s'étendre à plus de 300 km du centre (jusqu'à 335 km pour l'ouragan Alex), l'alerte part donc avant leur arrivée pour un cyclone de taille moyenne. |
+| `QUOTA_EMAILS_JOUR` | 300 | E-mails par jour de l'offre gratuite de Brevo (voir « Choix techniques »). |
+| `RESERVE_EMAILS_AUTH` | 50 | Part du quota quotidien jamais prise par les alertes (US-07) : au plus 250 e-mails d'alerte par jour (UTC), pour que les e-mails de confirmation et de réinitialisation restent prioritaires. |
 
 Toutes les distances sont des distances orthodromiques (sur la sphère)
 entre le centre du système et le point de référence de l'île.

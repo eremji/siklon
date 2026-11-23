@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import { LienNhc } from "@/components/LienNhc";
 import type { EtatFlux } from "@/lib/nhc/client";
 import { avisLePlusRecent, formaterHeureAntilles } from "@/lib/nhc/fraicheur";
@@ -49,12 +49,12 @@ export function ListeSystemes({
             <li key={systeme.id} className="flex min-h-11 items-start gap-3 rounded-2xl bg-surface p-3">
               <Pastille systeme={systeme} />
               <div className="flex flex-col">
-                <Link
+                <Lien
                   href={`/systemes/${systeme.id}`}
                   className="flex min-h-11 items-center text-lg font-bold text-accent underline underline-offset-4"
                 >
                   {systeme.nom}
-                </Link>
+                </Lien>
                 <span className="text-base text-muted">{descriptionSysteme(systeme)}</span>
                 <span className="text-sm text-muted">
                   Avis n° {systeme.avis.numero} du {formaterHeureAntilles(systeme.avis.emisLe)}

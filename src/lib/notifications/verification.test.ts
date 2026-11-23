@@ -85,7 +85,7 @@ function servicePush() {
 }
 
 const verifier = (situation: Situation, envoyer: ReturnType<typeof servicePush>["envoyer"]) =>
-  verifierAlertes(db, sources(situation), { envoyer, base: BASE });
+  verifierAlertes(db, sources(situation), { canaux: [envoyer], base: BASE });
 
 describe("entrée d'un système dans le rayon d'une île", () => {
   const KYLE = { flux: etatFixture("actifs", LU_LE), positions: positionsFixture("actifs") };
@@ -192,7 +192,7 @@ describe("robustesse", () => {
       },
     };
 
-    const bilan = await verifierAlertes(db, enPanne, { envoyer: service.envoyer, base: BASE });
+    const bilan = await verifierAlertes(db, enPanne, { canaux: [service.envoyer], base: BASE });
 
     expect(service.recus).toEqual([martinique.endpoint]);
     expect(bilan.envoyes).toBe(1);
@@ -208,7 +208,7 @@ describe("robustesse", () => {
     };
     const jaune = { CDPV85TFFR: { etat: "ok", niveau: "jaune", misAJour: "2026-09-10T16:00:00.000Z" } as const };
 
-    const bilan = await verifierAlertes(db, sources({ vigilance: jaune }), { envoyer, base: BASE });
+    const bilan = await verifierAlertes(db, sources({ vigilance: jaune }), { canaux: [envoyer], base: BASE });
 
     expect(service.recus).toEqual([second.endpoint]);
     expect(bilan).toMatchObject({ evenements: 1, envoyes: 1, echecs: 1 });
@@ -216,5 +216,21 @@ describe("robustesse", () => {
     expect(ecrit).toContain("[alertes]");
     expect(ecrit).not.toContain(premier.id);
     expect(ecrit).not.toContain("@exemple.org");
+  });
+
+  it("prévient par chaque canal, et la panne d'un canal n'empêche pas l'autre", async () => {
+    const guadeloupe = await abonne(["guadeloupe"]);
+    const service = servicePush();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const enPanne = vi.fn(async () => {
+      throw new Error("Brevo injoignable");
+    });
+    const jaune = { CDPV85TFFR: { etat: "ok", niveau: "jaune", misAJour: "2026-09-10T16:00:00.000Z" } as const };
+
+    const bilan = await verifierAlertes(db, sources({ vigilance: jaune }), { canaux: [enPanne, service.envoyer], base: BASE });
+
+    expect(enPanne).toHaveBeenCalledOnce();
+    expect(service.recus).toEqual([guadeloupe.endpoint]);
+    expect(bilan).toMatchObject({ envoyes: 1, echecs: 1 });
   });
 });

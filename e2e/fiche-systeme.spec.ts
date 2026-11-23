@@ -76,7 +76,7 @@ test("la fiche d'un système qui n'est plus actif le dit et renvoie vers la cart
   await page.goto("/systemes/al992026");
 
   await expect(page.getByRole("heading", { level: 1, name: "Système introuvable" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Voir les systèmes actifs" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Voir les systèmes actifs" })).toHaveAttribute("href", "/fr");
 });
 
 test("la fiche signale un flux NHC indisponible", async ({ page, context, baseURL }) => {

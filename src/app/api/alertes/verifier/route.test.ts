@@ -8,6 +8,8 @@ const sources = vi.hoisted(() => ({ nom: "sources des alertes" }));
 vi.mock("@/lib/notifications/verification", () => ({ verifierAlertes }));
 vi.mock("@/lib/notifications/sources", () => ({ sourcesAlertes: () => sources }));
 vi.mock("@/lib/db/pool", () => ({ connexionComptes: () => pool }));
+const emails = vi.hoisted(() => ({ envoyer: vi.fn(), effacer: vi.fn() }));
+vi.mock("@/lib/emails/configuration", () => ({ choisirServiceEmails: () => ({ type: "brevo", service: emails }) }));
 
 const { POST } = await import("./route");
 
@@ -45,7 +47,11 @@ describe("POST /api/alertes/verifier", () => {
 
     expect(reponse.status).toBe(200);
     expect(await reponse.json()).toEqual({ evenements: 2, envoyes: 3, echecs: 1 });
-    expect(verifierAlertes).toHaveBeenCalledWith(pool, sources, { envoyer: expect.any(Function), base: "https://siklon.exemple" });
+    // Deux canaux : web push et e-mail.
+    expect(verifierAlertes).toHaveBeenCalledWith(pool, sources, {
+      canaux: [expect.any(Function), expect.any(Function)],
+      base: "https://siklon.exemple",
+    });
     expect(console.info).toHaveBeenCalledWith("[alertes] 2 événement(s), 3 notification(s) envoyée(s), 1 échec(s)");
   });
 
@@ -76,12 +82,12 @@ describe("POST /api/alertes/verifier", () => {
     expect(verifierAlertes).not.toHaveBeenCalled();
   });
 
-  it("répond 503 si le web push n'est pas configuré : aucun canal pour prévenir", async () => {
+  it("sans web push configuré, prévient quand même par e-mail", async () => {
     for (const nom of ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]) vi.stubEnv(nom, "");
 
     const reponse = await POST(requete(`Bearer ${SECRET}`));
 
-    expect(reponse.status).toBe(503);
-    expect(verifierAlertes).not.toHaveBeenCalled();
+    expect(reponse.status).toBe(200);
+    expect(verifierAlertes).toHaveBeenCalledWith(pool, sources, { canaux: [expect.any(Function)], base: "https://siklon.exemple" });
   });
 });

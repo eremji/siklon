@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import { type EtatAlertesNhc, TYPES_ALERTE } from "@/lib/nhc/alertes";
 import { formaterHeureAntilles } from "@/lib/nhc/fraicheur";
 import type { CodeAlerte } from "@/lib/nhc/watches";
@@ -79,9 +79,9 @@ export function AlertesNhc({ nomIle, etat }: { nomIle: string; etat: EtatAlertes
               {TYPES_ALERTE[code].libelle} ({TYPES_ALERTE[code].origine})
             </p>
             <p className="text-base">
-              <Link href={`/systemes/${systeme.id}`} className="font-bold text-accent underline underline-offset-2">
+              <Lien href={`/systemes/${systeme.id}`} className="font-bold text-accent underline underline-offset-2">
                 {systeme.nom}
-              </Link>{" "}
+              </Lien>{" "}
               ({systeme.description})
             </p>
             <p className="text-sm text-muted">

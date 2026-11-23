@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { JETONS_CLAIR, JETONS_SOMBRE } from "./jetons";
 
-const CSS = readFileSync(join(import.meta.dirname, "../../app/globals.css"), "utf8");
+const CSS = readFileSync(join(import.meta.dirname, "../../app/[langue]/globals.css"), "utf8");
 
 /** Valeur d'un jeton dans le premier bloc qui suit `debut` (`:root {` ou le bloc sombre). */
 function jeton(debut: string, nom: string): string {

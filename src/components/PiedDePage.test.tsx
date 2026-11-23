@@ -4,8 +4,8 @@ import { PiedDePage } from "./PiedDePage";
 
 describe("PiedDePage", () => {
   it("mène à la page de confidentialité depuis chaque page", () => {
-    render(<PiedDePage />);
+    render(<PiedDePage langue="en" />);
     expect(screen.getByRole("contentinfo")).toContainElement(screen.getByRole("link", { name: "Confidentialité" }));
-    expect(screen.getByRole("link", { name: "Confidentialité" })).toHaveAttribute("href", "/confidentialite");
+    expect(screen.getByRole("link", { name: "Confidentialité" })).toHaveAttribute("href", "/en/confidentialite");
   });
 });

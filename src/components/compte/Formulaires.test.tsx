@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { ILES } from "@/lib/iles";
 
 const parametres = vi.hoisted(() => ({ valeur: new URLSearchParams() }));
@@ -59,7 +60,12 @@ describe("FormulaireInscription", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Un compte existe déjà avec cette adresse email.");
     expect(screen.getByLabelText("Adresse email")).toHaveValue("a@b.fr");
     const donnees = action.mock.calls[0][1];
-    expect(Object.fromEntries(donnees)).toEqual({ email: "a@b.fr", motDePasse: "un mot de passe solide", langue: "en" });
+    expect(Object.fromEntries(donnees)).toEqual({
+      langueInterface: "fr",
+      email: "a@b.fr",
+      motDePasse: "un mot de passe solide",
+      langue: "en",
+    });
   });
 });
 
@@ -223,7 +229,7 @@ describe("FormulaireConfirmationAdresse", () => {
 
     expect(action.mock.calls[0][1].get("jeton")).toBe("jeton-1");
     expect(await screen.findByRole("status")).toHaveTextContent("Votre adresse est confirmée.");
-    expect(screen.getByRole("link", { name: "Aller à mon compte" })).toHaveAttribute("href", "/compte");
+    expect(screen.getByRole("link", { name: "Aller à mon compte" })).toHaveAttribute("href", "/fr/compte");
     expect(screen.queryByRole("button", { name: "Confirmer mon adresse" })).not.toBeInTheDocument();
   });
 
@@ -270,7 +276,7 @@ describe("FormulaireNouveauMotDePasse", () => {
     expect(donnees.get("jeton")).toBe("jeton-1");
     expect(donnees.get("motDePasse")).toBe("un tout nouveau mot de passe");
     expect(await screen.findByRole("status")).toHaveTextContent("Votre mot de passe est changé.");
-    expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/compte/connexion");
+    expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/fr/compte/connexion");
   });
 
   it("propose un nouveau lien quand celui-ci ne marche plus", async () => {
@@ -285,7 +291,25 @@ describe("FormulaireNouveauMotDePasse", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Demandez-en un nouveau.");
     expect(screen.getByRole("link", { name: "Demander un nouveau lien" })).toHaveAttribute(
       "href",
-      "/compte/mot-de-passe-oublie",
+      "/fr/compte/mot-de-passe-oublie",
     );
+  });
+});
+
+describe("Langue de la page transmise aux actions qui redirigent", () => {
+  // Les server actions ne lisent pas l'adresse de la page : la langue part avec le formulaire.
+  const champLangue = (formulaire: HTMLElement) =>
+    formulaire.querySelector<HTMLInputElement>('input[type="hidden"][name="langueInterface"]')?.value;
+
+  it.each([
+    ["inscription", <FormulaireInscription key="i" action={vi.fn()} google={vi.fn()} />],
+    ["connexion", <FormulaireConnexion key="c" action={vi.fn()} />],
+    ["Google", <FormulaireGoogle key="g" action={vi.fn()} origine="/compte/connexion" />],
+    ["suppression", <FormulaireSuppression key="s" action={vi.fn()} />],
+  ])("formulaire de %s", (_nom, formulaire) => {
+    const { container } = render(<FournisseurLangue langue="en">{formulaire}</FournisseurLangue>);
+    const formulaires = [...container.querySelectorAll("form")];
+    expect(formulaires.length).toBeGreaterThan(0);
+    for (const element of formulaires) expect(champLangue(element)).toBe("en");
   });
 });

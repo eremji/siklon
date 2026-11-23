@@ -1,7 +1,8 @@
 "use client";
 // Formulaires d'inscription et de connexion (US-05). L'action est une server action passée par la
 // page : sans JavaScript, le formulaire est envoyé normalement ; avec, l'erreur s'affiche sur place.
-import Link from "next/link";
+import { ChampLangueInterface } from "@/components/langue/ContexteLangue";
+import { Lien } from "@/components/langue/Lien";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { messageErreurGoogle } from "@/lib/auth/messagesGoogle";
@@ -140,6 +141,7 @@ export function FormulaireGoogle({
   return (
     <form action={action}>
       <input type="hidden" name="origine" value={origine} />
+      <ChampLangueInterface />
       <button type="submit" className={`${BOUTON_GOOGLE} w-full`}>
         <LogoGoogle />
         {libelle}
@@ -152,6 +154,7 @@ export function FormulaireInscription({ action, google }: { action: Action; goog
   const [etat, envoyer, enCours] = useActionState(action, {});
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <ChampLangueInterface />
       <Erreur message={etat.message} />
       <ChampEmail formulaire="inscription" defaut={etat.email} />
       <ChampMotDePasse formulaire="inscription" nouveau />
@@ -189,6 +192,7 @@ export function FormulaireConnexion({ action }: { action: Action }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <ChampLangueInterface />
       <Erreur message={etat.message} />
       <ChampEmail formulaire="connexion" defaut={etat.email} />
       <ChampMotDePasse formulaire="connexion" nouveau={false} />
@@ -229,6 +233,7 @@ export function FormulaireSuppression({
         </>
       )}
       <form action={envoyer} className="flex flex-col gap-3">
+        <ChampLangueInterface />
         <Erreur message={etat.message} />
         {motDePasse && (
           <div className="flex flex-col gap-1">
@@ -304,9 +309,9 @@ export function FormulaireConfirmationAdresse({ action, jeton }: { action: Actio
     return (
       <div className="flex flex-col gap-4">
         <Confirmation message={etat.confirmation} />
-        <Link href="/compte" className={LIEN}>
+        <Lien href="/compte" className={LIEN}>
           Aller à mon compte
-        </Link>
+        </Lien>
       </div>
     );
   }
@@ -360,9 +365,9 @@ export function FormulaireNouveauMotDePasse({ action, jeton }: { action: Action;
     return (
       <div className="flex flex-col gap-4">
         <Confirmation message={etat.confirmation} />
-        <Link href="/compte/connexion" className={LIEN}>
+        <Lien href="/compte/connexion" className={LIEN}>
           Se connecter
-        </Link>
+        </Lien>
       </div>
     );
   }
@@ -370,9 +375,9 @@ export function FormulaireNouveauMotDePasse({ action, jeton }: { action: Action;
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
       <Erreur message={etat.message} />
       {etat.message && (
-        <Link href="/compte/mot-de-passe-oublie" className={LIEN}>
+        <Lien href="/compte/mot-de-passe-oublie" className={LIEN}>
           Demander un nouveau lien
-        </Link>
+        </Lien>
       )}
       <input type="hidden" name="jeton" value={jeton} />
       <ChampMotDePasse formulaire="nouveau" nouveau libelle="Nouveau mot de passe" />

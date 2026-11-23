@@ -1,4 +1,4 @@
-// Métadonnées de l'application installée (US-07b, #101), reprises par src/app/layout.tsx.
+// Métadonnées de l'application installée (US-07b, #101), reprises par src/app/[langue]/layout.tsx.
 import type { Metadata, Viewport } from "next";
 import { JETONS_CLAIR, JETONS_SOMBRE } from "./jetons";
 
