@@ -26,7 +26,7 @@ describe("ratioContraste", () => {
 
 /** Jetons de globals.css : le premier bloc (:root, clair) et le bloc sombre forcé ([data-theme="dark"]). */
 function jetons(): Record<"clair" | "sombre", Record<string, string>> {
-  const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+  const css = readFileSync(join(process.cwd(), "src/app/[langue]/globals.css"), "utf8");
   const lire = (bloc: string) =>
     Object.fromEntries([...bloc.matchAll(/--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(([, nom, valeur]) => [nom, valeur]));
   const clair = lire(css.slice(css.indexOf(":root {"), css.indexOf("}", css.indexOf(":root {"))));

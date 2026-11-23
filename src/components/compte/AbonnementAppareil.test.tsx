@@ -195,7 +195,7 @@ describe("AbonnementAppareil sur iPhone et iPad", () => {
 
     expect(await screen.findByText(/ajoutez d'abord siklon à l'écran d'accueil/i)).toBeInTheDocument();
     expect(screen.getByText("« Sur l'écran d'accueil »", { exact: false })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Voir l'aide en images" })).toHaveAttribute("href", "/compte/ecran-accueil");
+    expect(screen.getByRole("link", { name: "Voir l'aide en images" })).toHaveAttribute("href", "/fr/compte/ecran-accueil");
     expect(screen.queryByText(/ce navigateur ne permet pas/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });

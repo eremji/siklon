@@ -452,7 +452,7 @@ test.describe("sur iPhone, dans un onglet Safari", () => {
     const aide = section.getByRole("link", { name: "Voir l'aide en images" });
     expect((await aide.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     await aide.click();
-    await expect(page).toHaveURL("/compte/ecran-accueil");
+    await expect(page).toHaveURL("/fr/compte/ecran-accueil");
     await expect(page.getByRole("heading", { level: 1, name: "Ajouter Siklon à l'écran d'accueil" })).toBeVisible();
   });
 

@@ -3,7 +3,7 @@
 // le bouton (US-13). Le service worker public/sw.js affiche les alertes reçues.
 // Sur iPhone et iPad, Apple ne l'autorise que depuis l'écran d'accueil : la section explique alors
 // comment y ajouter Siklon (US-07c, #110).
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import { useEffect, useState } from "react";
 import { EtapesEcranAccueil } from "@/components/ecranAccueil/EtapesEcranAccueil";
 import {
@@ -175,9 +175,9 @@ export function AbonnementAppareil({
             </p>
             <EtapesEcranAccueil appareil={appareil} />
           </div>
-          <Link href="/compte/ecran-accueil" className={`flex items-center justify-center ${BOUTON_SECONDAIRE}`}>
+          <Lien href="/compte/ecran-accueil" className={`flex items-center justify-center ${BOUTON_SECONDAIRE}`}>
             Voir l&apos;aide en images
-          </Link>
+          </Lien>
         </>
       )}
       {etat === "non-abonne" && (

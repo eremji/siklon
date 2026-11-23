@@ -44,8 +44,8 @@ describe("écran d'aide : ajouter Siklon à l'écran d'accueil (US-07c)", () => 
 
   it("ramène à la page Compte et rappelle que Siklon ne remplace pas les consignes officielles", () => {
     render(<Page />);
-    expect(screen.getByRole("link", { name: "Retour au compte" })).toHaveAttribute("href", "/compte");
-    expect(screen.getByRole("link", { name: "J'ai compris" })).toHaveAttribute("href", "/compte");
+    expect(screen.getByRole("link", { name: "Retour au compte" })).toHaveAttribute("href", "/fr/compte");
+    expect(screen.getByRole("link", { name: "J'ai compris" })).toHaveAttribute("href", "/fr/compte");
     expect(screen.getByText(/ne remplace pas les consignes officielles/i)).toBeInTheDocument();
   });
 });

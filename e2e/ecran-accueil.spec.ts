@@ -18,7 +18,7 @@ test("l'écran d'aide donne les 4 étapes, puis ramène à la page Compte", asyn
   const compris = page.getByRole("link", { name: "J'ai compris" }).filter({ visible: true });
   expect((await compris.boundingBox())?.height).toBeGreaterThanOrEqual(48);
   await compris.click();
-  await expect(page).toHaveURL("/compte");
+  await expect(page).toHaveURL("/fr/compte");
 });
 
 test("le lien Retour au compte a une zone tactile d'au moins 44 px", async ({ page }) => {

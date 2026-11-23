@@ -1,7 +1,7 @@
 // Écran d'aide « Comment faire » : ajouter Siklon à l'écran d'accueil d'un iPhone ou d'un iPad
 // (US-07c, #110). Apple n'y autorise le web push (US-07) que pour un site ajouté à l'écran d'accueil.
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
 import { MentionOfficielle } from "@/components/compte/MentionOfficielle";
 import { IconeEcranAccueil, IconePartager } from "@/components/ecranAccueil/icones";
@@ -46,12 +46,12 @@ function Chevron({ vers }: { vers: "gauche" | "droite" }) {
 export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <Link href="/compte" className="flex min-h-11 w-fit items-center gap-1 text-base font-bold text-accent">
+      <Lien href="/compte" className="flex min-h-11 w-fit items-center gap-1 text-base font-bold text-accent">
         <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 5l-7 7 7 7" />
         </svg>
         Retour au compte
-      </Link>
+      </Lien>
       <h1 className="text-3xl font-bold">Ajouter Siklon à l&apos;écran d&apos;accueil</h1>
       <p className="text-base">
         Sur iPhone et iPad, c&apos;est la seule façon de recevoir les alertes de votre île quand Siklon est fermé.
@@ -94,12 +94,12 @@ export default function Page() {
           </p>
         </Etape>
       </ol>
-      <Link
+      <Lien
         href="/compte"
         className="flex min-h-13 items-center justify-center rounded-full bg-accent px-6 text-lg font-bold text-on-accent"
       >
         J&apos;ai compris
-      </Link>
+      </Lien>
       <MentionOfficielle />
     </main>
   );
