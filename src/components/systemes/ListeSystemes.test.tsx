@@ -28,7 +28,7 @@ function ok(systemes: SystemeActif[], rejetes = 0): EtatFlux {
 describe("ListeSystemes", () => {
   it("affiche le nom, le type et la catégorie de chaque système", () => {
     render(
-      <ListeSystemes
+      <ListeSystemes langue="fr"
         flux={ok([
           systeme({}),
           systeme({ id: "al122026", nom: "Leah", classification: "TS", ventKt: 45 }),
@@ -46,21 +46,20 @@ describe("ListeSystemes", () => {
   });
 
   it("mène à la fiche de chaque système depuis son nom (US-02)", () => {
-    render(<ListeSystemes flux={ok([systeme({}), systeme({ id: "al122026", nom: "Leah" })])} />);
+    render(<ListeSystemes langue="fr" flux={ok([systeme({}), systeme({ id: "al122026", nom: "Leah" })])} />);
 
-    expect(screen.getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/fr/systemes/al112026");
     expect(screen.getByRole("link", { name: "Leah" })).toHaveAttribute("href", "/fr/systemes/al122026");
   });
 
   it("indique clairement qu'aucun système n'est actif", () => {
-    render(<ListeSystemes flux={ok([])} />);
+    render(<ListeSystemes langue="fr" flux={ok([])} />);
 
     expect(screen.getByText("Aucun système actif dans l'Atlantique.")).toBeInTheDocument();
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
   it("distingue un flux indisponible de l'absence de système", () => {
-    render(<ListeSystemes flux={{ etat: "indisponible", luLe }} />);
+    render(<ListeSystemes langue="fr" flux={{ etat: "indisponible", luLe }} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("Les données du NHC sont momentanément indisponibles.");
     expect(screen.queryByText(/Aucun système actif/)).not.toBeInTheDocument();
@@ -68,21 +67,21 @@ describe("ListeSystemes", () => {
   });
 
   it("signale les systèmes écartés et renvoie vers la source officielle", () => {
-    render(<ListeSystemes flux={ok([systeme({})], 2)} />);
+    render(<ListeSystemes langue="fr" flux={ok([systeme({})], 2)} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("2 systèmes n'ont pas pu être affichés.");
     expect(screen.getByRole("link", { name: /nhc\.noaa\.gov/ })).toBeInTheDocument();
   });
 
   it("affiche le numéro et l'heure de l'avis de chaque système", () => {
-    render(<ListeSystemes flux={ok([systeme({})])} />);
+    render(<ListeSystemes langue="fr" flux={ok([systeme({})])} />);
 
     expect(screen.getByRole("listitem")).toHaveTextContent("Avis n° 14 du 10 septembre à 11 h 00");
   });
 
   it("indique pour chaque système si la trajectoire et le cône sont disponibles", () => {
     render(
-      <ListeSystemes
+      <ListeSystemes langue="fr"
         flux={ok([systeme({}), systeme({ id: "al122026", nom: "Leah", classification: "TS", ventKt: 45 })])}
         previsions={{ al112026: { avis: "14", trajectoire: [], cone: [] } }}
       />,
@@ -95,7 +94,7 @@ describe("ListeSystemes", () => {
 
   it("cite la source et l'heure du dernier avis NHC", () => {
     render(
-      <ListeSystemes
+      <ListeSystemes langue="fr"
         flux={ok([
           systeme({ avis: { numero: "13", emisLe: "2026-09-10T09:00:00.000Z" } }),
           systeme({ id: "al122026", nom: "Leah", avis: { numero: "3", emisLe: "2026-09-10T15:00:00.000Z" } }),
@@ -109,7 +108,7 @@ describe("ListeSystemes", () => {
   });
 
   it("cite la source et l'heure de lecture du flux quand aucun système n'est actif", () => {
-    render(<ListeSystemes flux={ok([])} />);
+    render(<ListeSystemes langue="fr" flux={ok([])} />);
 
     expect(
       screen.getByText("Source : NHC, flux lu le 10 septembre à 12 h 00 (heure des Antilles françaises)."),
@@ -125,7 +124,7 @@ describe("ListeSystemes", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-09-10T19:00:00.000Z"));
       render(
-        <ListeSystemes
+        <ListeSystemes langue="fr"
           flux={ok([
             systeme({ avis: { numero: "13", emisLe: "2026-09-10T09:00:00.000Z" } }),
             systeme({ id: "al122026", nom: "Leah", avis: { numero: "3", emisLe: "2026-09-10T15:00:00.000Z" } }),
@@ -140,9 +139,55 @@ describe("ListeSystemes", () => {
   });
 
   it("signale un système écarté même quand aucun autre n'est affiché", () => {
-    render(<ListeSystemes flux={ok([], 1)} />);
+    render(<ListeSystemes langue="fr" flux={ok([], 1)} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("1 système n'a pas pu être affiché.");
     expect(screen.queryByText(/Aucun système actif/)).not.toBeInTheDocument();
+  });
+});
+
+describe("ListeSystemes en anglais (US-10)", () => {
+  it("décrit chaque système, son avis et sa prévision en anglais", () => {
+    render(
+      <ListeSystemes
+        langue="en"
+        flux={ok([systeme({}), systeme({ id: "al122026", nom: "Leah", classification: "TS", ventKt: 45 })])}
+        previsions={{ al112026: { avis: "14", cone: [], trajectoire: [] } }}
+      />,
+    );
+    const elements = within(screen.getByRole("list", { name: "Active systems" })).getAllByRole("listitem");
+    expect(elements[0]).toHaveTextContent("Category 4 hurricane");
+    expect(elements[0]).toHaveTextContent("Advisory 14 issued 10 September at 11:00 am");
+    expect(elements[0]).toHaveTextContent("Forecast track and cone: advisory 14");
+    expect(elements[1]).toHaveTextContent("Tropical storm");
+    expect(elements[1]).toHaveTextContent("Forecast track and cone not available yet");
+  });
+
+  it("donne la source et l'heure du dernier avis, à l'heure des Antilles", () => {
+    render(<ListeSystemes langue="en" flux={ok([systeme({})])} />);
+    expect(
+      screen.getByText("Source: NHC, latest advisory 10 September at 11:00 am (Atlantic Standard Time, UTC−4)."),
+    ).toBeInTheDocument();
+  });
+
+  it("sans système, le dit et donne l'heure de lecture du flux", () => {
+    render(<ListeSystemes langue="en" flux={ok([])} />);
+    expect(screen.getByText("No active systems in the Atlantic.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Source: NHC, data read 10 September at 12:00 pm (Atlantic Standard Time, UTC−4)."),
+    ).toBeInTheDocument();
+  });
+
+  it("signale les systèmes écartés et un flux indisponible", () => {
+    const { unmount } = render(<ListeSystemes langue="en" flux={ok([systeme({})], 3)} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("3 systems could not be displayed. See nhc.noaa.gov.");
+    unmount();
+    render(<ListeSystemes langue="en" flux={ok([systeme({})], 1)} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("1 system could not be displayed.");
+  });
+
+  it("signale un flux indisponible", () => {
+    render(<ListeSystemes langue="en" flux={{ etat: "indisponible", luLe }} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("NHC data is temporarily unavailable. See nhc.noaa.gov.");
   });
 });

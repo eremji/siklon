@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { AlerteObsolescence } from "./AlerteObsolescence";
 
 const emisLe = "2026-09-10T15:00:00.000Z";
@@ -40,5 +41,18 @@ describe("AlerteObsolescence", () => {
     });
 
     expect(screen.getByText(MESSAGE)).toBeInTheDocument();
+  });
+
+  it("avertit en anglais sur une page en anglais (US-10)", () => {
+    vi.setSystemTime(new Date("2026-09-10T21:30:00.000Z"));
+    render(
+      <FournisseurLangue langue="en">
+        <AlerteObsolescence emisLe={emisLe} />
+      </FournisseurLangue>,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Data may be out of date: no new NHC advisory for more than 6 hours.",
+    );
   });
 });

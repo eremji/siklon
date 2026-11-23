@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { CarteSystemes } from "@/components/carte/CarteSystemes";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
 import { previsionEnCache } from "@/lib/nhc/cache";
 import { fluxNhc } from "@/lib/nhc/lecture";
 import { chargerPrevisions } from "@/lib/nhc/previsions";
@@ -18,7 +19,7 @@ export async function SystemesActifs() {
   return (
     <>
       {flux.etat === "ok" && <CarteSystemes systemes={systemes} previsions={previsions} />}
-      <ListeSystemes flux={flux} previsions={previsions} />
+      <ListeSystemes langue={await langueDeLaPage()} flux={flux} previsions={previsions} />
     </>
   );
 }

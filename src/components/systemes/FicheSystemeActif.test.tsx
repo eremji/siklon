@@ -22,13 +22,13 @@ const ok: EtatFlux = { etat: "ok", systemes: [kyle], rejetes: 0, luLe };
 
 describe("FicheSystemeActif", () => {
   it("affiche la fiche du système demandé", () => {
-    render(<FicheSystemeActif flux={ok} id="al112026" />);
+    render(<FicheSystemeActif langue="fr" flux={ok} id="al112026" />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Kyle" })).toBeInTheDocument();
   });
 
   it("indique qu'un système absent du flux n'est plus suivi, et renvoie vers la carte", () => {
-    render(<FicheSystemeActif flux={ok} id="al992026" />);
+    render(<FicheSystemeActif langue="fr" flux={ok} id="al992026" />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Système introuvable");
     expect(screen.getByText(/n'est plus suivi par le NHC/)).toBeInTheDocument();
@@ -37,10 +37,26 @@ describe("FicheSystemeActif", () => {
   });
 
   it("signale un flux NHC indisponible sans prétendre que le système n'existe plus", () => {
-    render(<FicheSystemeActif flux={{ etat: "indisponible", luLe }} id="al112026" />);
+    render(<FicheSystemeActif langue="fr" flux={{ etat: "indisponible", luLe }} id="al112026" />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("Les données du NHC sont momentanément indisponibles.");
     expect(screen.getByRole("link", { name: "nhc.noaa.gov" })).toHaveAttribute("href", "https://www.nhc.noaa.gov/");
     expect(screen.queryByText(/n'est plus suivi/)).not.toBeInTheDocument();
+  });
+});
+
+describe("FicheSystemeActif en anglais (US-10)", () => {
+  it("dit en anglais qu'un système n'est plus suivi", () => {
+    render(<FicheSystemeActif langue="en" flux={ok} id="al992026" />);
+    expect(screen.getByRole("heading", { level: 1, name: "System not found" })).toBeInTheDocument();
+    expect(screen.getByText("This system is no longer tracked by the NHC, or does not exist.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See active systems" })).toBeInTheDocument();
+    expect(screen.getByText(/^Source: NHC, data read .+ \(Atlantic Standard Time, UTC−4\)\.$/)).toBeInTheDocument();
+  });
+
+  it("dit en anglais que le flux est indisponible", () => {
+    render(<FicheSystemeActif langue="en" flux={{ etat: "indisponible", luLe }} id="al112026" />);
+    expect(screen.getByRole("heading", { level: 1, name: "System details" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("NHC data is temporarily unavailable. See nhc.noaa.gov.");
   });
 });

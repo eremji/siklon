@@ -1,16 +1,19 @@
 import { Suspense } from "react";
 import { SystemesActifs } from "@/components/systemes/SystemesActifs";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import { SYSTEMES } from "@/lib/textes/systemes";
 
-export default function Home() {
+export default async function Home() {
+  const { accueil } = SYSTEMES[await langueDeLaPage()];
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <h1 className="text-3xl font-bold">Siklon</h1>
       <section aria-labelledby="titre-systemes" className="flex flex-col gap-3">
         <h2 id="titre-systemes" className="text-xl font-bold">
-          Systèmes actifs dans l&apos;Atlantique
+          {accueil.titre}
         </h2>
-        <Suspense fallback={<p className="text-base text-muted">Chargement des systèmes actifs…</p>}>
+        <Suspense fallback={<p className="text-base text-muted">{accueil.chargement}</p>}>
           <SystemesActifs />
         </Suspense>
       </section>
