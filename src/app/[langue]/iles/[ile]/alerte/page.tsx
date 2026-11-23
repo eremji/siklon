@@ -4,8 +4,10 @@ import { Lien } from "@/components/langue/Lien";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { PropositionEcranAccueil } from "@/components/ecranAccueil/PropositionEcranAccueil";
 import { AlertesNhc } from "@/components/vigilance/AlertesNhc";
 import { BandeauVigilance, EnTeteIle } from "@/components/vigilance/BandeauVigilance";
+import { alertesNhcEnCours, vigilanceEnCours } from "@/lib/ecranAccueil/alerteEnCours";
 import { type Emprise, type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
 import { alertesNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDemandee } from "@/lib/nhc/source";
@@ -34,14 +36,25 @@ async function VigilanceIle({ ile, fichier }: { ile: Ile; fichier: FichierVigila
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
   const etat = fixture ? etatFixture(fixture) : await chargerVigilance(fichier, SOURCES_METEO_FRANCE);
-  return <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />;
+  return (
+    <>
+      <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />
+      <PropositionEcranAccueil alerteEnCours={vigilanceEnCours(etat)} />
+    </>
+  );
 }
 
 // Lit les watches/warnings NHC à chaque requête, par le cache partagé du flux et des couches NOAA.
 async function AlertesNhcIle({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
   await connection();
   const fixture = fixtureNhcDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE_NHC)?.value);
-  return <AlertesNhc nomIle={ile.nom} etat={await alertesNhc(fixture, emprise)} />;
+  const etat = await alertesNhc(fixture, emprise);
+  return (
+    <>
+      <AlertesNhc nomIle={ile.nom} etat={etat} />
+      <PropositionEcranAccueil alerteEnCours={alertesNhcEnCours(etat)} />
+    </>
+  );
 }
 
 // L'identifiant d'île vient de l'URL : il est lu sous Suspense pour garder un App Shell commun.
