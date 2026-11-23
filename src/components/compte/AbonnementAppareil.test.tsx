@@ -165,3 +165,71 @@ describe("AbonnementAppareil", () => {
     expect(screen.getByRole("button", { name: "Recevoir les alertes sur cet appareil" })).toBeInTheDocument();
   });
 });
+
+// US-07c (#110) : sur iPhone et iPad, Apple n'autorise le web push que depuis l'écran d'accueil.
+const IPHONE_SAFARI =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1";
+const IPHONE_SAFARI_ANCIEN =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1";
+const IPHONE_CHROME =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124.0.6367.88 Mobile/15E148 Safari/604.1";
+
+/** Navigateur d'iPhone, dans un onglet ou ouvert depuis l'écran d'accueil. */
+function iphone(agent: string, { installe = false } = {}) {
+  Object.defineProperty(navigator, "userAgent", { configurable: true, value: agent });
+  Object.defineProperty(navigator, "maxTouchPoints", { configurable: true, value: 5 });
+  Object.defineProperty(navigator, "standalone", { configurable: true, value: installe });
+  vi.stubGlobal("matchMedia", (requete: string) => ({
+    matches: requete === "(display-mode: standalone)" && installe,
+  }));
+}
+
+describe("AbonnementAppareil sur iPhone et iPad", () => {
+  afterEach(() => {
+    for (const cle of ["userAgent", "maxTouchPoints", "standalone"]) Reflect.deleteProperty(navigator, cle);
+  });
+
+  it("Safari, dans un onglet : montre les étapes pour ajouter Siklon à l'écran d'accueil", async () => {
+    iphone(IPHONE_SAFARI);
+    render(<AbonnementAppareil clePublique={CLE_PUBLIQUE} {...actions()} />);
+
+    expect(await screen.findByText(/ajoutez d'abord siklon à l'écran d'accueil/i)).toBeInTheDocument();
+    expect(screen.getByText("« Sur l'écran d'accueil »", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voir l'aide en images" })).toHaveAttribute("href", "/fr/compte/ecran-accueil");
+    expect(screen.queryByText(/ce navigateur ne permet pas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("Safari même si le navigateur expose le web push : les étapes restent, sans bouton d'abonnement", async () => {
+    iphone(IPHONE_SAFARI);
+    navigateurPush();
+    render(<AbonnementAppareil clePublique={CLE_PUBLIQUE} {...actions()} />);
+
+    expect(await screen.findByText(/ajoutez d'abord siklon à l'écran d'accueil/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("iOS trop ancien : invite à mettre iOS à jour", async () => {
+    iphone(IPHONE_SAFARI_ANCIEN);
+    render(<AbonnementAppareil clePublique={CLE_PUBLIQUE} {...actions()} />);
+
+    expect(await screen.findByText(/mettez à jour ios \(16\.4 ou plus récent\)/i)).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+  });
+
+  it("autre navigateur (Chrome) : invite à ouvrir Siklon dans Safari", async () => {
+    iphone(IPHONE_CHROME);
+    render(<AbonnementAppareil clePublique={CLE_PUBLIQUE} {...actions()} />);
+
+    expect(await screen.findByText(/ouvrez siklon dans safari/i)).toBeInTheDocument();
+  });
+
+  it("ouvert depuis l'écran d'accueil : propose l'abonnement comme ailleurs", async () => {
+    iphone(IPHONE_SAFARI, { installe: true });
+    navigateurPush();
+    render(<AbonnementAppareil clePublique={CLE_PUBLIQUE} {...actions()} />);
+
+    expect(await screen.findByRole("button", { name: "Recevoir les alertes sur cet appareil" })).toBeInTheDocument();
+    expect(screen.queryByText(/ajoutez d'abord siklon/i)).not.toBeInTheDocument();
+  });
+});
