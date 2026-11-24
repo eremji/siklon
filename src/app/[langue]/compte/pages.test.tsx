@@ -33,6 +33,7 @@ describe("pages du compte", () => {
   it("la page de connexion propose le formulaire et le lien vers l'inscription", () => {
     render(<Connexion.default />);
     expect(screen.getByRole("heading", { level: 1, name: "Se connecter" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Siklon" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Se connecter" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Créer un compte" })).toHaveAttribute("href", "/fr/compte/inscription");
     expect(screen.getByRole("link", { name: "Mot de passe oublié ?" })).toHaveAttribute("href", "/fr/compte/mot-de-passe-oublie");
@@ -42,6 +43,7 @@ describe("pages du compte", () => {
   it("la page d'inscription propose le formulaire, le lien vers la connexion et la confidentialité", () => {
     render(<Inscription.default />);
     expect(screen.getByRole("heading", { level: 1, name: "Créer un compte" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Siklon" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Créer mon compte" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Se connecter" })).toHaveAttribute("href", "/fr/compte/connexion");
     expect(screen.getByRole("link", { name: /données/i })).toHaveAttribute("href", "/fr/confidentialite");

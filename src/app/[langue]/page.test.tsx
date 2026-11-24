@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import Home from "./page";
 
@@ -8,9 +8,10 @@ vi.mock("@/components/systemes/SystemesActifs", () => ({
 }));
 
 describe("Accueil", () => {
-  it("affiche le nom de l'application", () => {
+  it("affiche le nom de l'application, en logo (US-07c)", () => {
     render(<Home />);
-    expect(screen.getByRole("heading", { level: 1, name: "Siklon" })).toBeInTheDocument();
+    const titre = screen.getByRole("heading", { level: 1, name: "Siklon" });
+    expect(within(titre).getByRole("img", { name: "Siklon" })).toBeInTheDocument();
   });
 
   it("présente les systèmes actifs de l'Atlantique", () => {

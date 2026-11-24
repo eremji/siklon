@@ -1,14 +1,17 @@
-// Dessin de l'icône de Siklon pour next/og (ImageResponse) : le symbole météo du cyclone tropical,
-// un anneau et deux bras en spirale, en trait de la couleur du texte des en-têtes sur le fond Lagon
-// des en-têtes (jetons --header-text et --header, DESIGN.md), jamais une couleur de vigilance.
-import { JETONS_CLAIR } from "./jetons";
+// Dessin de l'icône de Siklon pour next/og (ImageResponse) : la spirale du logo (US-07c, #110), bras
+// en blanc (--header-text) et en turquoise (--accent du thème sombre) sur le fond Lagon des en-têtes
+// (--header). Jamais de rouge ni d'orange, couleurs réservées aux vigilances (DESIGN.md).
+import { SPIRALE } from "@/lib/logo/traces";
+import { JETONS_CLAIR, JETONS_SOMBRE } from "./jetons";
+
+const pourcent = (part: number) => `${Math.round(part * 1000) / 10}%`;
 
 /**
- * `zoneSure` : part du côté occupée par le symbole. Une icône « maskable » est découpée par Android
- * (cercle de 80 % du côté) : le symbole y reste plus petit.
+ * `zoneSure` : part de la hauteur occupée par la spirale. Une icône « maskable » est découpée par
+ * Android (cercle de 80 % du côté) : la spirale y reste plus petite.
  */
 export function DessinIcone({ zoneSure }: { zoneSure: number }) {
-  const cote = `${Math.round(zoneSure * 100)}%`;
+  const { x, y, largeur, hauteur } = SPIRALE.cadre;
   return (
     <div
       style={{
@@ -20,16 +23,21 @@ export function DessinIcone({ zoneSure }: { zoneSure: number }) {
         background: JETONS_CLAIR.header,
       }}
     >
-      <svg width={cote} height={cote} viewBox="0 0 100 100" fill="none">
-        <g stroke={JETONS_CLAIR["header-text"]} strokeWidth={9} strokeLinecap="round">
-          <circle cx={50} cy={50} r={14} />
-          <path d="M 50 36 C 50 16, 66 6, 86 10" />
-          <path d="M 50 64 C 50 84, 34 94, 14 90" />
-        </g>
+      <svg
+        width={pourcent((zoneSure * largeur) / hauteur)}
+        height={pourcent(zoneSure)}
+        viewBox={`${x} ${y} ${largeur} ${hauteur}`}
+      >
+        {SPIRALE.texte.map((d) => (
+          <path key={d.slice(0, 24)} fill={JETONS_CLAIR["header-text"]} d={d} />
+        ))}
+        {SPIRALE.accent.map((d) => (
+          <path key={d.slice(0, 24)} fill={JETONS_SOMBRE.accent} d={d} />
+        ))}
       </svg>
     </div>
   );
 }
 
-/** Part du côté occupée par le symbole : icône ordinaire, ou découpée par Android. */
-export const ZONE_SURE = { normale: 0.78, maskable: 0.56 } as const;
+/** Part de la hauteur occupée par la spirale : icône ordinaire, ou découpée par Android. */
+export const ZONE_SURE = { normale: 0.74, maskable: 0.56 } as const;
