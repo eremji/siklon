@@ -22,13 +22,13 @@ export function TableauTrajectoire({ points }: { points: readonly PointHurdat2[]
         <tbody>
           {points.map((point) => (
             <tr key={point.horodatage.getTime()} className="border-t border-soft">
-              <td className="px-3 py-2 whitespace-nowrap">{formaterDateHeureUtc(point.horodatage)}</td>
+              <td className="px-3 py-2 whitespace-nowrap">{formaterDateHeureUtc(point.horodatage, "fr")}</td>
               <td className="px-3 py-2">
-                {libelleStatut(point.statut)}
+                {libelleStatut(point.statut, "fr")}
                 {point.identifiant === "L" ? " (atterrissage)" : ""}
               </td>
-              <td className="px-3 py-2 whitespace-nowrap">{formaterPosition(point)}</td>
-              <td className="px-3 py-2 whitespace-nowrap">{point.ventKt === null ? VIDE : formaterVent(point.ventKt)}</td>
+              <td className="px-3 py-2 whitespace-nowrap">{formaterPosition(point, "fr")}</td>
+              <td className="px-3 py-2 whitespace-nowrap">{point.ventKt === null ? VIDE : formaterVent(point.ventKt, "fr")}</td>
               <td className="px-3 py-2 whitespace-nowrap">{point.pressionMb === null ? VIDE : `${point.pressionMb} hPa`}</td>
             </tr>
           ))}

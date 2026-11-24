@@ -21,19 +21,19 @@ function CarteMenace({ ile, menace }: { ile: Ile; menace: Menace<SystemeActif> }
         <Pastille systeme={systeme} />
         <div className="flex flex-col">
           <span className="text-lg font-bold">{systeme.nom}</span>
-          <span className="text-sm text-muted">{descriptionSysteme(systeme)}</span>
+          <span className="text-sm text-muted">{descriptionSysteme(systeme, "fr")}</span>
         </div>
       </div>
       {/* Avant le délai : un délai calculé sur un avis périmé ne doit pas être lu comme à jour (#71). */}
       <AlerteObsolescence emisLe={avis.emisLe} />
       <DelaiPassage heure={passage.heure} />
       <p className="text-base">
-        Plus proche passage estimé : {formaterHeurePassage(passage.heure, ile.fuseau)}, à{" "}
-        {formaterDistance(passage.distanceKm)} de {ile.pointReference.nom}.
+        Plus proche passage estimé : {formaterHeurePassage(passage.heure, ile.fuseau, "fr")}, à{" "}
+        {formaterDistance(passage.distanceKm, "fr")} de {ile.pointReference.nom}.
       </p>
       <p className="text-sm text-muted">
         Estimation Siklon calculée à partir des positions prévues de l&apos;avis NHC n° {avis.numero} du{" "}
-        {formaterHeureAvis(avis.emisLe, ile.fuseau)} (heure locale).
+        {formaterHeureAvis(avis.emisLe, ile.fuseau, "fr")} (heure locale).
       </p>
     </li>
   );

@@ -70,7 +70,7 @@ export async function chargerAlertesNhc(
       if (alertes.has(cle) || !segmentDansEmprise(segment, emprise)) continue;
       alertes.set(cle, {
         code: segment.code,
-        systeme: { id: systeme.id, nom: systeme.nom, description: descriptionSysteme(systeme) },
+        systeme: { id: systeme.id, nom: systeme.nom, description: descriptionSysteme(systeme, "fr") },
         avis: segment.avis,
       });
     }

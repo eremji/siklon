@@ -1,6 +1,7 @@
 // Lecture du flux NHC CurrentStorms.json.
 // Le flux est une donnée externe non fiable : chaque système est validé
 // champ par champ avant tout usage ; un système invalide est écarté et journalisé.
+import type { Langue } from "@/lib/langues";
 
 export const CLASSIFICATIONS = ["TD", "STD", "TS", "STS", "HU", "PTC"] as const;
 export type Classification = (typeof CLASSIFICATIONS)[number];
@@ -38,17 +39,27 @@ export class FluxInvalideError extends Error {
   }
 }
 
-const LIBELLES: Record<Classification, string> = {
-  TD: "Dépression tropicale",
-  STD: "Dépression subtropicale",
-  TS: "Tempête tropicale",
-  STS: "Tempête subtropicale",
-  HU: "Ouragan",
-  PTC: "Cyclone potentiel ou post-tropical",
+const LIBELLES: Record<Langue, Record<Classification, string>> = {
+  fr: {
+    TD: "Dépression tropicale",
+    STD: "Dépression subtropicale",
+    TS: "Tempête tropicale",
+    STS: "Tempête subtropicale",
+    HU: "Ouragan",
+    PTC: "Cyclone potentiel ou post-tropical",
+  },
+  en: {
+    TD: "Tropical depression",
+    STD: "Subtropical depression",
+    TS: "Tropical storm",
+    STS: "Subtropical storm",
+    HU: "Hurricane",
+    PTC: "Potential or post-tropical cyclone",
+  },
 };
 
-export function libelleType(classification: Classification): string {
-  return LIBELLES[classification];
+export function libelleType(classification: Classification, langue: Langue): string {
+  return LIBELLES[langue][classification];
 }
 
 // Échelle de Saffir-Simpson, en nœuds (vent maximal soutenu sur 1 minute).
@@ -59,10 +70,11 @@ export function categorieSaffirSimpson(ventKt: number): 1 | 2 | 3 | 4 | 5 | null
   return index === -1 ? null : ((5 - index) as 1 | 2 | 3 | 4 | 5);
 }
 
-export function descriptionSysteme(systeme: SystemeActif): string {
-  const type = libelleType(systeme.classification);
+export function descriptionSysteme(systeme: SystemeActif, langue: Langue): string {
+  const type = libelleType(systeme.classification, langue);
   const categorie = systeme.classification === "HU" ? categorieSaffirSimpson(systeme.ventKt) : null;
-  return categorie ? `${type} de catégorie ${categorie}` : type;
+  if (!categorie) return type;
+  return langue === "fr" ? `${type} de catégorie ${categorie}` : `Category ${categorie} hurricane`;
 }
 
 const MAX_SYSTEMES = 50;

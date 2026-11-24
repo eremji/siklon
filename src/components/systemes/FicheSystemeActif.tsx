@@ -32,7 +32,7 @@ export function FicheSystemeActif({ flux, id }: { flux: EtatFlux; id: string }) 
         Voir les systèmes actifs
       </Lien>
       <p className="text-sm text-muted">
-        Source : NHC, flux lu le {formaterHeureAntilles(flux.luLe)} (heure des Antilles françaises).
+        Source : NHC, flux lu le {formaterHeureAntilles(flux.luLe, "fr")} (heure des Antilles françaises).
       </p>
     </>
   );
