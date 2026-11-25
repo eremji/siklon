@@ -92,3 +92,49 @@ test("la page signale un flux NHC indisponible sans conclure à l'absence de men
   ).toBeVisible();
   await expect(page.getByText(/Aucun système/)).toHaveCount(0);
 });
+
+test.describe("en anglais (US-10)", () => {
+  test("la liste des îles donne les noms anglais et mène à la page de l'île en anglais", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureNhc(context, baseURL, "vide");
+    await page.goto("/en/iles");
+
+    await expect(page).toHaveTitle("My island · Siklon");
+    await expect(page.getByRole("heading", { level: 1, name: "My island" })).toBeVisible();
+    await page.getByRole("link", { name: "Dominica", exact: true }).filter({ visible: true }).click();
+
+    await expect(page).toHaveURL("/en/iles/dominique");
+    await expect(page.getByRole("heading", { level: 1, name: "Dominica" }).filter({ visible: true })).toBeVisible();
+    await expect(page).toHaveTitle("Dominica: current threats · Siklon");
+    await expect(page.getByText("No system is threatening Dominica at the moment.")).toBeVisible();
+  });
+
+  test("la page d'une île menacée s'affiche en anglais et respecte WCAG AA", async ({ page, context, baseURL }) => {
+    await fixtureNhc(context, baseURL, "actifs");
+    // Fixture : avis n° 14 de Kyle émis à 15 h UTC ; il est 19 h UTC.
+    await page.clock.setFixedTime(new Date("2026-09-10T19:00:00.000Z"));
+    await page.goto("/en/iles/guadeloupe");
+
+    const autres = page.getByRole("navigation", { name: "More about Guadeloupe" });
+    for (const lien of ["Current alert", "Preparedness checklist", "Hurricane history"]) {
+      await expect(autres.getByRole("link", { name: lien })).toBeVisible();
+    }
+    await expect(page.getByRole("heading", { level: 2, name: "Systems threatening the island" })).toBeVisible();
+    const menace = page.getByRole("list", { name: "Systems threatening Guadeloupe" }).getByRole("listitem");
+    await expect(menace).toContainText("Category 4 hurricane");
+    await expect(menace.getByText("In about 12 hours")).toBeVisible();
+    await expect(menace).toContainText(
+      "Closest estimated approach: 11 September around 3 am, about 180 km from Pointe-à-Pitre.",
+    );
+    await expect(menace).toContainText(
+      "Siklon estimate based on the forecast positions in NHC advisory 14 issued 10 September at 11:00 am (local time).",
+    );
+    await expect(page.getByRole("alert").filter({ hasText: "Forecasts unavailable for Leah and Thirteen" })).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+});

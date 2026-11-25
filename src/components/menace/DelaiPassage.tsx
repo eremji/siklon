@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useLangue } from "@/components/langue/ContexteLangue";
 import { formaterDelai } from "@/lib/menace/formatage";
 
 const MINUTE_MS = 60_000;
@@ -17,9 +18,10 @@ const minuteServeur = () => null;
 
 export function DelaiPassage({ heure }: { heure: string }) {
   const minute = useSyncExternalStore(abonner, minuteCourante, minuteServeur);
+  const langue = useLangue();
   return (
     <p className="min-h-14 text-[44px] leading-tight font-bold">
-      {minute === null ? null : formaterDelai(heure, new Date(minute * MINUTE_MS), "fr")}
+      {minute === null ? null : formaterDelai(heure, new Date(minute * MINUTE_MS), langue)}
     </p>
   );
 }
