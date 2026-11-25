@@ -1,18 +1,20 @@
 import { Lien } from "@/components/langue/Lien";
 import { LienNhc } from "@/components/LienNhc";
 import type { EtatFlux } from "@/lib/nhc/client";
-import { formaterHeureAntilles } from "@/lib/nhc/fraicheur";
+import type { Langue } from "@/lib/langues";
+import { formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur";
+import { SYSTEMES } from "@/lib/textes/systemes";
 import { FicheSysteme } from "./FicheSysteme";
 
 /** Fiche d'un système selon l'état du flux NHC : disponible, système disparu, ou flux indisponible. */
-export function FicheSystemeActif({ flux, id }: { flux: EtatFlux; id: string }) {
+export function FicheSystemeActif({ langue, flux, id }: { langue: Langue; flux: EtatFlux; id: string }) {
+  const { fiche, liste, source } = SYSTEMES[langue];
   if (flux.etat === "indisponible") {
     return (
       <>
-        <h1 className="text-3xl font-bold">Fiche du système</h1>
+        <h1 className="text-3xl font-bold">{fiche.titre}</h1>
         <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
-          Les données du NHC sont momentanément indisponibles. Consultez{" "}
-          <LienNhc />
+          {liste.indisponible} {liste.consultez} <LienNhc />
           .
         </p>
       </>
@@ -20,19 +22,17 @@ export function FicheSystemeActif({ flux, id }: { flux: EtatFlux; id: string }) 
   }
 
   const systeme = flux.systemes.find((candidat) => candidat.id === id);
-  if (systeme) return <FicheSysteme systeme={systeme} />;
+  if (systeme) return <FicheSysteme langue={langue} systeme={systeme} />;
 
   return (
     <>
-      <h1 className="text-3xl font-bold">Système introuvable</h1>
-      <p className="rounded-2xl bg-surface p-4 text-base">
-        Ce système n&apos;est plus suivi par le NHC, ou n&apos;existe pas.
-      </p>
+      <h1 className="text-3xl font-bold">{fiche.introuvable}</h1>
+      <p className="rounded-2xl bg-surface p-4 text-base">{fiche.plusSuivi}</p>
       <Lien href="/" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
-        Voir les systèmes actifs
+        {fiche.voirActifs}
       </Lien>
       <p className="text-sm text-muted">
-        Source : NHC, flux lu le {formaterHeureAntilles(flux.luLe, "fr")} (heure des Antilles françaises).
+        {source.fluxLu(formaterHeureAntilles(flux.luLe, langue), libelleHeureAntilles(langue))}
       </p>
     </>
   );

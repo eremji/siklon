@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
-import { formaterHeureAntilles } from "@/lib/nhc/fraicheur";
+import type { Langue } from "@/lib/langues";
+import { formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
+import { SYSTEMES } from "@/lib/textes/systemes";
 import { directionDeplacement, formaterPosition, ktVersKmh, ktVersMph, mphVersKmh } from "@/lib/unites";
 import { AlerteObsolescence } from "./AlerteObsolescence";
 import { Pastille } from "./Pastille";
@@ -36,52 +38,55 @@ function Origine({ libelle, children }: { libelle: string; children: ReactNode }
   );
 }
 
-function deplacementMetrique({ deplacement }: SystemeActif): string {
-  if (!deplacement) return "Non communiqué par le NHC";
-  if (deplacement.vitesseMph === 0) return "Stationnaire";
-  const direction = directionDeplacement(deplacement.directionDeg, "fr");
-  return `${direction.charAt(0).toUpperCase()}${direction.slice(1)} à ${mphVersKmh(deplacement.vitesseMph)} km/h`;
+function deplacementMetrique({ deplacement }: SystemeActif, langue: Langue): string {
+  const { fiche } = SYSTEMES[langue];
+  if (!deplacement) return fiche.nonCommuniqueNhc;
+  if (deplacement.vitesseMph === 0) return fiche.stationnaire;
+  const direction = directionDeplacement(deplacement.directionDeg, langue);
+  return fiche.vitesse(`${direction.charAt(0).toUpperCase()}${direction.slice(1)}`, mphVersKmh(deplacement.vitesseMph));
 }
 
-function deplacementOrigine({ deplacement }: SystemeActif): string {
-  if (!deplacement) return "Non communiqué";
+function deplacementOrigine({ deplacement }: SystemeActif, langue: Langue): string {
+  const { fiche } = SYSTEMES[langue];
+  if (!deplacement) return fiche.nonCommunique;
   if (deplacement.vitesseMph === 0) return "0 mph";
-  return `${deplacement.directionDeg}° à ${deplacement.vitesseMph} mph`;
+  return fiche.vitesseOrigine(deplacement.directionDeg, deplacement.vitesseMph);
 }
 
 /** Fiche d'un système actif (US-02) : intensité, déplacement et avis NHC d'origine. */
-export function FicheSysteme({ systeme }: { systeme: SystemeActif }) {
+export function FicheSysteme({ langue, systeme }: { langue: Langue; systeme: SystemeActif }) {
   const { avis } = systeme;
+  const { fiche, source } = SYSTEMES[langue];
   return (
     <>
       <header className="flex items-center gap-3">
         <Pastille systeme={systeme} />
         <div className="flex flex-col">
           <h1 className="text-3xl font-bold">{systeme.nom}</h1>
-          <p className="text-base text-muted">{descriptionSysteme(systeme, "fr")}</p>
+          <p className="text-base text-muted">{descriptionSysteme(systeme, langue)}</p>
         </div>
       </header>
       <AlerteObsolescence emisLe={avis.emisLe} />
 
       <section aria-labelledby="titre-mesures" className="flex flex-col gap-2">
         <h2 id="titre-mesures" className="text-xl font-bold">
-          Intensité et déplacement
+          {fiche.mesures}
         </h2>
         <dl className="grid grid-cols-2 gap-2">
-          <Mesure libelle="Vents maximaux soutenus" cle>
+          <Mesure libelle={fiche.vent} cle>
             {ktVersKmh(systeme.ventKt)} km/h
           </Mesure>
-          <Mesure libelle="Pression centrale">{systeme.pressionHpa} hPa</Mesure>
-          <Mesure libelle="Position">{formaterPosition(systeme.latitude, systeme.longitude, "fr")}</Mesure>
-          <Mesure libelle="Déplacement" large>
-            {deplacementMetrique(systeme)}
+          <Mesure libelle={fiche.pression}>{systeme.pressionHpa} hPa</Mesure>
+          <Mesure libelle={fiche.position}>{formaterPosition(systeme.latitude, systeme.longitude, langue)}</Mesure>
+          <Mesure libelle={fiche.deplacement} large>
+            {deplacementMetrique(systeme, langue)}
           </Mesure>
         </dl>
       </section>
 
       <details className="group rounded-2xl bg-surface px-4">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-base font-bold text-accent">
-          Valeurs d&apos;origine du NHC
+          {fiche.origine}
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
@@ -96,29 +101,21 @@ export function FicheSysteme({ systeme }: { systeme: SystemeActif }) {
           </svg>
         </summary>
         <dl className="flex flex-col gap-2 pb-4">
-          <Origine libelle="Vents maximaux soutenus">
-            {systeme.ventKt} nœuds ({ktVersMph(systeme.ventKt)} mph)
-          </Origine>
-          <Origine libelle="Pression centrale">{systeme.pressionHpa} mb</Origine>
-          <Origine libelle="Déplacement">{deplacementOrigine(systeme)}</Origine>
+          <Origine libelle={fiche.vent}>{fiche.noeuds(systeme.ventKt, ktVersMph(systeme.ventKt))}</Origine>
+          <Origine libelle={fiche.pression}>{systeme.pressionHpa} mb</Origine>
+          <Origine libelle={fiche.deplacement}>{deplacementOrigine(systeme, langue)}</Origine>
         </dl>
-        <p className="pb-4 text-sm text-muted">
-          Siklon convertit ces valeurs en unités métriques ; les vents sont arrondis à 5 km/h près, comme dans
-          les avis du NHC.
-        </p>
+        <p className="pb-4 text-sm text-muted">{fiche.conversion}</p>
       </details>
 
       <footer className="flex flex-col gap-1 text-sm text-muted">
-        <p>
-          Source : NHC, avis n° {avis.numero} du {formaterHeureAntilles(avis.emisLe, "fr")} (heure des Antilles
-          françaises).
-        </p>
+        <p>{source.avis(avis.numero, formaterHeureAntilles(avis.emisLe, langue), libelleHeureAntilles(langue))}</p>
         <p>
           <a
             href={avis.url ?? URL_NHC}
             className="inline-flex min-h-11 items-center text-base text-accent underline underline-offset-4"
           >
-            {avis.url ? `Lire l'avis n° ${avis.numero} sur le site du NHC (en anglais)` : "Lire les avis sur le site du NHC (en anglais)"}
+            {avis.url ? fiche.lireAvis(avis.numero) : fiche.lireAvisTous}
           </a>
         </p>
       </footer>

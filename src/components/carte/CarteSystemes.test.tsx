@@ -5,6 +5,7 @@ import type { styleCarte } from "@/lib/carte/style";
 import type { Prevision } from "@/lib/nhc/previsions";
 import type { SystemeActif } from "@/lib/nhc/systemes";
 import { CarteSystemes } from "./CarteSystemes";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 
 // jsdom n'a pas WebGL : MapLibre est remplacé par un double qui enregistre les appels.
 const espion = vi.hoisted(() => ({
@@ -203,6 +204,38 @@ describe("CarteSystemes", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent(
       "La carte interactive n'a pas pu s'afficher. La liste des systèmes reste à jour ci-dessous.",
+    );
+  });
+
+  it("en anglais, décrit la carte, ses commandes et ses marqueurs en anglais (US-10)", async () => {
+    render(
+      <FournisseurLangue langue="en">
+        <CarteSystemes systemes={systemes} />
+      </FournisseurLangue>,
+    );
+
+    expect(screen.getByRole("region", { name: "Map of active systems" })).toBeInTheDocument();
+    await waitFor(() => expect(espion.marqueurs).toHaveLength(2));
+    expect(espion.marqueurs[0].element).toHaveAttribute("aria-label", "Kyle, Category 4 hurricane");
+    expect(espion.options[0]).toMatchObject({
+      locale: {
+        "Map.Title": "Interactive map of active systems",
+        "AttributionControl.ToggleAttribution": "Show or hide map credits",
+        "AttributionControl.MapFeedback": "Report an error on the map",
+      },
+    });
+  });
+
+  it("en anglais, renvoie vers la liste si la carte ne peut pas s'afficher", async () => {
+    espion.echoue = true;
+    render(
+      <FournisseurLangue langue="en">
+        <CarteSystemes systemes={systemes} />
+      </FournisseurLangue>,
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "The interactive map could not be displayed. The list of systems below is still up to date.",
     );
   });
 });

@@ -5,22 +5,27 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { FicheSystemeActif } from "@/components/systemes/FicheSystemeActif";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
 import { fluxNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
+import { SYSTEMES } from "@/lib/textes/systemes";
 
-export const metadata: Metadata = { title: "Fiche d'un système actif · Siklon" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: SYSTEMES[await langueDeLaPage()].fiche.titreOnglet };
+}
 
 // Identifiant NHC d'un système de l'Atlantique, par exemple « al112026 ».
 const ID_SYSTEME = /^al\d{6}$/;
 
-export default function Page({ params }: PageProps<"/[langue]/systemes/[id]">) {
+export default async function Page({ params }: PageProps<"/[langue]/systemes/[id]">) {
+  const { fiche } = SYSTEMES[await langueDeLaPage()];
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <Lien href="/" className="flex min-h-11 items-center self-start text-base text-accent underline underline-offset-4">
-        Carte des systèmes actifs
+        {fiche.retour}
       </Lien>
-      <Suspense fallback={<p className="text-base text-muted">Chargement de la fiche…</p>}>
+      <Suspense fallback={<p className="text-base text-muted">{fiche.chargement}</p>}>
         <Fiche params={params} />
       </Suspense>
       <MentionOfficielle />
@@ -35,5 +40,5 @@ async function Fiche({ params }: Pick<PageProps<"/[langue]/systemes/[id]">, "par
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
   const flux = await fluxNhc(fixture);
-  return <FicheSystemeActif flux={flux} id={id} />;
+  return <FicheSystemeActif langue={await langueDeLaPage()} flux={flux} id={id} />;
 }

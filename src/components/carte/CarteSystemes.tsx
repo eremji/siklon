@@ -8,14 +8,20 @@ import { emprise } from "@/lib/carte/emprise";
 import { type CouleursCarte, JETONS_CARTE, SOURCE_FOND, styleCarte } from "@/lib/carte/style";
 import type { Prevision } from "@/lib/nhc/previsions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
+import { useLangue } from "@/components/langue/ContexteLangue";
 import { Pastille } from "@/components/systemes/Pastille";
+import type { Langue } from "@/lib/langues";
+import { SYSTEMES } from "@/lib/textes/systemes";
 
-// Textes d'interface de MapLibre, en français.
-const TEXTES_CARTE = {
-  "Map.Title": "Carte interactive des systèmes actifs",
-  "AttributionControl.ToggleAttribution": "Afficher ou masquer les crédits de la carte",
-  "AttributionControl.MapFeedback": "Signaler une erreur sur la carte",
-};
+// Textes d'interface de MapLibre, dans la langue de la page.
+function textesMapLibre(langue: Langue) {
+  const { carte } = SYSTEMES[langue];
+  return {
+    "Map.Title": carte.titre,
+    "AttributionControl.ToggleAttribution": carte.credits,
+    "AttributionControl.MapFeedback": carte.signaler,
+  };
+}
 
 interface Ancre {
   systeme: SystemeActif;
@@ -59,6 +65,7 @@ export function CarteSystemes({
   // Prévisions disponibles, par identifiant de système.
   previsions?: Record<string, Prevision>;
 }) {
+  const langue = useLangue();
   const conteneur = useRef<HTMLDivElement>(null);
   const [ancres, setAncres] = useState<Ancre[]>([]);
   const [echec, setEchec] = useState(false);
@@ -88,7 +95,7 @@ export function CarteSystemes({
           // Place pour la pastille et, à droite, pour le nom du système.
           fitBoundsOptions: { padding: { top: 32, bottom: 32, left: 32, right: 96 } },
           attributionControl: { compact: true },
-          locale: TEXTES_CARTE,
+          locale: textesMapLibre(langue),
         });
         carte.once("load", () => {
           if (!annule) setPrete(true);
@@ -102,7 +109,7 @@ export function CarteSystemes({
           const element = document.createElement("div");
           // Marqueur non cliquable : MapLibre en ferait un « button » nommé « Map marker ».
           element.setAttribute("role", "group");
-          element.setAttribute("aria-label", `${systeme.nom}, ${descriptionSysteme(systeme, "fr")}`);
+          element.setAttribute("aria-label", `${systeme.nom}, ${descriptionSysteme(systeme, langue)}`);
           new Marker({ element }).setLngLat([systeme.longitude, systeme.latitude]).addTo(carte!);
           return { systeme, element };
         });
@@ -118,13 +125,13 @@ export function CarteSystemes({
       theme?.removeEventListener("change", surTheme);
       carte?.remove();
     };
-  }, [systemes, previsions]);
+  }, [systemes, previsions, langue]);
 
   return (
-    <div role="region" aria-label="Carte des systèmes actifs" className="relative">
+    <div role="region" aria-label={SYSTEMES[langue].carte.region} className="relative">
       {echec ? (
         <p role="status" className="rounded-2xl bg-surface p-4 text-base">
-          La carte interactive n&apos;a pas pu s&apos;afficher. La liste des systèmes reste à jour ci-dessous.
+          {SYSTEMES[langue].carte.echec}
         </p>
       ) : (
         <div ref={conteneur} aria-busy={!prete} className="h-72 w-full overflow-hidden rounded-2xl bg-sea" />
