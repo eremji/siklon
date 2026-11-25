@@ -15,7 +15,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
-    theme_color: JETONS_CLAIR.header,
+    // Barre d'état de l'app installée sur Android : fond --bg, comme sur iOS (US-07c).
+    theme_color: JETONS_CLAIR.bg,
     background_color: JETONS_CLAIR.bg,
     icons: ICONES.map(({ nom, taille, maskable }) => ({
       src: `/icones/${nom}`,

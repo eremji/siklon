@@ -67,6 +67,7 @@ describe("proxy : chemins concernés", () => {
     expect(passe("/sw.js")).toBe(false);
     expect(passe("/favicon.ico")).toBe(false);
     expect(passe("/icon.svg")).toBe(false);
+    expect(passe("/demarrage/390x844@3x-clair.png")).toBe(false);
   });
 
   it("ne touche pas aux fichiers de l'application installée (US-07b), même sans extension", () => {
