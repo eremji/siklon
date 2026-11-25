@@ -35,12 +35,16 @@ describe("politiqueContenu (CSP)", () => {
     // Seule exception : le formulaire « Continuer avec Google » est redirigé vers Google (sans JavaScript).
     expect(csp["form-action"]).toEqual(["'self'", "https://accounts.google.com"]);
     expect(csp["frame-ancestors"]).toEqual(["'none'"]);
-    expect(csp["upgrade-insecure-requests"]).toEqual([]);
   });
 
   it("n'autorise eval qu'en développement", () => {
     expect(csp["script-src"]).not.toContain("'unsafe-eval'");
     expect(directives(politiqueContenu({ dev: true }))["script-src"]).toContain("'unsafe-eval'");
+  });
+
+  it("ne force https qu'en production (Safari sur iOS charge sinon CSS et JS en https sur http://localhost)", () => {
+    expect(csp["upgrade-insecure-requests"]).toEqual([]);
+    expect(directives(politiqueContenu({ dev: true }))).not.toHaveProperty("upgrade-insecure-requests");
   });
 
   it("n'autorise aucun script d'un autre domaine", () => {

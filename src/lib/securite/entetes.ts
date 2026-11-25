@@ -26,7 +26,9 @@ export function politiqueContenu({ dev }: { dev: boolean }): string {
     ["base-uri", "'self'"],
     ["form-action", "'self'", AUTORISATION_GOOGLE],
     ["frame-ancestors", "'none'"],
-    ["upgrade-insecure-requests"],
+    // Pas en développement : Safari sur iOS rechargerait CSS et JS en https sur http://localhost
+    // ou l'adresse IP du Mac, et la page s'afficherait sans style.
+    ...(dev ? [] : [["upgrade-insecure-requests"] as [string]]),
   ];
   return directives.map((d) => d.join(" ")).join("; ");
 }
