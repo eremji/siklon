@@ -66,6 +66,7 @@ describe("proxy : chemins concernés", () => {
     expect(passe("/_next/static/chunks/app.js")).toBe(false);
     expect(passe("/sw.js")).toBe(false);
     expect(passe("/favicon.ico")).toBe(false);
+    expect(passe("/icon.svg")).toBe(false);
   });
 
   it("ne touche pas aux fichiers de l'application installée (US-07b), même sans extension", () => {

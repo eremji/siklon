@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { Suspense } from "react";
 import { AlerteGoogle, FormulaireConnexion, FormulaireGoogle } from "@/components/compte/Formulaires";
+import { LogoSiklon } from "@/components/logo/LogoSiklon";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { connexionGoogleActive } from "@/lib/auth/configuration";
 import { connecter, connecterAvecGoogle } from "../actions";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
+      <LogoSiklon hauteur={36} />
       <h1 className="text-3xl font-bold">Se connecter</h1>
       {connexionGoogleActive(process.env) && (
         <>

@@ -94,6 +94,29 @@ conçue pour distinguer sans ambiguïté I, l et 1.
 
 Le corps du texte ne descend jamais sous 16 px.
 
+## Logo et icône
+Le logo fourni par le porteur (spirale et lettrage « Siklon ») est repris
+tel quel, mais recoloré : son rouge et son orange sont des couleurs de
+vigilance. Tracés : `src/lib/logo/traces.ts`. Maquettes : canevas
+https://claude.ai/artifact/DnRE5t57qgUzCwVyaztsjz (artboards Icone, LogoApp).
+
+- **Deux teintes** : les bras et les lettres « rouges » d'origine en
+  `--text`, les bras « orange » et le « o » en `--accent`. En clair : encre
+  #10292E et Lagon #0E5E6F ; en sombre : #E6F2F0 et turquoise #5EC4C9,
+  les couleurs de l'icône. Jamais de rouge, d'orange ni d'autre couleur.
+- **Logo dans l'app** (`LogoSiklon`) : spirale puis lettrage, côte à côte,
+  le lettrage aux 30/44 de la hauteur de la spirale (44 px sur l'accueil,
+  36 px sur la connexion et l'inscription). Une seule image nommée
+  « Siklon » pour le lecteur d'écran. Il remplace le titre texte de
+  l'accueil et coiffe les pages de connexion et d'inscription.
+- **Icône d'app** : la spirale seule, en blanc (`--header-text`) et
+  turquoise #5EC4C9 (`--accent` sombre) sur fond Lagon #0E5E6F
+  (`--header`). Contraste de chaque teinte sur le fond ≥ 3:1. La spirale
+  occupe 74 % de la hauteur, 56 % pour l'icône Android découpée
+  (« maskable »). Fichiers : `src/app/icon.svg` (onglet), PNG 192 et
+  512 px, icône Android et icône Apple 180 px carrée, dessinés au build
+  (`src/lib/pwa/DessinIcone.tsx`). iOS arrondit lui-même les angles.
+
 ## Formes et espacements
 - Rayons : 12 / 16 / 20 / 24 px ; boutons et pastilles en pilule.
 - Espacements : 4 / 8 / 12 / 16 / 24 px ; marges d'écran 16 px.

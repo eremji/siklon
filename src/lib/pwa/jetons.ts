@@ -12,4 +12,6 @@ export const JETONS_CLAIR = {
 export const JETONS_SOMBRE = {
   bg: "#0B1F24",
   header: "#12303A",
+  /** Turquoise de la spirale sur l'icône (DESIGN.md, « Logo et icône »). */
+  accent: "#5EC4C9",
 } as const;
