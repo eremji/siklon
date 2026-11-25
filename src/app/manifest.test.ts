@@ -24,7 +24,7 @@ describe("manifeste d'application", () => {
   });
 
   it("prend ses couleurs dans les jetons de DESIGN.md", () => {
-    expect(m.theme_color).toBe(JETONS_CLAIR.header);
+    expect(m.theme_color).toBe(JETONS_CLAIR.bg);
     expect(m.background_color).toBe(JETONS_CLAIR.bg);
   });
 
