@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { DelaiPassage } from "./DelaiPassage";
 
 describe("DelaiPassage", () => {
@@ -20,5 +21,17 @@ describe("DelaiPassage", () => {
     act(() => vi.advanceTimersByTime(2 * 3_600_000));
 
     expect(screen.getByText("Dans environ 10 h")).toBeInTheDocument();
+  });
+
+  it("affiche le délai dans la langue de la page (US-10)", () => {
+    vi.useFakeTimers({ now: new Date("2026-09-10T19:00:00.000Z") });
+
+    render(
+      <FournisseurLangue langue="en">
+        <DelaiPassage heure="2026-09-11T07:15:00.000Z" />
+      </FournisseurLangue>,
+    );
+
+    expect(screen.getByText("In about 12 hours")).toBeInTheDocument();
   });
 });

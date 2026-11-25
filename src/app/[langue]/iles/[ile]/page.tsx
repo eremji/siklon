@@ -5,10 +5,13 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { MenaceIle } from "@/components/menace/MenaceIle";
-import { ILES, type Ile, trouverIle } from "@/lib/iles";
+import { ILES, type Ile, nomIle, trouverIle } from "@/lib/iles";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import type { Langue } from "@/lib/langues";
 import { fluxNhc, positionsNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
+import { ILES_TEXTES } from "@/lib/textes/iles";
 
 type Props = PageProps<"/[langue]/iles/[ile]">;
 
@@ -17,8 +20,10 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const langue = await langueDeLaPage();
+  const textes = ILES_TEXTES[langue].ile;
   const ile = trouverIle((await params).ile);
-  return { title: ile ? `${ile.nom} : menaces en cours · Siklon` : "Île introuvable · Siklon" };
+  return { title: ile ? textes.titreOnglet(nomIle(ile, langue)) : textes.introuvable };
 }
 
 function Chargement({ texte }: { texte: string }) {
@@ -26,62 +31,66 @@ function Chargement({ texte }: { texte: string }) {
 }
 
 // Lit le flux NHC et les positions prévues à chaque requête, par le cache partagé, jamais pendant le build.
-async function Menaces({ ile }: { ile: Ile }) {
+async function Menaces({ ile, langue }: { ile: Ile; langue: Langue }) {
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
   const flux = await fluxNhc(fixture);
   const systemes = flux.etat === "ok" ? flux.systemes : [];
   const positions = await positionsNhc(fixture, systemes);
-  return <MenaceIle ile={ile} flux={flux} positions={positions} />;
+  return <MenaceIle ile={ile} flux={flux} positions={positions} langue={langue} />;
 }
 
 // L'identifiant d'île vient de l'URL : il est lu sous Suspense pour garder une coquille commune.
 async function ContenuIle({ params }: Pick<Props, "params">) {
   const ile = trouverIle((await params).ile);
   if (!ile) notFound();
+  const langue = await langueDeLaPage();
+  const textes = ILES_TEXTES[langue].ile;
+  const nom = nomIle(ile, langue);
 
   return (
     <>
-      <h1 className="text-3xl font-bold">{ile.nom}</h1>
-      <nav aria-label={`Autres informations sur ${ile.nom}`} className="flex flex-wrap gap-x-4">
+      <h1 className="text-3xl font-bold">{nom}</h1>
+      <nav aria-label={textes.autresInfos(nom)} className="flex flex-wrap gap-x-4">
         <Lien
           href={`/iles/${ile.slug}/alerte`}
           className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
         >
-          Alerte en cours
+          {textes.alerte}
         </Lien>
         <Lien
           href={`/iles/${ile.slug}/checklist`}
           className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
         >
-          Checklist de préparation
+          {textes.checklist}
         </Lien>
         <Lien
           href={`/iles/${ile.slug}/historique`}
           className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
         >
-          Historique des cyclones
+          {textes.historique}
         </Lien>
       </nav>
       <section aria-labelledby="titre-menaces" className="flex flex-col gap-3">
         <h2 id="titre-menaces" className="text-xl font-bold">
-          Systèmes qui menacent l&apos;île
+          {textes.menaces}
         </h2>
-        <Suspense fallback={<Chargement texte="Chargement des prévisions du NHC…" />}>
-          <Menaces ile={ile} />
+        <Suspense fallback={<Chargement texte={textes.chargementPrevisions} />}>
+          <Menaces ile={ile} langue={langue} />
         </Suspense>
       </section>
     </>
   );
 }
 
-export default function PageIle({ params }: Props) {
+export default async function PageIle({ params }: Props) {
+  const textes = ILES_TEXTES[await langueDeLaPage()].ile;
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <Lien href="/iles" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
-        Toutes les îles
+        {textes.toutes}
       </Lien>
-      <Suspense fallback={<Chargement texte="Chargement de l'île…" />}>
+      <Suspense fallback={<Chargement texte={textes.chargement} />}>
         <ContenuIle params={params} />
       </Suspense>
       <MentionOfficielle />

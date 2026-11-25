@@ -6,10 +6,12 @@ import points from "@/lib/nhc/__fixtures__/prevision-at1-points.json";
 import type { EtatFlux } from "@/lib/nhc/client";
 import { lirePositionsPrevues } from "@/lib/nhc/positions";
 import type { SystemeActif } from "@/lib/nhc/systemes";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { MenaceIle } from "./MenaceIle";
 
 const luLe = "2026-09-10T16:00:00.000Z";
 const guadeloupe = trouverIle("guadeloupe")!;
+const dominique = trouverIle("dominique")!;
 const martinique = trouverIle("martinique")!;
 const positionsKyle = { al112026: lirePositionsPrevues(points, "AT1")! };
 
@@ -39,7 +41,7 @@ describe("MenaceIle", () => {
   afterEach(() => vi.useRealTimers());
 
   it("affiche, pour un système qui menace l'île, le délai, l'heure et la distance du plus proche passage", () => {
-    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
 
     const menaces = within(screen.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" })).getAllByRole(
       "listitem",
@@ -56,7 +58,7 @@ describe("MenaceIle", () => {
   it("signale un avis NHC de plus de 6 h, avant le délai", () => {
     // Avis n° 14 émis à 15 h UTC ; il est 22 h UTC, soit 7 h plus tard.
     vi.setSystemTime(new Date("2026-09-10T22:00:00.000Z"));
-    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
 
     const menace = within(screen.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" })).getByRole(
       "listitem",
@@ -69,13 +71,13 @@ describe("MenaceIle", () => {
   });
 
   it("ne signale rien quand l'avis NHC a moins de 6 h", () => {
-    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
 
     expect(screen.queryByText(/Données possiblement obsolètes/)).not.toBeInTheDocument();
   });
 
   it("présente le calcul comme une estimation, avec le numéro et l'heure de l'avis NHC utilisé", () => {
-    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
 
     expect(
       screen.getByText(
@@ -86,7 +88,7 @@ describe("MenaceIle", () => {
   });
 
   it("explique le rayon de menace, mesuré depuis le point de référence de l'île", () => {
-    render(<MenaceIle ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
 
     expect(
       screen.getByText(
@@ -96,20 +98,20 @@ describe("MenaceIle", () => {
   });
 
   it("indique qu'aucun système ne menace l'île quand aucun système n'est actif", () => {
-    render(<MenaceIle ile={martinique} flux={ok([])} positions={{}} />);
+    render(<MenaceIle langue="fr" ile={martinique} flux={ok([])} positions={{}} />);
 
     expect(screen.getByText("Aucun système ne menace Martinique pour le moment.")).toBeInTheDocument();
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
   it("indique qu'aucun système ne menace l'île quand les trajectoires prévues restent hors du rayon", () => {
-    render(<MenaceIle ile={martinique} flux={ok([systeme()])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={martinique} flux={ok([systeme()])} positions={positionsKyle} />);
 
     expect(screen.getByText("Aucun système ne menace Martinique pour le moment.")).toBeInTheDocument();
   });
 
   it("ne conclut pas à l'absence de menace quand des prévisions manquent, et nomme les systèmes concernés", () => {
-    render(<MenaceIle ile={martinique} flux={ok([systeme(), leah])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={martinique} flux={ok([systeme(), leah])} positions={positionsKyle} />);
 
     expect(
       screen.getByText("Aucun système dont la prévision est disponible ne menace Martinique."),
@@ -121,7 +123,7 @@ describe("MenaceIle", () => {
   });
 
   it("présente les prévisions manquantes sur un fond neutre, pas celui des échéances proches (DESIGN.md)", () => {
-    render(<MenaceIle ile={martinique} flux={ok([systeme(), leah])} positions={positionsKyle} />);
+    render(<MenaceIle langue="fr" ile={martinique} flux={ok([systeme(), leah])} positions={positionsKyle} />);
 
     const encadre = screen.getByRole("alert");
     expect(encadre).toHaveClass("bg-soft");
@@ -129,18 +131,92 @@ describe("MenaceIle", () => {
   });
 
   it("signale les systèmes écartés du flux NHC", () => {
-    render(<MenaceIle ile={martinique} flux={ok([], 2)} positions={{}} />);
+    render(<MenaceIle langue="fr" ile={martinique} flux={ok([], 2)} positions={{}} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("2 systèmes n'ont pas pu être lus");
     expect(screen.queryByText(/pour le moment/)).not.toBeInTheDocument();
   });
 
   it("signale un flux NHC indisponible sans dire qu'aucun système ne menace l'île", () => {
-    render(<MenaceIle ile={guadeloupe} flux={{ etat: "indisponible", luLe }} positions={{}} />);
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={{ etat: "indisponible", luLe }} positions={{}} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Les données du NHC sont momentanément indisponibles : la menace ne peut pas être évaluée.",
     );
     expect(screen.queryByText(/Aucun système/)).not.toBeInTheDocument();
+  });
+});
+
+describe("MenaceIle en anglais (US-10)", () => {
+  beforeEach(() => vi.useFakeTimers({ now: new Date("2026-09-10T19:00:00.000Z") }));
+  afterEach(() => vi.useRealTimers());
+
+  const thirteen = systeme({ id: "al132026", emplacement: "AT3", nom: "Thirteen", classification: "TD", ventKt: 30 });
+
+  function rendreEnAnglais(...[props]: Parameters<typeof MenaceIle>) {
+    render(
+      <FournisseurLangue langue="en">
+        <MenaceIle {...props} />
+      </FournisseurLangue>,
+    );
+  }
+
+  it("présente la menace, le délai, le plus proche passage et l'avis NHC en anglais", () => {
+    rendreEnAnglais({ langue: "en", ile: guadeloupe, flux: ok([systeme()]), positions: positionsKyle });
+
+    expect(
+      screen.getByText(
+        `Systems whose forecast track passes within ${RADIUS_WATCH_KM} km of Pointe-à-Pitre in the next 5 days.`,
+      ),
+    ).toBeInTheDocument();
+    const menace = within(screen.getByRole("list", { name: "Systems threatening Guadeloupe" })).getByRole("listitem");
+    expect(menace).toHaveTextContent("Category 4 hurricane");
+    expect(within(menace).getByText("In about 12 hours")).toBeInTheDocument();
+    expect(menace).toHaveTextContent(
+      "Closest estimated approach: 11 September around 3 am, about 180 km from Pointe-à-Pitre.",
+    );
+    expect(menace).toHaveTextContent(
+      "Siklon estimate based on the forecast positions in NHC advisory 14 issued 10 September at 11:00 am (local time).",
+    );
+    expect(screen.getByText(/^Source: NHC forecast positions/)).toHaveTextContent(
+      "Source: NHC forecast positions (nhc.noaa.gov). The time and distance are estimates, not official forecasts.",
+    );
+  });
+
+  it("donne le nom anglais de l'île quand aucun système ne la menace", () => {
+    rendreEnAnglais({ langue: "en", ile: dominique, flux: ok([]), positions: {} });
+
+    expect(screen.getByText("No system is threatening Dominica at the moment.")).toBeInTheDocument();
+  });
+
+  it("nomme en anglais les systèmes sans prévision et les systèmes illisibles", () => {
+    rendreEnAnglais({
+      langue: "en",
+      ile: martinique,
+      flux: ok([systeme(), leah, thirteen], 3),
+      positions: positionsKyle,
+    });
+
+    const alerte = screen.getByRole("alert");
+    expect(alerte).toHaveTextContent("Forecasts unavailable for Leah and Thirteen: their threat cannot be assessed.");
+    expect(alerte).toHaveTextContent("3 systems could not be read: their threat cannot be assessed.");
+    expect(alerte).toHaveTextContent("See nhc.noaa.gov.");
+    expect(screen.getByText("No system with an available forecast is threatening Martinique.")).toBeInTheDocument();
+  });
+
+  it("accorde au singulier un seul système sans prévision ou illisible", () => {
+    rendreEnAnglais({ langue: "en", ile: dominique, flux: ok([leah], 1), positions: {} });
+
+    const alerte = screen.getByRole("alert");
+    expect(alerte).toHaveTextContent("Forecast unavailable for Leah: its threat cannot be assessed.");
+    expect(alerte).toHaveTextContent("1 system could not be read: its threat cannot be assessed.");
+  });
+
+  it("signale en anglais un flux NHC indisponible", () => {
+    rendreEnAnglais({ langue: "en", ile: guadeloupe, flux: { etat: "indisponible", luLe }, positions: {} });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "NHC data is temporarily unavailable: the threat cannot be assessed. See nhc.noaa.gov.",
+    );
   });
 });
