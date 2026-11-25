@@ -116,6 +116,12 @@ https://claude.ai/artifact/DnRE5t57qgUzCwVyaztsjz (artboards Icone, LogoApp).
   (« maskable »). Fichiers : `src/app/icon.svg` (onglet), PNG 192 et
   512 px, icône Android et icône Apple 180 px carrée, dessinés au build
   (`src/lib/pwa/DessinIcone.tsx`). iOS arrondit lui-même les angles.
+- **Écran de démarrage** : aucun pour l'instant. iOS 27 ignore les images
+  `apple-touch-startup-image` et affiche un écran blanc (clair) ou noir
+  (sombre) ; constaté sur un iPhone et dans le simulateur (novembre 2026).
+- **Barre d'état** de l'app installée : opaque, couleur `--bg` du thème
+  en cours (`theme-color`) ; le contenu ne passe ni dessous ni sous la
+  barre d'accueil.
 
 ## Formes et espacements
 - Rayons : 12 / 16 / 20 / 24 px ; boutons et pastilles en pilule.

@@ -8,10 +8,14 @@ describe("métadonnées de l'application installée (US-07b, #101)", () => {
     expect(APPLE_WEB_APP).toEqual({ capable: true, title: "Siklon", statusBarStyle: "default" });
   });
 
-  it("colore la barre du navigateur avec l'en-tête du thème clair ou sombre", () => {
+  it("colore la barre d'état (et celle du navigateur) avec le fond --bg du thème clair ou sombre (US-07c)", () => {
     expect(COULEURS_THEME).toEqual([
-      { media: "(prefers-color-scheme: light)", color: JETONS_CLAIR.header },
-      { media: "(prefers-color-scheme: dark)", color: JETONS_SOMBRE.header },
+      { media: "(prefers-color-scheme: light)", color: JETONS_CLAIR.bg },
+      { media: "(prefers-color-scheme: dark)", color: JETONS_SOMBRE.bg },
     ]);
+  });
+
+  it("garde la barre d'état opaque : le contenu ne passe jamais dessous (US-07c)", () => {
+    expect(APPLE_WEB_APP.statusBarStyle).toBe("default");
   });
 });
