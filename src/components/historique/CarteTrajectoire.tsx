@@ -2,7 +2,9 @@ import { RADIUS_IMPACT_KM } from "@/lib/constantes";
 import type { PointHurdat2 } from "@/lib/hurdat2/parseur";
 import { cotesDansCadre } from "@/lib/historique/cotes";
 import { cadrer, creerProjection, pasGrille } from "@/lib/historique/projection";
-import type { Ile } from "@/lib/iles";
+import { type Ile, nomIle, nomVille } from "@/lib/iles";
+import type { Langue } from "@/lib/langues";
+import { HISTORIQUE } from "@/lib/textes/historique";
 
 const LARGEUR = 600;
 // Le SVG est réduit à ~360–420 px de large : 20 unités donnent un texte d'environ 12–14 px.
@@ -17,7 +19,18 @@ const multiples = (min: number, max: number) => {
 };
 
 /** Carte schématique en SVG, rendue côté serveur : légère en 3G, sans bibliothèque de carte. */
-export function CarteTrajectoire({ titre, points, ile }: { titre: string; points: readonly PointHurdat2[]; ile?: Ile }) {
+export function CarteTrajectoire({
+  titre,
+  points,
+  ile,
+  langue,
+}: {
+  titre: string;
+  points: readonly PointHurdat2[];
+  ile?: Ile;
+  langue: Langue;
+}) {
+  const textes = HISTORIQUE[langue].carte;
   const reference = ile?.pointReference;
   const cadre = cadrer(reference ? [...points, reference] : points, { marge: 2, ecartMin: 8 });
   const { hauteur, projeter, kmVersUnites } = creerProjection(cadre, LARGEUR);
@@ -30,7 +43,8 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
   );
   const ileSurCarte = reference ? projeter(reference) : null;
   const etiquetteAGauche = ileSurCarte !== null && ileSurCarte.x > LARGEUR * 0.6;
-  const description = `Carte de la trajectoire de ${titre}, ${points.length} points${ile ? `, près de ${ile.nom}` : ""}`;
+  const ville = ile ? nomVille(ile, langue) : "";
+  const description = textes.description(titre, points.length, ile ? nomIle(ile, langue) : null);
 
   return (
     <figure className="flex flex-col gap-2">
@@ -62,7 +76,7 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
               <line x1={x} x2={x} y1={0} y2={hauteur} stroke="var(--field)" strokeWidth={0.5} strokeDasharray="2 4" />
               {x < LARGEUR - 3 * TEXTE_GRILLE && (
                 <text x={x + 6} y={hauteur - 8} fontSize={TEXTE_GRILLE} fill="var(--text-2)" stroke="var(--map-sea)" strokeWidth={5} paintOrder="stroke">
-                  {Math.abs(lon)}° {lon < 0 ? "O" : "E"}
+                  {Math.abs(lon)}° {lon < 0 ? textes.ouest : "E"}
                 </text>
               )}
             </g>
@@ -107,7 +121,7 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
               fontWeight={700}
               fill="var(--text)" stroke="var(--map-sea)" strokeWidth={6} paintOrder="stroke"
             >
-              {reference.nom}
+              {ville}
             </text>
           </g>
         )}
@@ -117,18 +131,16 @@ export function CarteTrajectoire({ titre, points, ile }: { titre: string; points
           <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
             <rect x="2" y="2" width="8" height="8" fill="var(--danger)" />
           </svg>
-          Carré : stade d&apos;ouragan
+          {textes.carre}
         </span>
         <span className="flex items-center gap-1">
           <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
             <circle cx="6" cy="6" r="3.5" fill="var(--text-2)" />
           </svg>
-          Rond : autre stade
+          {textes.rond}
         </span>
         {reference && (
-          <span>
-            Cercle pointillé : {RADIUS_IMPACT_KM} km autour de {reference.nom}
-          </span>
+          <span>{textes.cercle(RADIUS_IMPACT_KM, ville)}</span>
         )}
       </figcaption>
     </figure>

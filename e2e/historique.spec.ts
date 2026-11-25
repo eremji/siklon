@@ -110,3 +110,54 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations, "fiche").toEqual([]);
   });
 }
+
+test.describe("en anglais (US-10)", () => {
+  const attendreResultatsEn = (page: Page) =>
+    expect(page.getByRole("heading", { level: 2, name: /^\d+ storms?$/ })).toBeVisible();
+
+  test("de la liste des îles à la fiche d'un cyclone, tout reste en anglais", async ({ page }) => {
+    await page.goto("/en/historique");
+    await expect(page).toHaveTitle("Hurricane history · Siklon");
+    await expect(page.getByRole("heading", { level: 1, name: "Hurricane history" })).toBeVisible();
+    await page.getByRole("link", { name: "Guadeloupe" }).filter({ visible: true }).click();
+
+    await expect(page).toHaveURL("/en/iles/guadeloupe/historique");
+    await expect(page.getByRole("heading", { level: 1, name: "Hurricane history: Guadeloupe" })).toBeVisible();
+    await attendreResultatsEn(page);
+    const premiere = entrees(page).first();
+    await expect(premiere.getByText("Intensity near the island")).toBeVisible();
+    await expect(premiere.getByText("Closest approach")).toBeVisible();
+    await expect(page.getByText(/^Source: National Hurricane Center \(NHC\) HURDAT2 database, version of/)).toBeVisible();
+
+    await page.getByLabel("Minimum intensity").selectOption("5");
+    await page.getByRole("button", { name: "Filter" }).click();
+    await expect(page).toHaveURL(/^[^?]*\/en\/iles\/guadeloupe\/historique\?.*categorie=5/);
+    await attendreResultatsEn(page);
+    const intensites = await entrees(page).getByText(/^Category \d hurricane$|^Storm$|^Depression$/).allTextContents();
+    expect(intensites.length).toBeGreaterThan(0);
+    for (const intensite of intensites) expect(intensite).toBe("Category 5 hurricane");
+
+    await entrees(page).first().getByRole("link").click();
+    await expect(page).toHaveURL(/\/en\/historique\/AL\d{6}\?ile=guadeloupe$/);
+    await expect(page).toHaveTitle("Past storm · Siklon");
+    await expect(page.getByRole("img", { name: /^Map of the track of .+, \d+ points, near Guadeloupe$/ })).toBeVisible();
+    await expect(page.getByText("Peak intensity")).toBeVisible();
+    await page.getByText("Show track points").click();
+    await expect(page.getByRole("table", { name: /^Track points \(\d+\), times in UTC$/ })).toBeVisible();
+    await page.getByRole("link", { name: "Guadeloupe history" }).click();
+    await expect(page).toHaveURL("/en/iles/guadeloupe/historique");
+  });
+
+  test("la liste et la fiche en anglais respectent WCAG AA", async ({ page }) => {
+    await page.goto("/en/iles/guadeloupe/historique");
+    await attendreResultatsEn(page);
+    let { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations, "liste").toEqual([]);
+
+    await entrees(page).first().getByRole("link").click();
+    await expect(page.getByRole("img", { name: /^Map of the track/ })).toBeVisible();
+    await page.getByText("Show track points").click();
+    ({ violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze());
+    expect(violations, "fiche").toEqual([]);
+  });
+});
