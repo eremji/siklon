@@ -32,13 +32,14 @@ describe("FeuilleEcranAccueil (US-07c)", () => {
     expect(feuille()).toHaveTextContent(/recevoir les alertes de votre île, même quand l'app est fermée/i);
     const gestes = within(feuille()).getAllByRole("listitem");
     expect(gestes).toHaveLength(2);
-    expect(gestes[0]).toHaveTextContent(/touchez partager/i);
-    expect(gestes[1]).toHaveTextContent("« Sur l'écran d'accueil »");
+    expect(gestes[0]).toHaveTextContent("Touchez ≡ ou « ⋯ », puis Partager");
+    expect(gestes[1]).toHaveTextContent("Puis « En voir plus » et « Sur l'écran d'accueil »");
   });
 
   it("parle de l'iPad sur un iPad", () => {
     render(<FeuilleEcranAccueil appareil="ipad" onFermer={() => {}} />);
-    expect(screen.getByRole("dialog", { name: "Recevez les alertes de votre île sur votre iPad" })).toBeInTheDocument();
+    const dialogue = screen.getByRole("dialog", { name: "Recevez les alertes de votre île sur votre iPad" });
+    expect(within(dialogue).getAllByRole("listitem")[0]).toHaveTextContent("Touchez Partager, en haut à droite");
   });
 
   it("mène à l'aide en images, sans compter comme un refus", () => {
@@ -113,7 +114,8 @@ describe("FeuilleEcranAccueil (US-07c)", () => {
       </FournisseurLangue>,
     );
     const dialogue = screen.getByRole("dialog", { name: "Get alerts for your island on your iPhone" });
-    expect(dialogue).toHaveTextContent("“Add to Home Screen”");
+    expect(dialogue).toHaveTextContent("Tap ≡ or “⋯”, then Share");
+    expect(dialogue).toHaveTextContent("Then “View More” and “Add to Home Screen”");
     expect(within(dialogue).getByRole("button", { name: "Not now" })).toBeInTheDocument();
     expect(within(dialogue).getByRole("button", { name: "Close" })).toBeInTheDocument();
     expect(within(dialogue).getByRole("link", { name: "See in pictures" })).toHaveAttribute("href", "/en/compte/ecran-accueil");

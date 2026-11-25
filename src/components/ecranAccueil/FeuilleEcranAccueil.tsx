@@ -137,7 +137,7 @@ export function FeuilleEcranAccueil({
       <p className="text-base text-muted">{textes.pourquoi}</p>
       <ol className="flex flex-col gap-2">
         <Geste numero={1}>
-          {textes.partager} <IconePartager className="text-accent" />
+          {textes.partager(appareil)} <IconePartager className="text-accent" />
         </Geste>
         <Geste numero={2}>
           {textes.ecranAccueil} <IconeEcranAccueil className="text-accent" />

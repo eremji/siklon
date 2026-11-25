@@ -11,7 +11,9 @@ test("l'écran d'aide donne les 4 étapes, puis ramène à la page Compte", asyn
   await expect(page.getByRole("heading", { level: 1, name: "Ajouter Siklon à l'écran d'accueil" })).toBeVisible();
   await expect(etapes(page)).toHaveCount(4);
   await expect(etapes(page).nth(0)).toContainText("Touchez le bouton Partager");
+  await expect(etapes(page).nth(0)).toContainText("touchez d'abord ≡ ou « ⋯ » à côté de l'adresse, puis Partager");
   await expect(etapes(page).nth(1)).toContainText("Touchez « Sur l'écran d'accueil »");
+  await expect(etapes(page).nth(1)).toContainText("« En voir plus »");
   await expect(etapes(page).nth(2)).toContainText("Touchez « Ajouter »");
   await expect(etapes(page).nth(3)).toContainText("Ouvrez Siklon depuis son icône");
 

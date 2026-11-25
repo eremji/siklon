@@ -8,15 +8,16 @@ describe("EtapesEcranAccueil", () => {
 
     const etapes = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(etapes).toHaveLength(4);
-    expect(etapes[0]).toHaveTextContent(/touchez partager/i);
+    expect(etapes[0]).toHaveTextContent(/puis partager/i);
+    expect(etapes[1]).toHaveTextContent("« En voir plus »");
     expect(etapes[1]).toHaveTextContent("« Sur l'écran d'accueil »");
     expect(etapes[2]).toHaveTextContent("« Ajouter »");
     expect(etapes[3]).toHaveTextContent(/ouvrez siklon depuis son icône/i);
   });
 
-  it("sur iPhone, Partager est en bas de l'écran ; sur iPad, en haut à droite", () => {
+  it("sur iPhone, Partager est derrière ≡ ou « ⋯ » ; sur iPad, en haut à droite", () => {
     const { unmount } = render(<EtapesEcranAccueil appareil="iphone" />);
-    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent(/en bas de l'écran/i);
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Touchez ≡ ou « ⋯ » à côté de l'adresse, puis Partager");
     unmount();
 
     render(<EtapesEcranAccueil appareil="ipad" />);

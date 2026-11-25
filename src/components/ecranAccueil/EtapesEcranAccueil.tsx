@@ -18,14 +18,24 @@ function Etape({ numero, children }: { numero: number; children: ReactNode }) {
 }
 
 export function EtapesEcranAccueil({ appareil }: { appareil: Appareil }) {
-  const ouPartager = appareil === "ipad" ? "en haut à droite de l'écran" : "en bas de l'écran";
   return (
     <ol className="flex flex-col gap-3">
       <Etape numero={1}>
-        Touchez Partager <IconePartager className="inline align-[-4px] text-accent" />, {ouPartager}.
+        {appareil === "ipad" ? (
+          <>
+            Touchez Partager <IconePartager className="inline align-[-4px] text-accent" />, en haut à droite de
+            l&apos;écran.
+          </>
+        ) : (
+          <>
+            Touchez ≡ ou « ⋯ » à côté de l&apos;adresse, puis Partager{" "}
+            <IconePartager className="inline align-[-4px] text-accent" />.
+          </>
+        )}
       </Etape>
       <Etape numero={2}>
-        Touchez « Sur l&apos;écran d&apos;accueil » <IconeEcranAccueil className="inline align-[-4px] text-accent" />.
+        Touchez « En voir plus », puis « Sur l&apos;écran d&apos;accueil »{" "}
+        <IconeEcranAccueil className="inline align-[-4px] text-accent" />.
       </Etape>
       <Etape numero={3}>Touchez « Ajouter ».</Etape>
       <Etape numero={4}>Ouvrez Siklon depuis son icône, puis revenez dans Compte pour activer les alertes.</Etape>

@@ -28,3 +28,12 @@ export function IconeEcranAccueil({ taille = 22, className }: { taille?: number;
     </svg>
   );
 }
+
+/** Bouton du menu de Safari (iOS 26 et plus), à gauche de l'adresse : trois traits. */
+export function IconeMenuSafari({ taille = 22, className }: { taille?: number; className?: string }) {
+  return (
+    <svg width={taille} height={taille} viewBox="0 0 24 24" aria-hidden="true" className={className} {...TRAIT}>
+      <path d="M5 7h14M5 12h14M5 17h9" />
+    </svg>
+  );
+}

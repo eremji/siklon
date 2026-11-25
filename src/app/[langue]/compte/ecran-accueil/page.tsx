@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
-import { IconeEcranAccueil, IconePartager } from "@/components/ecranAccueil/icones";
+import { IconeEcranAccueil, IconeMenuSafari, IconePartager } from "@/components/ecranAccueil/icones";
 
 export const metadata: Metadata = {
   title: "Ajouter Siklon à l'écran d'accueil · Siklon",
@@ -59,15 +59,18 @@ export default function Page() {
       <ol aria-label="Étapes" className="flex flex-col gap-3">
         <Etape numero={1} titre="Touchez le bouton Partager">
           <Illustration>
-            <Chevron vers="gauche" />
+            <span className={CIBLE}>
+              <IconeMenuSafari taille={32} />
+            </span>
             <Chevron vers="droite" />
             <span className={CIBLE}>
               <IconePartager taille={32} />
             </span>
           </Illustration>
           <p className="text-base text-muted">
-            Un carré avec une flèche vers le haut : en bas de l&apos;écran sur iPhone, en haut à droite sur iPad. Vous
-            ne le voyez pas ? Touchez « ⋯ » à côté de l&apos;adresse.
+            Sur iPhone, touchez d&apos;abord ≡ ou « ⋯ » à côté de l&apos;adresse, puis Partager. Sur iPad, Partager est
+            en haut à droite. Sur les versions plus anciennes d&apos;iOS, c&apos;est un carré avec une flèche vers le
+            haut, en bas de l&apos;écran.
           </p>
         </Etape>
         <Etape numero={2} titre="Touchez « Sur l'écran d'accueil »">
@@ -78,7 +81,9 @@ export default function Page() {
               <IconeEcranAccueil taille={24} />
             </span>
           </Illustration>
-          <p className="text-base text-muted">Faites défiler la liste si vous ne le voyez pas tout de suite.</p>
+          <p className="text-base text-muted">
+            Touchez d&apos;abord « En voir plus » si vous ne le voyez pas. Faites défiler la liste si besoin.
+          </p>
         </Etape>
         <Etape numero={3} titre="Touchez « Ajouter »">
           <Illustration className="justify-between">
