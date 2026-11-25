@@ -20,19 +20,21 @@ describe("écran d'aide : ajouter Siklon à l'écran d'accueil (US-07c)", () => 
     expect(etapes).toHaveLength(4);
     expect(etapes[0]).toHaveTextContent(/touchez le bouton partager/i);
     expect(etapes[1]).toHaveTextContent("Touchez « Sur l'écran d'accueil »");
+    expect(etapes[1]).toHaveTextContent("Touchez d'abord « En voir plus » si vous ne le voyez pas.");
     expect(etapes[2]).toHaveTextContent("Touchez « Ajouter »");
     expect(etapes[3]).toHaveTextContent(/ouvrez siklon depuis son icône/i);
     expect(etapes[3]).toHaveTextContent("« Recevoir les alertes sur cet appareil »");
   });
 
-  it("dit où trouver Partager sur iPhone, sur iPad et derrière « ⋯ »", () => {
+  it("dit où trouver Partager : derrière ≡ ou « ⋯ » sur iPhone (iOS 26 et plus), en haut à droite sur iPad", () => {
     render(<Page />);
     const premiere = within(screen.getByRole("list", { name: "Étapes" })).getAllByRole("listitem")[0];
-    expect(premiere).toHaveTextContent(/en bas de l'écran sur iphone/i);
-    expect(premiere).toHaveTextContent(/en haut à droite sur ipad/i);
-    expect(premiere).toHaveTextContent("Touchez « ⋯ » à côté de l'adresse.");
+    expect(premiere).toHaveTextContent("Sur iPhone, touchez d'abord ≡ ou « ⋯ » à côté de l'adresse, puis Partager.");
+    expect(premiere).toHaveTextContent(/sur ipad, partager est en haut à droite/i);
+    expect(premiere).toHaveTextContent(/versions plus anciennes.*en bas de l'écran/i);
     // Les points ne sont écrits qu'une fois (pas de texte doublé d'une icône).
     expect(premiere.textContent?.match(/⋯/g)).toHaveLength(1);
+    expect(premiere.textContent?.match(/≡/g)).toHaveLength(1);
   });
 
   it("les illustrations sont décoratives : le texte des étapes suffit", () => {

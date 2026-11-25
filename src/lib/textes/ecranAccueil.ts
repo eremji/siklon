@@ -10,8 +10,10 @@ export const ECRAN_ACCUEIL = traductions(
     feuille: {
       titre: (appareil: Appareil) => `Recevez les alertes de votre île sur votre ${nomAppareil(appareil)}`,
       pourquoi: "Ajoutez Siklon à l'écran d'accueil pour recevoir les alertes de votre île, même quand l'app est fermée.",
-      partager: "Touchez Partager",
-      ecranAccueil: "Puis « Sur l'écran d'accueil »",
+      // iOS 26 et plus : Partager est dans le menu ≡ (ou « ⋯ ») de Safari, sauf sur iPad.
+      partager: (appareil: Appareil): string =>
+        appareil === "ipad" ? "Touchez Partager, en haut à droite" : "Touchez ≡ ou « ⋯ », puis Partager",
+      ecranAccueil: "Puis « En voir plus » et « Sur l'écran d'accueil »",
       aide: "Voir en images",
       plusTard: "Plus tard",
       fermer: "Fermer",
@@ -27,8 +29,8 @@ export const ECRAN_ACCUEIL = traductions(
     feuille: {
       titre: (appareil: Appareil) => `Get alerts for your island on your ${nomAppareil(appareil)}`,
       pourquoi: "Add Siklon to your Home Screen to get alerts for your island, even when the app is closed.",
-      partager: "Tap Share",
-      ecranAccueil: "Then “Add to Home Screen”",
+      partager: (appareil: Appareil) => (appareil === "ipad" ? "Tap Share, at the top right" : "Tap ≡ or “⋯”, then Share"),
+      ecranAccueil: "Then “View More” and “Add to Home Screen”",
       aide: "See in pictures",
       plusTard: "Not now",
       fermer: "Close",

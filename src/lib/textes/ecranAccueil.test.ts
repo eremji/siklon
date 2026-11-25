@@ -4,6 +4,8 @@ import { ECRAN_ACCUEIL } from "./ecranAccueil";
 describe("textes de la proposition d'ajout à l'écran d'accueil (US-07c)", () => {
   it("nomment le menu d'iOS dans la langue du site", () => {
     expect(ECRAN_ACCUEIL.fr.feuille.ecranAccueil).toContain("« Sur l'écran d'accueil »");
+    expect(ECRAN_ACCUEIL.fr.feuille.ecranAccueil).toContain("« En voir plus »");
+    expect(ECRAN_ACCUEIL.en.feuille.ecranAccueil).toContain("“View More”");
     expect(ECRAN_ACCUEIL.en.feuille.ecranAccueil).toContain("“Add to Home Screen”");
   });
 
