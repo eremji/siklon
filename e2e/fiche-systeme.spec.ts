@@ -127,3 +127,36 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("en anglais (US-10)", () => {
+  test("l'accueil et la fiche d'un système s'affichent en anglais", async ({ page, context, baseURL }) => {
+    await fixtureNhc(context, baseURL, "actifs");
+    await page.goto("/en");
+
+    await expect(page.getByRole("heading", { level: 2, name: "Active systems in the Atlantic" })).toBeVisible();
+    const liste = page.getByRole("list", { name: "Active systems" });
+    await expect(liste.getByRole("listitem").filter({ hasText: "Kyle" })).toContainText("Category 4 hurricane");
+    await expect(page.getByText(/^Source: NHC, latest advisory .+ \(Atlantic Standard Time, UTC−4\)\.$/)).toBeVisible();
+    await expect(page.getByRole("region", { name: "Map of active systems" })).toBeVisible();
+
+    await liste.getByRole("link", { name: "Kyle" }).click();
+    await expect(page).toHaveURL("/en/systemes/al112026");
+    await expect(page).toHaveTitle("Active system · Siklon");
+    const mesures = page.getByRole("region", { name: "Intensity and movement" });
+    await expect(valeur(mesures, "Maximum sustained winds")).toHaveText("220 km/h");
+    await expect(valeur(mesures, "Movement")).toHaveText("Toward the west-northwest at 19 km/h");
+    await expect(valeur(mesures, "Position")).toHaveText("16.8° N, 58.2° W");
+
+    await page.getByText("Original NHC values").click();
+    await expect(page.getByText("120 knots (140 mph)")).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Read advisory \d+ on the NHC website$/ })).toBeVisible();
+  });
+
+  test("la fiche en anglais respecte WCAG AA", async ({ page, context, baseURL }) => {
+    await fixtureNhc(context, baseURL, "actifs");
+    await page.goto("/en/systemes/al112026");
+    await expect(page.getByRole("heading", { level: 1, name: "Kyle" })).toBeVisible();
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+});

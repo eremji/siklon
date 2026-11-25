@@ -1,7 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useLangue } from "@/components/langue/ContexteLangue";
 import { SEUIL_OBSOLESCENCE_H, estObsolete } from "@/lib/nhc/fraicheur";
+import { SYSTEMES } from "@/lib/textes/systemes";
 
 const MINUTE_MS = 60_000;
 
@@ -17,12 +19,13 @@ const minuteCourante = () => Math.floor(Date.now() / MINUTE_MS);
 const minuteServeur = () => null;
 
 export function AlerteObsolescence({ emisLe }: { emisLe: string }) {
+  const langue = useLangue();
   const minute = useSyncExternalStore(abonner, minuteCourante, minuteServeur);
   if (minute === null || !estObsolete(emisLe, new Date(minute * MINUTE_MS))) return null;
 
   return (
     <p role="status" className="text-base font-bold text-danger-text">
-      Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de {SEUIL_OBSOLESCENCE_H} h.
+      {SYSTEMES[langue].obsolescence(SEUIL_OBSOLESCENCE_H)}
     </p>
   );
 }
