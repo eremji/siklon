@@ -116,11 +116,9 @@ https://claude.ai/artifact/DnRE5t57qgUzCwVyaztsjz (artboards Icone, LogoApp).
   (« maskable »). Fichiers : `src/app/icon.svg` (onglet), PNG 192 et
   512 px, icône Android et icône Apple 180 px carrée, dessinés au build
   (`src/lib/pwa/DessinIcone.tsx`). iOS arrondit lui-même les angles.
-- **Écran de démarrage** (app ouverte depuis l'écran d'accueil) : la
-  spirale au-dessus du lettrage, centrés sur `--bg`, en `--text` et
-  `--accent` du thème ; spirale large de 28 % de l'écran. Une image par
-  taille d'iPhone et d'iPad, en portrait, en clair et en sombre, dessinée
-  au build (`src/lib/pwa/demarrage.ts`, `DessinDemarrage.tsx`).
+- **Écran de démarrage** : aucun pour l'instant. iOS 27 ignore les images
+  `apple-touch-startup-image` et affiche un écran blanc (clair) ou noir
+  (sombre) ; constaté sur un iPhone et dans le simulateur (novembre 2026).
 - **Barre d'état** de l'app installée : opaque, couleur `--bg` du thème
   en cours (`theme-color`) ; le contenu ne passe ni dessous ni sous la
   barre d'accueil.

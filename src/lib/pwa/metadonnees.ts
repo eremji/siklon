@@ -1,17 +1,16 @@
 // Métadonnées de l'application installée (US-07b, #101), reprises par src/app/[langue]/layout.tsx.
 import type { Metadata, Viewport } from "next";
-import { IMAGES_DEMARRAGE_APPLE } from "./demarrage";
 import { JETONS_CLAIR, JETONS_SOMBRE } from "./jetons";
 
 /**
  * iOS : plein écran depuis l'écran d'accueil, nom affiché sous l'icône, barre d'état opaque (le contenu
- * ne passe pas dessous) et écran de démarrage à la taille de chaque iPhone et iPad (US-07c).
+ * ne passe pas dessous, US-07c). Pas d'images apple-touch-startup-image : iOS 27 les ignore (vérifié sur
+ * un iPhone et dans le simulateur, novembre 2026) et affiche son écran blanc ou noir.
  */
 export const APPLE_WEB_APP = {
   capable: true,
   title: "Siklon",
   statusBarStyle: "default",
-  startupImage: IMAGES_DEMARRAGE_APPLE,
 } as const satisfies Metadata["appleWebApp"];
 
 /**

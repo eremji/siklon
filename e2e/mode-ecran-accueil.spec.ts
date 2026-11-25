@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-// Siklon ouvert depuis l'écran d'accueil (US-07c, #110, livraison 4) : écran de démarrage, barre
-// d'état, zones sûres et moyen de revenir sans bouton Précédent du navigateur.
+// Siklon ouvert depuis l'écran d'accueil (US-07c, #110, livraison 4) : barre d'état, zones sûres et
+// moyen de revenir sans bouton Précédent du navigateur.
 
 test("la barre d'état prend le fond --bg du thème, reste opaque, et le contenu ne passe pas dessous", async ({ page }) => {
   await page.goto("/fr");
@@ -12,24 +12,6 @@ test("la barre d'état prend le fond --bg du thème, reste opaque, et le contenu
   await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute("content", "default");
   // Sans viewport-fit=cover, iOS garde la page hors de la barre d'état et de la barre d'accueil.
   await expect(page.locator('meta[name="viewport"]')).not.toHaveAttribute("content", /viewport-fit=cover/);
-});
-
-test("chaque iPhone et iPad trouve son écran de démarrage, en clair et en sombre", async ({ page }) => {
-  await page.goto("/fr");
-  const liens = await page
-    .locator('link[rel="apple-touch-startup-image"]')
-    .evaluateAll((elements) => elements.map((lien) => ({ href: lien.getAttribute("href") ?? "", media: lien.getAttribute("media") ?? "" })));
-  expect(liens.length).toBeGreaterThanOrEqual(40);
-  expect(liens).toContainEqual({
-    href: "/demarrage/390x844@3x-sombre.png",
-    media:
-      "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)",
-  });
-  for (const { href } of liens) {
-    const image = await page.request.get(href);
-    expect(image.status(), href).toBe(200);
-    expect(image.headers()["content-type"], href).toBe("image/png");
-  }
 });
 
 const PAGES = [
