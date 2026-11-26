@@ -5,11 +5,13 @@ import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { IconeEcranAccueil, IconeMenuSafari, IconePartager } from "@/components/ecranAccueil/icones";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import { ECRAN_ACCUEIL } from "@/lib/textes/ecranAccueil";
 
-export const metadata: Metadata = {
-  title: "Ajouter Siklon à l'écran d'accueil · Siklon",
-  description: "Comment ajouter Siklon à l'écran d'accueil d'un iPhone ou d'un iPad pour recevoir les alertes.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { titre, description } = ECRAN_ACCUEIL[await langueDeLaPage()].aide;
+  return { title: `${titre} · Siklon`, description };
+}
 
 function Etape({ numero, titre, children }: { numero: number; titre: string; children?: ReactNode }) {
   return (
@@ -43,21 +45,20 @@ function Chevron({ vers }: { vers: "gauche" | "droite" }) {
   );
 }
 
-export default function Page() {
+export default async function Page() {
+  const textes = ECRAN_ACCUEIL[await langueDeLaPage()].aide;
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <Lien href="/compte" className="flex min-h-11 w-fit items-center gap-1 text-base font-bold text-accent">
         <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 5l-7 7 7 7" />
         </svg>
-        Retour au compte
+        {textes.retour}
       </Lien>
-      <h1 className="text-3xl font-bold">Ajouter Siklon à l&apos;écran d&apos;accueil</h1>
-      <p className="text-base">
-        Sur iPhone et iPad, c&apos;est la seule façon de recevoir les alertes de votre île quand Siklon est fermé.
-      </p>
-      <ol aria-label="Étapes" className="flex flex-col gap-3">
-        <Etape numero={1} titre="Touchez le bouton Partager">
+      <h1 className="text-3xl font-bold">{textes.titre}</h1>
+      <p className="text-base">{textes.intro}</p>
+      <ol aria-label={textes.etapes} className="flex flex-col gap-3">
+        <Etape numero={1} titre={textes.partager}>
           <Illustration>
             <span className={CIBLE}>
               <IconeMenuSafari taille={32} />
@@ -67,43 +68,35 @@ export default function Page() {
               <IconePartager taille={32} />
             </span>
           </Illustration>
-          <p className="text-base text-muted">
-            Sur iPhone, touchez d&apos;abord ≡ ou « ⋯ » à côté de l&apos;adresse, puis Partager. Sur iPad, Partager est
-            en haut à droite. Sur les versions plus anciennes d&apos;iOS, c&apos;est un carré avec une flèche vers le
-            haut, en bas de l&apos;écran.
-          </p>
+          <p className="text-base text-muted">{textes.partagerTexte}</p>
         </Etape>
-        <Etape numero={2} titre="Touchez « Sur l'écran d'accueil »">
+        <Etape numero={2} titre={textes.ecranAccueil}>
           <Illustration className="flex-col items-stretch gap-1">
-            <span className="flex min-h-10 items-center justify-between px-1">Ajouter aux favoris</span>
+            <span className="flex min-h-10 items-center justify-between px-1">{textes.favoris}</span>
             <span className={`${CIBLE} min-h-11 items-center justify-between px-2 font-bold`}>
-              Sur l&apos;écran d&apos;accueil
+              {textes.menuEcranAccueil}
               <IconeEcranAccueil taille={24} />
             </span>
           </Illustration>
-          <p className="text-base text-muted">
-            Touchez d&apos;abord « En voir plus » si vous ne le voyez pas. Faites défiler la liste si besoin.
-          </p>
+          <p className="text-base text-muted">{textes.ecranAccueilTexte}</p>
         </Etape>
-        <Etape numero={3} titre="Touchez « Ajouter »">
+        <Etape numero={3} titre={textes.ajouter}>
           <Illustration className="justify-between">
-            <span>Annuler</span>
-            <span className="font-bold text-foreground">Sur l&apos;écran d&apos;accueil</span>
-            <span className={`${CIBLE} px-2 font-bold`}>Ajouter</span>
+            <span>{textes.annuler}</span>
+            <span className="font-bold text-foreground">{textes.menuEcranAccueil}</span>
+            <span className={`${CIBLE} px-2 font-bold`}>{textes.boutonAjouter}</span>
           </Illustration>
-          <p className="text-base text-muted">En haut à droite de la fenêtre qui s&apos;ouvre.</p>
+          <p className="text-base text-muted">{textes.ajouterTexte}</p>
         </Etape>
-        <Etape numero={4} titre="Ouvrez Siklon depuis son icône">
-          <p className="text-base text-muted">
-            Puis, dans Compte, touchez « Recevoir les alertes sur cet appareil » et acceptez les notifications.
-          </p>
+        <Etape numero={4} titre={textes.ouvrir}>
+          <p className="text-base text-muted">{textes.ouvrirTexte}</p>
         </Etape>
       </ol>
       <Lien
         href="/compte"
         className="flex min-h-13 items-center justify-center rounded-full bg-accent px-6 text-lg font-bold text-on-accent"
       >
-        J&apos;ai compris
+        {textes.compris}
       </Lien>
       <MentionOfficielle />
     </main>

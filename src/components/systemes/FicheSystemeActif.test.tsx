@@ -60,3 +60,18 @@ describe("FicheSystemeActif en anglais (US-10)", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("NHC data is temporarily unavailable. See nhc.noaa.gov.");
   });
 });
+
+describe("FicheSystemeActif quand le NHC ne répond plus (US-11)", () => {
+  it("montre la fiche de la dernière donnée connue et avertit que la mise à jour a échoué (US-11)", () => {
+    render(<FicheSystemeActif langue="fr" flux={{ ...ok, echecLe: "2026-09-10T17:00:00.000Z" }} id="al112026" />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("La mise à jour des données du NHC a échoué.");
+    expect(screen.getByRole("heading", { level: 1, name: "Kyle" })).toBeInTheDocument();
+  });
+
+  it("avertit aussi quand le système n'est plus dans la dernière donnée connue (US-11)", () => {
+    render(<FicheSystemeActif langue="fr" flux={{ ...ok, echecLe: "2026-09-10T17:00:00.000Z" }} id="al992026" />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("La mise à jour des données du NHC a échoué.");
+  });
+});

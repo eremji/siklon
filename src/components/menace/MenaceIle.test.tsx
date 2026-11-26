@@ -220,3 +220,19 @@ describe("MenaceIle en anglais (US-10)", () => {
     );
   });
 });
+
+describe("MenaceIle quand le NHC ne répond plus (US-11)", () => {
+  it("évalue la menace sur la dernière donnée connue et avertit que la mise à jour a échoué (US-11)", () => {
+    render(
+      <MenaceIle
+        langue="fr"
+        ile={guadeloupe}
+        flux={{ etat: "ok", systemes: [systeme()], rejetes: 0, luLe, echecLe: "2026-09-10T17:00:00.000Z" }}
+        positions={positionsKyle}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("La mise à jour des données du NHC a échoué.");
+    expect(screen.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" })).toBeInTheDocument();
+  });
+});

@@ -24,6 +24,8 @@ export const SYSTEMES = traductions(
     },
     obsolescence: (heures: number) =>
       `Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de ${heures} h.`,
+    echecMiseAJour: (heure: string, fuseau: string) =>
+      `La mise à jour des données du NHC a échoué. Dernière donnée connue, lue le ${heure} (${fuseau}).`,
     carte: {
       region: "Carte des systèmes actifs",
       titre: "Carte interactive des systèmes actifs",
@@ -78,6 +80,8 @@ export const SYSTEMES = traductions(
       avis: (numero: string, heure: string, fuseau: string) => `Source: NHC, advisory ${numero} issued ${heure} (${fuseau}).`,
     },
     obsolescence: (heures: number) => `Data may be out of date: no new NHC advisory for more than ${heures} hours.`,
+    echecMiseAJour: (heure: string, fuseau: string) =>
+      `The NHC data update failed. Last known data, read ${heure} (${fuseau}).`,
     carte: {
       region: "Map of active systems",
       titre: "Interactive map of active systems",

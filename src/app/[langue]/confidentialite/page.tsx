@@ -3,11 +3,28 @@ import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
 import { DUREE_REAUTHENTIFICATION_MINUTES, DUREE_SESSION_JOURS, LIMITES_TENTATIVES } from "@/lib/auth/options";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import type { Langue } from "@/lib/langues";
 
-export const metadata: Metadata = {
-  title: "Confidentialité · Siklon",
-  description: "Les données que Siklon collecte, où elles sont gardées, et les tiers qui voient votre adresse IP.",
+// Texte juridique : un texte complet par langue plutôt que des morceaux de phrases (US-10).
+// Les deux versions disent la même chose ; à modifier ensemble.
+const PAGE: Record<Langue, { titre: string; description: string; miseAJour: string }> = {
+  fr: {
+    titre: "Confidentialité",
+    description: "Les données que Siklon collecte, où elles sont gardées, et les tiers qui voient votre adresse IP.",
+    miseAJour: "Mise à jour : 26 novembre 2026.",
+  },
+  en: {
+    titre: "Privacy",
+    description: "The data Siklon collects, where it is kept, and the third parties that see your IP address.",
+    miseAJour: "Last updated: 26 November 2026.",
+  },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { titre, description } = PAGE[await langueDeLaPage()];
+  return { title: `${titre} · Siklon`, description };
+}
 
 // Décrit l'état actuel du site. À mettre à jour à chaque nouvelle donnée collectée
 // (emails, connexion Google, notifications : US-05, US-07, US-13).
@@ -34,11 +51,9 @@ function LienExterne({ href, children }: { href: string; children: ReactNode }) 
   );
 }
 
-export default function Page() {
+function TexteFr() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8 text-base">
-      <h1 className="text-3xl font-bold">Confidentialité</h1>
-
+    <>
       <Section id="collecte" titre="Ce que Siklon collecte">
         <p>
           Sans compte, rien : toutes les informations sur les cyclones et les îles se consultent sans compte ni
@@ -49,6 +64,7 @@ export default function Page() {
           les îles que vous suivez et votre mot de passe, qui n&apos;est jamais en clair : seule son empreinte (scrypt)
           est gardée. Siklon ne demande ni votre nom, ni votre photo.
         </p>
+        <p>Cette langue change si vous changez de langue en bas de page en étant connecté.</p>
         <p>
           Les filtres de l&apos;historique (période, intensité) restent dans l&apos;adresse de la page : ils ne sont pas
           enregistrés.
@@ -166,8 +182,143 @@ export default function Page() {
         </p>
       </Section>
 
+    </>
+  );
+}
+
+function TexteEn() {
+  return (
+    <>
+      <Section id="collecte" titre="What Siklon collects">
+        <p>
+          Without an account, nothing: all information about cyclones and islands is available without an account or
+          any personal information. Siklon uses no audience measurement and no advertising.
+        </p>
+        <p>
+          The account is optional. It only contains your email address, the language you chose (French or English),
+          the islands you follow and your password, which is never stored in plain text: only its hash (scrypt) is
+          kept. Siklon does not ask for your name or your photo.
+        </p>
+        <p>This language changes if you switch language at the bottom of the page while signed in.</p>
+        <p>History filters (period, intensity) stay in the page address: they are not saved.</p>
+      </Section>
+
+      <Section id="alertes-appareil" titre="Alerts on a device">
+        <p>
+          Only if you ask for it from the Account page, Siklon keeps the subscription address that your browser&apos;s
+          notification service (Google for Chrome, Mozilla for Firefox, Apple for Safari, Microsoft for Edge) assigns to
+          this device, and the keys used to encrypt alerts. This service delivers the alerts to your device: they are
+          encrypted, and it cannot read them.
+        </p>
+        <p>
+          The subscription is erased when you choose “Unsubscribe”, when the notification service reports that it is no
+          longer valid, or with your account.
+        </p>
+      </Section>
+
+      <Section id="alertes-email" titre="Email alerts">
+        <p>
+          Siklon only sends you alerts by email if you tick “Receive alerts by email” on the Account page. They are sent
+          through <LienExterne href="https://www.brevo.com/legal/privacypolicy/">Brevo</LienExterne>, the service that
+          already sends the account emails.
+        </p>
+        <p>To stop receiving them, untick the box: your choice is kept with your account.</p>
+      </Section>
+
+      <Section id="connexion-google" titre="Signing in with Google">
+        <p>
+          You can also sign in with your Google account. Google then sends Siklon your email address, the fact that it
+          is confirmed, and an identifier for your Google account. Siklon keeps neither your name, nor your photo, nor
+          any access token: it accesses nothing else in your Google account.
+        </p>
+        <p>
+          For its part, Google knows that you use Siklon, as with any site where you sign in with it. It processes this
+          information according to{" "}
+          <LienExterne href="https://policies.google.com/privacy?hl=en">Google&apos;s privacy policy</LienExterne>.
+        </p>
+      </Section>
+
+      <Section id="cookie" titre="Cookies">
+        <p>
+          Siklon only sets a cookie if you sign in: it keeps your session open for up to {DUREE_SESSION_JOURS} days, and
+          disappears when you sign out. It is essential for signing in, and is used for nothing else.
+        </p>
+        <p>
+          If you sign in with Google, a second cookie protects the round trip to Google against impersonation; it is
+          deleted after a few minutes.
+        </p>
+      </Section>
+
+      <Section id="conservation" titre="Where and for how long">
+        <p>
+          Account data is kept in a database hosted in Paris by{" "}
+          <LienExterne href="https://supabase.com/privacy">Supabase</LienExterne>, for as long as the account exists.
+        </p>
+        <p>
+          Account emails (address confirmation, password reset) are sent by{" "}
+          <LienExterne href="https://www.brevo.com/legal/privacypolicy/">Brevo</LienExterne> (France), which receives
+          your email address for this purpose and keeps a log of the emails sent.
+        </p>
+        <p>
+          To block repeated sign-in attempts, Siklon counts attempts per IP address: this counter is erased after{" "}
+          {MINUTES_COMPTEURS} minutes. Your IP address is never kept with your account.
+        </p>
+      </Section>
+
+      <Section id="suppression" titre="Deleting your data">
+        <p>
+          From the{" "}
+          <Lien href="/compte" className="text-accent underline underline-offset-4">
+            Account page
+          </Lien>
+          , once signed in, you can delete your account: it is erased immediately with all its data (email address,
+          language, followed islands, devices subscribed to alerts, consent to email alerts, password hash, sessions),
+          including at Brevo, which erases the log of emails sent to your address. Your password is asked for to
+          confirm; if your account has none, you just need to have signed in again with Google within the previous{" "}
+          {DUREE_REAUTHENTIFICATION_MINUTES} minutes.
+        </p>
+      </Section>
+
+      <Section id="adresse-ip" titre="Who sees your IP address">
+        <p>Like any site, Siklon cannot be displayed without your IP address being seen by the services that deliver it:</p>
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Vercel</strong> (United States), which hosts Siklon, receives your IP address and the technical
+            information of each visit (page requested, browser) to serve you the site. It processes them according to{" "}
+            <LienExterne href="https://vercel.com/legal/privacy-policy">Vercel&apos;s privacy policy</LienExterne>.
+          </li>
+          <li>
+            <strong>OpenFreeMap</strong> provides the base map of active systems. Your browser asks it directly for the
+            map tiles to display: it receives your IP address and the area of the map you are looking at.{" "}
+            <LienExterne href="https://openfreemap.org/">Learn more about OpenFreeMap</LienExterne>.
+          </li>
+        </ul>
+        <p>Fonts are served by Siklon itself: no other service is contacted.</p>
+      </Section>
+
+      <Section id="sources" titre="Data sources">
+        <p>
+          NHC, NOAA and Météo-France data, as well as cyclone history, are read by Siklon&apos;s server, never by your
+          browser. These organisations receive no information about you.
+        </p>
+        <p>
+          If you follow a link to the NHC or Météo-France website, you leave Siklon: that site then applies its own
+          privacy policy.
+        </p>
+      </Section>
+    </>
+  );
+}
+
+export default async function Page() {
+  const langue = await langueDeLaPage();
+  const { titre, miseAJour } = PAGE[langue];
+  return (
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8 text-base">
+      <h1 className="text-3xl font-bold">{titre}</h1>
+      {langue === "fr" ? <TexteFr /> : <TexteEn />}
       <div className="flex flex-col gap-1 text-sm text-muted">
-        <p>Mise à jour : 23 novembre 2026.</p>
+        <p>{miseAJour}</p>
         <MentionOfficielle className="" />
       </div>
     </main>

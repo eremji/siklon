@@ -286,7 +286,11 @@ describe("confirmation de l'adresse", () => {
     const email = nouvelEmail();
     await inscrire(email, "un mot de passe solide");
     const jeton = lienEnvoye(email).searchParams.get("jeton") ?? "";
-    expect((await confirmer(`${jeton.slice(0, -2)}xx`)).ok).toBe(false);
+    // Un caractère au milieu de la signature (après le dernier « . ») porte 6 bits utiles,
+    // contrairement au dernier, et son remplaçant diffère toujours de l'original.
+    const i = Math.floor((jeton.lastIndexOf(".") + 1 + jeton.length) / 2);
+    const falsifie = `${jeton.slice(0, i)}${jeton[i] === "A" ? "B" : "A"}${jeton.slice(i + 1)}`;
+    expect((await confirmer(falsifie)).ok).toBe(false);
     const { rows } = await db.query<{ email_verifie: boolean }>("select email_verifie from utilisateurs where email = $1", [email]);
     expect(rows[0].email_verifie).toBe(false);
   });

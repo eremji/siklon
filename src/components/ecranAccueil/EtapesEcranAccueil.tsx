@@ -1,5 +1,8 @@
+"use client";
 // Étapes pour ajouter Siklon à l'écran d'accueil d'un iPhone ou d'un iPad (US-07c, #110).
 import type { ReactNode } from "react";
+import { useLangue } from "@/components/langue/ContexteLangue";
+import { ECRAN_ACCUEIL } from "@/lib/textes/ecranAccueil";
 import type { Appareil } from "@/lib/ecranAccueil/detection";
 import { IconeEcranAccueil, IconePartager } from "./icones";
 
@@ -18,27 +21,20 @@ function Etape({ numero, children }: { numero: number; children: ReactNode }) {
 }
 
 export function EtapesEcranAccueil({ appareil }: { appareil: Appareil }) {
+  const textes = ECRAN_ACCUEIL[useLangue()].etapes;
+  const partager = appareil === "ipad" ? textes.partagerIpad : textes.partagerIphone;
   return (
     <ol className="flex flex-col gap-3">
       <Etape numero={1}>
-        {appareil === "ipad" ? (
-          <>
-            Touchez Partager <IconePartager className="inline align-[-4px] text-accent" />, en haut à droite de
-            l&apos;écran.
-          </>
-        ) : (
-          <>
-            Touchez ≡ ou « ⋯ » à côté de l&apos;adresse, puis Partager{" "}
-            <IconePartager className="inline align-[-4px] text-accent" />.
-          </>
-        )}
+        {partager.avant} <IconePartager className="inline align-[-4px] text-accent" />
+        {partager.apres}
       </Etape>
       <Etape numero={2}>
-        Touchez « En voir plus », puis « Sur l&apos;écran d&apos;accueil »{" "}
-        <IconeEcranAccueil className="inline align-[-4px] text-accent" />.
+        {textes.ecranAccueil.avant} <IconeEcranAccueil className="inline align-[-4px] text-accent" />
+        {textes.ecranAccueil.apres}
       </Etape>
-      <Etape numero={3}>Touchez « Ajouter ».</Etape>
-      <Etape numero={4}>Ouvrez Siklon depuis son icône, puis revenez dans Compte pour activer les alertes.</Etape>
+      <Etape numero={3}>{textes.ajouter}</Etape>
+      <Etape numero={4}>{textes.ouvrir}</Etape>
     </ol>
   );
 }

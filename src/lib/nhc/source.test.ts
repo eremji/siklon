@@ -16,6 +16,7 @@ describe("fixtureDemandee", () => {
     const env = { NHC_FIXTURES: "1" };
     expect(fixtureDemandee(env, "vide")).toBe("vide");
     expect(fixtureDemandee(env, "indisponible")).toBe("indisponible");
+    expect(fixtureDemandee(env, "ancien")).toBe("ancien");
     expect(fixtureDemandee(env, undefined)).toBe("actifs");
     expect(fixtureDemandee(env, "../../etc/passwd")).toBe("actifs");
   });
@@ -29,6 +30,13 @@ describe("etatFixture", () => {
     expect(actifs.etat === "ok" && actifs.systemes.map((s) => s.nom)).toEqual(["Kyle", "Leah", "Thirteen"]);
     expect(etatFixture("vide", luLe)).toEqual({ etat: "ok", systemes: [], rejetes: 0, luLe });
     expect(etatFixture("indisponible", luLe)).toEqual({ etat: "indisponible", luLe });
+  });
+
+  it("simule un NHC muet dont la dernière lecture réussie date d'une heure (US-11)", () => {
+    const ancien = etatFixture("ancien", luLe);
+
+    expect(ancien).toMatchObject({ etat: "ok", luLe: "2026-09-10T15:00:00.000Z", echecLe: luLe });
+    expect(ancien.etat === "ok" && ancien.systemes.map((s) => s.nom)).toEqual(["Kyle", "Leah", "Thirteen"]);
   });
 });
 
