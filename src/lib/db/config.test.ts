@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { ConfigurationBaseError, configurationConnexion } from "./config";
+import { ConfigurationBaseError, configurationConnexion, optionsPool } from "./config";
 
 const CA = "-----BEGIN CERTIFICATE-----\nMIIBcertificat\n-----END CERTIFICATE-----\n";
 const SUPABASE = "postgresql://siklon_lecture.ref:secret@aws-1-eu-west-3.pooler.supabase.com:5432/postgres";
@@ -96,5 +96,24 @@ describe("configurationConnexion", () => {
     }
     expect(message).toMatch(/DATABASE_URL invalide/);
     expect(message).not.toContain("motdepasse");
+  });
+});
+
+describe("optionsPool", () => {
+  it("garde 3 connexions par défaut : la production et le pooler Supabase ne changent pas", () => {
+    expect(optionsPool({})).toEqual({ max: 3, connectionTimeoutMillis: 5_000, idleTimeoutMillis: 10_000 });
+    expect(optionsPool({ DATABASE_POOL_MAX: "" }).max).toBe(3);
+  });
+
+  it("lit la taille du pool dans DATABASE_POOL_MAX (serveur des tests e2e)", () => {
+    expect(optionsPool({ DATABASE_POOL_MAX: "12" })).toEqual({ max: 12, connectionTimeoutMillis: 5_000, idleTimeoutMillis: 10_000 });
+    expect(optionsPool({ DATABASE_POOL_MAX: "1" }).max).toBe(1);
+    expect(optionsPool({ DATABASE_POOL_MAX: "50" }).max).toBe(50);
+  });
+
+  it("refuse une taille qui n'est pas un entier entre 1 et 50", () => {
+    for (const valeur of ["0", "51", "-2", "2.5", "dix", "12abc", " "]) {
+      expect(() => optionsPool({ DATABASE_POOL_MAX: valeur })).toThrow(/DATABASE_POOL_MAX/);
+    }
   });
 });

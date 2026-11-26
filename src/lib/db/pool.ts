@@ -1,16 +1,14 @@
 import "server-only";
 import pg from "pg";
-import { configurationConnexion } from "./config";
+import { configurationConnexion, optionsPool } from "./config";
 import type { Executeur } from "./historique";
-
-const OPTIONS_POOL = { max: 3, connectionTimeoutMillis: 5_000, idleTimeoutMillis: 10_000 };
 
 let pool: pg.Pool | undefined;
 let poolComptes: pg.Pool | undefined;
 
 /** Pool Postgres partagé, créé à la première requête. DATABASE_URL vient de l'environnement, TLS vérifié imposé. */
 export function connexion(): Executeur {
-  pool ??= new pg.Pool({ ...configurationConnexion(process.env), ...OPTIONS_POOL });
+  pool ??= new pg.Pool({ ...configurationConnexion(process.env), ...optionsPool(process.env) });
   return pool;
 }
 
@@ -22,7 +20,7 @@ export function connexionComptes(): pg.Pool {
   if (!process.env.DATABASE_URL_COMPTES) throw new Error("Configuration Postgres refusée : DATABASE_URL_COMPTES manquante");
   poolComptes ??= new pg.Pool({
     ...configurationConnexion({ ...process.env, DATABASE_URL: process.env.DATABASE_URL_COMPTES }),
-    ...OPTIONS_POOL,
+    ...optionsPool(process.env),
   });
   return poolComptes;
 }
