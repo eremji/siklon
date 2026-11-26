@@ -297,3 +297,28 @@ describe("dernière lecture réussie du flux NHC (US-11)", () => {
     expect(journal.mock.calls.flat().join(" ")).toContain("[alertes]");
   });
 });
+
+describe("dernier niveau de vigilance lu (US-11, livraison 2)", () => {
+  const JAUNE = { etat: "ok", niveau: "jaune", misAJour: "2026-09-10T16:00:00.000Z" } as const;
+
+  it("mémorise le niveau lu en direct de chaque fichier, pour les pages si Météo-France ne répond plus", async () => {
+    await verifier({ vigilance: { CDPV85TFFR: JAUNE, CDPV85TFFF: { etat: "indisponible" } } }, servicePush().envoyer);
+
+    expect((await lireDerniereLecture(db, "vigilance:CDPV85TFFR"))?.contenu).toEqual({
+      niveau: "jaune",
+      misAJour: "2026-09-10T16:00:00.000Z",
+    });
+    expect(await lireDerniereLecture(db, "vigilance:CDPV85TFFF")).toBeNull();
+    // Saint-Martin et Saint-Barthélemy partagent un fichier : une seule lecture, mémorisée.
+    expect((await lireDerniereLecture(db, "vigilance:CDPV85TFFJ"))?.contenu).toEqual({
+      niveau: "vert",
+      misAJour: VERT.etat === "ok" ? VERT.misAJour : "",
+    });
+  });
+
+  it("ne mémorise jamais un niveau de secours", async () => {
+    await verifier({ vigilance: { CDPV85TFFR: { ...JAUNE, echecLe: "2026-09-10T17:00:00.000Z" } } }, servicePush().envoyer);
+
+    expect(await lireDerniereLecture(db, "vigilance:CDPV85TFFR")).toBeNull();
+  });
+});

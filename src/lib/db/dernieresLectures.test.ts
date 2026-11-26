@@ -66,4 +66,18 @@ describe("dernière lecture réussie d'une source", () => {
       enTantQue("siklon_lecture", () => enregistrerLecture(db, "nhc-systemes", FLUX, "2026-09-10T16:00:00.000Z")),
     ).rejects.toThrow();
   });
+
+  it("garde une lecture par fichier de vigilance, indépendante de celle du NHC (US-11, livraison 2)", async () => {
+    const jaune = { niveau: "jaune", misAJour: "2026-09-10T12:00:00.000Z" };
+    await enTantQue("siklon_comptes", () =>
+      enregistrerLecture(db, "vigilance:CDPV85TFFR", jaune, "2026-09-10T15:02:00.000Z"),
+    );
+
+    expect(await enTantQue("siklon_lecture", () => lireDerniereLecture(db, "vigilance:CDPV85TFFR"))).toEqual({
+      contenu: jaune,
+      luLe: "2026-09-10T15:02:00.000Z",
+    });
+    expect(await enTantQue("siklon_lecture", () => lireDerniereLecture(db, "vigilance:CDPV85TFFF"))).toBeNull();
+    expect((await enTantQue("siklon_lecture", () => lireDerniereLecture(db, "nhc-systemes")))?.contenu).not.toEqual(jaune);
+  });
 });

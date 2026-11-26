@@ -2,8 +2,11 @@
 // pour rester sous le quota de l'API (60 requêtes par minute). La clé ne quitte pas le serveur.
 import "server-only";
 import { cacheLife } from "next/cache";
+import { lireDerniereLecture } from "@/lib/db/dernieresLectures";
+import { connexion } from "@/lib/db/pool";
+import type { FichierVigilance } from "@/lib/iles";
 import { telechargerArchive, telechargerControle } from "./client";
-import { lireBulletins, type Sources } from "./vigilance";
+import { chargerVigilance, type EtatVigilance, lireBulletins, type Sources } from "./vigilance";
 
 // SPEC.md : le fichier de contrôle est relu chaque minute.
 async function controleEnCache() {
@@ -21,3 +24,13 @@ async function bulletinsEnCache(checksum: string) {
 }
 
 export const SOURCES_METEO_FRANCE: Sources = { controle: controleEnCache, bulletins: bulletinsEnCache };
+
+/**
+ * Niveau montré par les pages : quand Météo-France ne répond pas, le dernier niveau lu par la
+ * vérification de chaque minute, gardé en base (US-11). La vérification lit, elle, en direct.
+ */
+export function vigilanceAffichee(fichier: FichierVigilance): Promise<EtatVigilance> {
+  return chargerVigilance(fichier, SOURCES_METEO_FRANCE, {
+    secours: () => lireDerniereLecture(connexion(), `vigilance:${fichier}`),
+  });
+}
