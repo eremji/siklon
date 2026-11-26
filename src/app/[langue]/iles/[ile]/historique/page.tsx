@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { FormulaireFiltres } from "@/components/historique/FormulaireFiltres";
 import { ListeHistorique } from "@/components/historique/ListeHistorique";
@@ -70,8 +71,12 @@ async function Contenu({ params, searchParams }: PageProps<"/[langue]/iles/[ile]
   );
 }
 
-/** Saison à risque (US-17) : toujours depuis ANNEE_DEBUT_SAISON_RISQUE, indépendante des filtres de la liste. */
+/**
+ * Saison à risque (US-17) : toujours depuis ANNEE_DEBUT_SAISON_RISQUE, indépendante des filtres de la liste.
+ * Lue à chaque requête, par le cache partagé, jamais pendant le build (qui n'a pas de base).
+ */
 async function BlocSaison({ ile, langue }: { ile: Ile; langue: Langue }) {
+  await connection();
   let entrees: EntreeHistorique[];
   let dernierImport: DernierImport | null;
   try {
