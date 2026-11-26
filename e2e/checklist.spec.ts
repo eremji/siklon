@@ -210,3 +210,82 @@ for (const colorScheme of ["light", "dark"] as const) {
     });
   }
 }
+
+test.describe("en anglais (US-10)", () => {
+  const audit = async (page: Page) => {
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme });
+      const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+      expect(violations).toEqual([]);
+    }
+  };
+
+  test("la checklist d'une île française est traduite, garde le terme d'origine et dit que ses sources sont françaises", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureVigilance(context, baseURL, "orange");
+    await page.goto("/en/iles/guadeloupe/checklist");
+
+    await expect(page).toHaveTitle("Preparedness checklist: Guadeloupe · Siklon");
+    await expect(page.getByRole("link", { name: "Guadeloupe: current threats" })).toHaveAttribute("href", "/en/iles/guadeloupe");
+    await expect(page.locator("header", { has: titre(page, 1, "Guadeloupe") }).getByText("Orange vigilance")).toBeVisible();
+
+    await expect(titre(page, 2, "Preparedness checklist")).toBeVisible();
+    const enCours = titre(page, 3, "Orange vigilance: get prepared (Vigilance orange · Préparez-vous)");
+    await expect(enCours.getByText("(Vigilance orange · Préparez-vous)")).toHaveAttribute("lang", "fr");
+    await expect(visible(page, /^This checklist is translated from official French guides/)).toBeVisible();
+    await expect(visible(page, "Threat becoming clearer, within 24 to 36 hours. (Prefecture of Guadeloupe)")).toBeVisible();
+    const liste = page.getByRole("list", { name: "Current list: Orange vigilance: get prepared" });
+    await expect(liste.getByText("Fill up with fuel.")).toBeVisible();
+    await expect(liste.getByText(/^Source: /).first()).toBeVisible();
+    await expect(visible(page, /^If not done yet: /)).toHaveCount(2);
+    await expect(
+      page.getByRole("list", { name: "Checklist sources" }).getByRole("link", { name: "Prefecture of Guadeloupe: Hurricane season leaflet (2023, in French)" }),
+    ).toHaveAttribute("href", /guadeloupe\.gouv\.fr/);
+    await expect(page.getByRole("link", { name: "Sign in to check off items and keep your progress" })).toHaveAttribute(
+      "href",
+      "/en/compte/connexion",
+    );
+
+    await audit(page);
+  });
+
+  test("la checklist d'une île suivie par le NHC est traduite", async ({ page }) => {
+    await page.goto("/en/iles/dominique/checklist");
+
+    await expect(page.locator("header", { has: titre(page, 1, "Dominica") }).getByText("Hurricane Warning", { exact: true })).toBeVisible();
+    await expect(titre(page, 3, "Red vigilance: protect yourself (Vigilance rouge · Protégez-vous)")).toBeVisible();
+    await expect(visible(page, /Follow the instructions of the authorities of Dominica first\.$/)).toBeVisible();
+    await audit(page);
+  });
+
+  test("un utilisateur connecté coche, masque et ajoute en anglais ; l'état est le même en français", async (
+    { page, context, baseURL },
+    testInfo,
+  ) => {
+    await fixtureVigilance(context, baseURL, "orange");
+    await connecterNouveauCompte(page, testInfo.project.name);
+    await page.goto("/en/iles/guadeloupe/checklist");
+
+    await Promise.all([
+      page.waitForResponse((reponse) => reponse.request().method() === "POST"),
+      caseVisible(page, "Fill up with fuel.").check(),
+    ]);
+    await page.getByRole("button", { name: "Hide: Withdraw cash." }).filter({ visible: true }).click();
+    await expect(visible(page, "Hidden items (1)")).toBeVisible();
+    await page.getByRole("textbox", { name: "Add an item" }).filter({ visible: true }).fill("Dog food");
+    await page.getByRole("button", { name: "Add", exact: true }).filter({ visible: true }).click();
+    await expect(caseVisible(page, "Dog food")).toBeVisible();
+    await expect(page).toHaveURL("/en/iles/guadeloupe/checklist");
+    await visible(page, "Hidden items (1)").click();
+    await audit(page);
+
+    // Mêmes identifiants dans les deux langues : la checklist française reprend le même état.
+    await page.goto("/fr/iles/guadeloupe/checklist");
+    await expect(caseVisible(page, "Faire le plein de carburant.")).toBeChecked();
+    await expect(visible(page, "Éléments masqués (1)")).toBeVisible();
+    await expect(caseVisible(page, "Dog food")).toBeVisible();
+  });
+});

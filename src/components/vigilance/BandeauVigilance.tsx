@@ -81,6 +81,12 @@ export function BandeauVigilance({ nomIle, fichier, etat, langue }: {
           </p>
         )}
       </EnTeteIle>
+      {/* US-11 : Météo-France ne répond plus, le niveau affiché est le dernier lu. */}
+      {etat.echecLe && (
+        <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
+          {textes.echec(formaterHeureAntilles(etat.misAJour, langue), textes.fuseau)}
+        </p>
+      )}
       {!alerte && <p className="text-base">{textes.aucune(nomIle)}</p>}
       <Source fichier={fichier} misAJour={etat.misAJour} langue={langue} />
     </>

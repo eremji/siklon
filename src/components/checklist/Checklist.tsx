@@ -1,18 +1,21 @@
 import { Lien } from "@/components/langue/Lien";
 import type { ReactNode } from "react";
 import type { EtatAction, ResultatCoche } from "@/app/[langue]/iles/[ile]/checklist/actions";
-import { CHECKLISTS, type ChecklistNiveau, type ElementChecklist, type IdSource, SOURCES } from "@/lib/checklist/contenu";
+import { CHECKLISTS, type ElementChecklist, type IdSource, SOURCES } from "@/lib/checklist/contenu";
 import { etapeChecklist, etapesPrecedentes } from "@/lib/checklist/etapes";
 import { type ElementPerso, LONGUEUR_MAX_TEXTE } from "@/lib/db/checklist";
+import { LANGUES, type Langue } from "@/lib/langues";
 import type { NiveauAlerte } from "@/lib/notifications/evenements";
-import { NIVEAUX } from "@/lib/vigilance/niveaux";
+import { CHECKLIST } from "@/lib/textes/checklist";
+import { infoNiveau, type Niveau, NIVEAUX } from "@/lib/vigilance/niveaux";
 import { BoutonAction } from "./BoutonAction";
 import { CaseElement } from "./CaseElement";
 import { FormulaireAjout } from "./FormulaireAjout";
 
 // Checklist de l'US-08 : la liste du niveau en cours, les éléments ajoutés par l'utilisateur, les
 // listes précédentes repliées et les documents officiels cités. Un utilisateur connecté coche,
-// masque et ajoute des éléments ; un visiteur lit la checklist de base.
+// masque et ajoute des éléments ; un visiteur lit la checklist de base. En anglais (US-10), le
+// contenu est une traduction des documents officiels français, ce que la page dit.
 
 type ActionFormulaire = (etat: EtatAction, donnees: FormData) => Promise<EtatAction>;
 
@@ -21,29 +24,58 @@ export type CompteChecklist = {
   coches: string[];
   masques: string[];
   perso: ElementPerso[];
-  cocher: (element: string, coche: boolean) => Promise<ResultatCoche>;
-  cocherPerso: (element: string, coche: boolean) => Promise<ResultatCoche>;
+  cocher: (element: string, coche: boolean, langue: Langue) => Promise<ResultatCoche>;
+  cocherPerso: (element: string, coche: boolean, langue: Langue) => Promise<ResultatCoche>;
   masquer: ActionFormulaire;
   ajouter: ActionFormulaire;
   supprimer: ActionFormulaire;
 } | null;
 
-const ELEMENTS_DE_BASE = new Map<string, ElementChecklist>(
-  NIVEAUX.flatMap((niveau) => CHECKLISTS[niveau].sections.flatMap(({ elements }) => elements.map((e) => [e.id, e] as const))),
-);
+const ELEMENTS_DE_BASE = Object.fromEntries(
+  LANGUES.map((langue) => [
+    langue,
+    new Map<string, ElementChecklist>(
+      NIVEAUX.flatMap((niveau) =>
+        CHECKLISTS[langue][niveau].sections.flatMap(({ elements }) => elements.map((e) => [e.id, e] as const)),
+      ),
+    ),
+  ]),
+) as Record<Langue, Map<string, ElementChecklist>>;
 
-function auteurs(sources: IdSource[]): string {
-  return [...new Set(sources.map((id) => SOURCES[id].auteur))].join(" ; ");
+type Commun = { niveau: Niveau; langue: Langue; compte: CompteChecklist };
+
+function auteurs(sources: IdSource[], langue: Langue): string {
+  return [...new Set(sources.map((id) => SOURCES[langue][id].auteur))].join(CHECKLIST[langue].liste.separateurAuteurs);
 }
 
-function Sections({ checklist, prefixe, compte }: { checklist: ChecklistNiveau; prefixe: string; compte: CompteChecklist }) {
+/** Titre d'une liste ; en anglais, le terme d'origine de la vigilance suit, en français (US-10). */
+function TitreListe({ niveau, langue }: { niveau: Niveau; langue: Langue }) {
+  const origine = langue !== "fr" && niveau !== "vert" ? infoNiveau(niveau, "fr") : null;
+  return (
+    <>
+      {CHECKLISTS[langue][niveau].titre}
+      {origine && (
+        <>
+          {" "}
+          <span lang="fr">
+            ({origine.libelle} · {origine.consigne})
+          </span>
+        </>
+      )}
+    </>
+  );
+}
+
+function Sections({ niveau, langue, prefixe, compte }: Commun & { prefixe: string }) {
+  const checklist = CHECKLISTS[langue][niveau];
+  const textes = CHECKLIST[langue].liste;
   return checklist.sections.map((section, index) => {
     const visibles = section.elements.filter(({ id }) => !compte?.masques.includes(id));
     return (
       <div key={section.titre ?? index} className="flex flex-col gap-2">
         {section.titre && <h4 className="text-lg font-bold">{section.titre}</h4>}
         {visibles.length === 0 ? (
-          <p className="text-base text-muted">Vous avez masqué tous les éléments de cette liste.</p>
+          <p className="text-base text-muted">{textes.toutMasque}</p>
         ) : (
           <ul aria-label={`${prefixe}${section.titre ?? checklist.titre}`} className="flex flex-col gap-2">
             {visibles.map(({ id, texte, sources }) => (
@@ -54,13 +86,16 @@ function Sections({ checklist, prefixe, compte }: { checklist: ChecklistNiveau; 
                   <p className="text-base">{texte}</p>
                 )}
                 <div className="flex items-end justify-between gap-2">
-                  <p className="text-sm text-muted">Source : {auteurs(sources)}</p>
+                  <p className="text-sm text-muted">
+                    {textes.source}
+                    {auteurs(sources, langue)}
+                  </p>
                   {compte && (
                     <BoutonAction
                       action={compte.masquer}
                       champs={{ element: id, masque: "1" }}
-                      libelle="Masquer"
-                      description={`Masquer : ${texte}`}
+                      libelle={textes.masquer}
+                      description={textes.action(textes.masquer, texte)}
                     />
                   )}
                 </div>
@@ -73,17 +108,18 @@ function Sections({ checklist, prefixe, compte }: { checklist: ChecklistNiveau; 
   });
 }
 
-function Delai({ checklist }: { checklist: ChecklistNiveau }) {
-  if (!checklist.delai) return null;
+function Delai({ niveau, langue }: { niveau: Niveau; langue: Langue }) {
+  const { delai } = CHECKLISTS[langue][niveau];
+  if (!delai) return null;
   return (
     <p className="text-base">
-      {checklist.delai.texte} ({SOURCES[checklist.delai.source].auteur})
+      {delai.texte} ({SOURCES[langue][delai.source].auteur})
     </p>
   );
 }
 
 /** Bloc replié, avec un chevron en trait : l'état ouvert ou fermé ne repose pas sur la couleur (DESIGN.md). */
-function Repli({ titre, children }: { titre: string; children: ReactNode }) {
+function Repli({ titre, children }: { titre: ReactNode; children: ReactNode }) {
   return (
     <details className="group flex flex-col gap-3 rounded-2xl bg-soft p-4">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-base font-bold [&::-webkit-details-marker]:hidden">
@@ -106,29 +142,42 @@ function Repli({ titre, children }: { titre: string; children: ReactNode }) {
   );
 }
 
-function ListeRepliee({ checklist, rappel, compte }: { checklist: ChecklistNiveau; rappel: boolean; compte: CompteChecklist }) {
+function ListeRepliee({ niveau, langue, rappel, compte }: Commun & { rappel: boolean }) {
   return (
-    <Repli titre={rappel ? `Si ce n'est pas encore fait : ${checklist.titre}` : checklist.titre}>
-      <Delai checklist={checklist} />
-      <Sections checklist={checklist} prefixe="" compte={compte} />
+    <Repli
+      titre={
+        <>
+          {rappel && CHECKLIST[langue].liste.rappel}
+          <TitreListe niveau={niveau} langue={langue} />
+        </>
+      }
+    >
+      <Delai niveau={niveau} langue={langue} />
+      <Sections niveau={niveau} langue={langue} prefixe="" compte={compte} />
     </Repli>
   );
 }
 
-function MesElements({ compte }: { compte: NonNullable<CompteChecklist> }) {
+function MesElements({ langue, compte }: { langue: Langue; compte: NonNullable<CompteChecklist> }) {
+  const textes = CHECKLIST[langue].liste;
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-xl font-bold">Mes éléments</h3>
+      <h3 className="text-xl font-bold">{textes.mesElements}</h3>
       {compte.perso.length === 0 ? (
-        <p className="text-base text-muted">Ajoutez ce qui manque pour votre foyer : il apparaîtra à chaque niveau d&apos;alerte.</p>
+        <p className="text-base text-muted">{textes.aucunElement}</p>
       ) : (
-        <ul aria-label="Mes éléments" className="flex flex-col gap-2">
+        <ul aria-label={textes.mesElements} className="flex flex-col gap-2">
           {compte.perso.map(({ id, texte, coche }) => (
             <li key={id} className="flex items-start justify-between gap-2 rounded-2xl bg-surface p-4">
               <div className="flex-1">
                 <CaseElement id={id} texte={texte} cocheInitiale={coche} cocher={compte.cocherPerso} />
               </div>
-              <BoutonAction action={compte.supprimer} champs={{ id }} libelle="Supprimer" description={`Supprimer : ${texte}`} />
+              <BoutonAction
+                action={compte.supprimer}
+                champs={{ id }}
+                libelle={textes.supprimer}
+                description={textes.action(textes.supprimer, texte)}
+              />
             </li>
           ))}
         </ul>
@@ -138,20 +187,21 @@ function MesElements({ compte }: { compte: NonNullable<CompteChecklist> }) {
   );
 }
 
-function ElementsMasques({ compte }: { compte: NonNullable<CompteChecklist> }) {
-  const masques = compte.masques.flatMap((id) => ELEMENTS_DE_BASE.get(id) ?? []);
+function ElementsMasques({ langue, compte }: { langue: Langue; compte: NonNullable<CompteChecklist> }) {
+  const textes = CHECKLIST[langue].liste;
+  const masques = compte.masques.flatMap((id) => ELEMENTS_DE_BASE[langue].get(id) ?? []);
   if (masques.length === 0) return null;
   return (
-    <Repli titre={`Éléments masqués (${masques.length})`}>
-      <ul aria-label="Éléments masqués" className="flex flex-col gap-2">
+    <Repli titre={textes.masques(masques.length)}>
+      <ul aria-label={textes.listeMasques} className="flex flex-col gap-2">
         {masques.map(({ id, texte }) => (
           <li key={id} className="flex items-center justify-between gap-2 rounded-2xl bg-surface p-4">
             <p className="text-base">{texte}</p>
             <BoutonAction
               action={compte.masquer}
               champs={{ element: id, masque: "0" }}
-              libelle="Réafficher"
-              description={`Réafficher : ${texte}`}
+              libelle={textes.reafficher}
+              description={textes.action(textes.reafficher, texte)}
             />
           </li>
         ))}
@@ -160,15 +210,16 @@ function ElementsMasques({ compte }: { compte: NonNullable<CompteChecklist> }) {
   );
 }
 
-function Sources() {
+function Sources({ langue }: { langue: Langue }) {
+  const textes = CHECKLIST[langue].liste;
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-lg font-bold">Sources</h3>
-      <ul aria-label="Sources de la checklist" className="flex flex-col">
-        {Object.entries(SOURCES).map(([id, { auteur, titre, url }]) => (
+      <h3 className="text-lg font-bold">{textes.sources}</h3>
+      <ul aria-label={textes.listeSources} className="flex flex-col">
+        {Object.entries(SOURCES[langue]).map(([id, { auteur, titre, url }]) => (
           <li key={id}>
             <a href={url} className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
-              {auteur} : {titre}
+              {textes.document(auteur, titre)}
             </a>
           </li>
         ))}
@@ -177,53 +228,51 @@ function Sources() {
   );
 }
 
-export function Checklist({ nomIle, source, niveau, compte }: {
+export function Checklist({ langue, nomIle, source, niveau, compte }: {
+  langue: Langue;
+  /** Nom de l'île dans la langue de la page. */
   nomIle: string;
   source: "meteo-france" | "nhc";
   /** null : la source du niveau d'alerte est indisponible. */
   niveau: NiveauAlerte | null;
   compte: CompteChecklist;
 }) {
+  const textes = CHECKLIST[langue].liste;
   const etape = niveau === null ? null : etapeChecklist(niveau);
-  const enCours = etape ? CHECKLISTS[etape] : null;
   const replies = etape ? etapesPrecedentes(etape) : NIVEAUX;
 
   return (
     <section aria-labelledby="titre-checklist" className="flex flex-col gap-4">
       <h2 id="titre-checklist" className="text-2xl font-bold">
-        Checklist de préparation
+        {textes.titre}
       </h2>
+      {textes.traduction && <p className="text-base">{textes.traduction}</p>}
       {!compte && (
         <Lien
           href="/compte/connexion"
           className="flex min-h-11 items-center text-base font-bold text-accent underline underline-offset-4"
         >
-          Connectez-vous pour cocher les éléments et garder votre progression
+          {textes.connexion}
         </Lien>
       )}
-      {source === "nhc" && (
-        <p className="text-base">
-          Ces listes viennent des guides des préfectures françaises des Antilles et de la Croix-Rouge. Suivez
-          d&apos;abord les consignes des autorités de {nomIle}.
-        </p>
-      )}
-      {enCours ? (
+      {source === "nhc" && <p className="text-base">{textes.origineNhc(nomIle)}</p>}
+      {etape ? (
         <div className="flex flex-col gap-3">
-          <h3 className="text-xl font-bold">{enCours.titre}</h3>
-          <Delai checklist={enCours} />
-          <Sections checklist={enCours} prefixe="Liste en cours : " compte={compte} />
+          <h3 className="text-xl font-bold">
+            <TitreListe niveau={etape} langue={langue} />
+          </h3>
+          <Delai niveau={etape} langue={langue} />
+          <Sections niveau={etape} langue={langue} prefixe={textes.enCours} compte={compte} />
         </div>
       ) : (
-        <p className="text-base">
-          Niveau d&apos;alerte indisponible : choisissez la liste qui correspond aux consignes des autorités.
-        </p>
+        <p className="text-base">{textes.indisponible}</p>
       )}
-      {compte && <MesElements compte={compte} />}
+      {compte && <MesElements langue={langue} compte={compte} />}
       {replies.map((precedente) => (
-        <ListeRepliee key={precedente} checklist={CHECKLISTS[precedente]} rappel={etape !== null} compte={compte} />
+        <ListeRepliee key={precedente} niveau={precedente} langue={langue} rappel={etape !== null} compte={compte} />
       ))}
-      {compte && <ElementsMasques compte={compte} />}
-      <Sources />
+      {compte && <ElementsMasques langue={langue} compte={compte} />}
+      <Sources langue={langue} />
     </section>
   );
 }

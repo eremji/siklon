@@ -10,14 +10,9 @@ import { ILES, type Ile, nomIle, trouverIle } from "@/lib/iles";
 import { langueDeLaPage } from "@/lib/langueDeLaPage";
 import type { Langue } from "@/lib/langues";
 import { fluxNhc, positionsNhc } from "@/lib/nhc/lecture";
-import { evaluerMenaces } from "@/lib/nhc/menace";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
-import { chargerAlerteIle } from "@/lib/partage/chargement";
+import { chargerPartageIle, fixturesDemandees } from "@/lib/partage/chargement";
 import { ileMenacee } from "@/lib/partage/ile";
-import {
-  COOKIE_FIXTURE as COOKIE_FIXTURE_VIGILANCE,
-  fixtureDemandee as fixtureVigilanceDemandee,
-} from "@/lib/vigilance/fixtures";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { ILES_TEXTES } from "@/lib/textes/iles";
 
@@ -49,18 +44,10 @@ async function Menaces({ ile, langue }: { ile: Ile; langue: Langue }) {
 }
 
 // Bouton « Partager » (US-21), seulement pour une île menacée : un système dans le rayon de
-// surveillance ou une alerte officielle en cours. Ses propres lectures passent par les caches partagés.
+// surveillance ou une alerte officielle en cours. Mêmes lectures que l'image d'aperçu du lien.
 async function Partage({ ile }: { ile: Ile }) {
   await connection();
-  const biscuits = await cookies();
-  const fixture = fixtureDemandee(process.env, biscuits.get(COOKIE_FIXTURE)?.value);
-  const flux = await fluxNhc(fixture);
-  const systemes = flux.etat === "ok" ? flux.systemes : [];
-  const { menaces } = evaluerMenaces(ile, systemes, await positionsNhc(fixture, systemes));
-  const alerte = await chargerAlerteIle(ile, {
-    nhc: fixture,
-    vigilance: fixtureVigilanceDemandee(process.env, biscuits.get(COOKIE_FIXTURE_VIGILANCE)?.value),
-  });
+  const { menaces, alerte } = await chargerPartageIle(ile, fixturesDemandees(await cookies()));
   if (!ileMenacee(menaces, alerte)) return null;
   return <PartageIle slug={ile.slug} menaces={menaces} alerte={alerte} />;
 }

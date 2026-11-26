@@ -1,10 +1,11 @@
 // Dernière lecture réussie de chaque source officielle (US-11), table public.dernieres_lectures :
 // écrite par la vérification de chaque minute (rôle siklon_comptes), relue par le site (siklon_lecture)
 // quand la source ne répond plus.
+import type { FichierVigilance } from "../iles";
 import type { Executeur } from "./historique";
 
-/** Source lue : le flux CurrentStorms.json du NHC. */
-export type SourceLue = "nhc-systemes";
+/** Source lue : le flux CurrentStorms.json du NHC, ou le bulletin de vigilance Météo-France d'un fichier. */
+export type SourceLue = "nhc-systemes" | `vigilance:${FichierVigilance}`;
 
 export interface Lecture {
   /** Réponse brute de la source, à relire avec le même lecteur que la réponse en direct. */

@@ -22,4 +22,14 @@ describe("mode fixture de la vigilance (tests e2e)", () => {
     expect(etatFixture("orange")).toEqual({ etat: "ok", niveau: "orange", misAJour: MIS_A_JOUR_FIXTURE });
     expect(etatFixture("indisponible")).toEqual({ etat: "indisponible" });
   });
+
+  it("simule un Météo-France muet : dernier niveau connu jaune, mise à jour échouée (US-11)", () => {
+    expect(fixtureDemandee({ VIGILANCE_FIXTURES: "1" }, "ancien")).toBe("ancien");
+    expect(etatFixture("ancien")).toEqual({
+      etat: "ok",
+      niveau: "jaune",
+      misAJour: MIS_A_JOUR_FIXTURE,
+      echecLe: "2026-11-09T13:00:00.000Z",
+    });
+  });
 });

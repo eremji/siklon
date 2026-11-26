@@ -1,12 +1,14 @@
 // Vérification planifiée des alertes (US-07) : lit les sources, détecte les événements de chaque île
 // (entrée d'un système dans le rayon, changement de niveau d'alerte) et prévient ceux qui la suivent.
-// Appelée chaque minute (route /api/alertes/verifier) ; mémorise aussi le flux NHC lu (US-11).
+// Appelée chaque minute (route /api/alertes/verifier) ; mémorise aussi le flux NHC et les niveaux de
+// vigilance lus en direct (US-11).
 // Deux vérifications simultanées ne préviennent qu'une fois : le niveau est enregistré par
 // compare-and-set, chaque envoi réservé par canal.
 import { enregistrerLecture } from "../db/dernieresLectures";
 import type { Executeur } from "../db/historique";
 import { destinataires, enregistrerNiveau, lireNiveauxIles } from "../db/notifications";
 import { type Emprise, type FichierVigilance, ILES, type Ile } from "../iles";
+import type { Langue } from "../langues";
 import type { EtatAlertesNhc } from "../nhc/alertes";
 import type { EtatFlux } from "../nhc/client";
 import { evaluerMenaces } from "../nhc/menace";
@@ -23,7 +25,7 @@ import {
   niveauVigilance,
 } from "./evenements";
 import type { AlertePush } from "./push";
-import { contenuNotification } from "./textes";
+import { type ContenuNotification, contenuNotification } from "./textes";
 
 /** Sources lues par la vérification : caches partagés en production, simulées dans les tests. */
 export interface SourcesAlertes {
@@ -93,6 +95,20 @@ async function memoriserFlux(db: Executeur, flux: EtatFlux): Promise<void> {
   }
 }
 
+/** Mémorise le niveau lu en direct de chaque fichier de vigilance (US-11), jamais un niveau de secours. */
+async function memoriserVigilances(db: Executeur, vigilances: Map<FichierVigilance, Promise<EtatVigilance>>) {
+  for (const [fichier, lecture] of vigilances) {
+    const etat = await lecture.catch((): EtatVigilance => ({ etat: "indisponible" }));
+    if (etat.etat !== "ok" || etat.echecLe) continue;
+    try {
+      const { niveau, misAJour } = etat;
+      await enregistrerLecture(db, `vigilance:${fichier}`, { niveau, misAJour }, new Date().toISOString());
+    } catch (erreur) {
+      console.error(`[alertes] dernier niveau de ${fichier} non mémorisé (${typeErreur(erreur)})`);
+    }
+  }
+}
+
 /**
  * Enregistre le niveau observé s'il diffère du dernier connu, et rend l'événement à notifier.
  * Le premier niveau connu d'une île est enregistré ; il n'est notifié que s'il y a une alerte.
@@ -132,8 +148,12 @@ export async function verifierAlertes(
     bilan.evenements += evenements.length;
     const abonnes = await destinataires(db, ile.slug);
     for (const evenement of evenements) {
-      const contenu = contenuNotification(evenement, base);
+      // Un contenu par langue de compte (US-10), rédigé une seule fois pour tous ceux qui la partagent.
+      const contenus = new Map<Langue, ContenuNotification>();
       for (const destinataire of abonnes) {
+        const { langue } = destinataire;
+        const contenu = contenus.get(langue) ?? contenuNotification(evenement, base, langue);
+        contenus.set(langue, contenu);
         // Chaque canal à part : une panne de l'un n'empêche pas l'autre de prévenir.
         for (const envoyer of canaux) {
           try {
@@ -148,5 +168,6 @@ export async function verifierAlertes(
       }
     }
   }
+  await memoriserVigilances(db, vigilances);
   return bilan;
 }
