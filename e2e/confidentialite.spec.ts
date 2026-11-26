@@ -34,3 +34,19 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("en anglais (US-10)", () => {
+  test("le pied de page anglais mène à la page Privacy, en anglais et conforme WCAG AA", async ({ page }) => {
+    await page.goto("/en");
+    await page.getByRole("contentinfo").getByRole("link", { name: "Privacy" }).click();
+
+    await expect(page).toHaveURL("/en/confidentialite");
+    await expect(page).toHaveTitle("Privacy · Siklon");
+    await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Who sees your IP address" })).toContainText("OpenFreeMap");
+    await expect(page.getByText("Last updated: 26 November 2026.")).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+});

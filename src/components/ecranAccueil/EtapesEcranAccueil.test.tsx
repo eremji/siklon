@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { EtapesEcranAccueil } from "./EtapesEcranAccueil";
 
 describe("EtapesEcranAccueil", () => {
@@ -32,3 +33,27 @@ describe("EtapesEcranAccueil", () => {
     for (const icone of icones) expect(icone).toHaveAttribute("aria-hidden", "true");
   });
 });
+
+describe("EtapesEcranAccueil en anglais (US-10)", () => {
+  const rendre = (appareil: "iphone" | "ipad") =>
+    render(
+      <FournisseurLangue langue="en">
+        <EtapesEcranAccueil appareil={appareil} />
+      </FournisseurLangue>,
+    );
+
+  it("donne les 4 étapes avec les noms des menus d'iOS en anglais", () => {
+    rendre("iphone");
+    const etapes = within(screen.getByRole("list")).getAllByRole("listitem");
+    expect(etapes[0]).toHaveTextContent("Tap ≡ or “⋯” next to the address, then Share");
+    expect(etapes[1]).toHaveTextContent("Tap “View More”, then “Add to Home Screen”");
+    expect(etapes[2]).toHaveTextContent("Tap “Add”.");
+    expect(etapes[3]).toHaveTextContent("Open Siklon from its icon, then come back to Account to turn on alerts.");
+  });
+
+  it("sur iPad, Partager est en haut à droite", () => {
+    rendre("ipad");
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent(/Tap Share.*, at the top right of the screen\.$/);
+  });
+});
+

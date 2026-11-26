@@ -182,3 +182,21 @@ for (const [appareil, agent] of [
     });
   });
 }
+
+test.describe("en anglais (US-10)", () => {
+  test("l'écran d'aide donne les 4 étapes en anglais, ramène au compte et respecte WCAG AA", async ({ page }) => {
+    await page.goto("/en/compte/ecran-accueil");
+
+    await expect(page).toHaveTitle("Add Siklon to the Home Screen · Siklon");
+    const etapes = page.getByRole("list", { name: "Steps" }).getByRole("listitem");
+    await expect(etapes).toHaveCount(4);
+    await expect(etapes.nth(1)).toContainText("Tap “Add to Home Screen”");
+    await expect(page.getByRole("link", { name: "Back to account" })).toHaveAttribute("href", "/en/compte");
+
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+
+    await page.getByRole("link", { name: "Got it" }).click();
+    await expect(page).toHaveURL("/en/compte");
+  });
+});
