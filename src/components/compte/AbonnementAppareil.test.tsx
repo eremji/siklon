@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
 import { AbonnementAppareil, type ResultatAbonnement } from "./AbonnementAppareil";
 
 const CLE_PUBLIQUE = "BPublique_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcd";
@@ -94,7 +95,7 @@ describe("AbonnementAppareil", () => {
 
     expect(notification.requestPermission).toHaveBeenCalled();
     expect(pushManager.subscribe).toHaveBeenCalledWith({ userVisibleOnly: true, applicationServerKey: expect.any(Uint8Array) });
-    expect(abonner).toHaveBeenCalledWith(abonnement.toJSON());
+    expect(abonner).toHaveBeenCalledWith(abonnement.toJSON(), "fr");
     expect(await screen.findByText("Cet appareil reçoit les alertes.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Se désabonner" })).toBeInTheDocument();
   });
@@ -149,7 +150,7 @@ describe("AbonnementAppareil", () => {
     render(<AbonnementAppareil clePublique={CLE_PUBLIQUE} abonner={abonner} desabonner={vi.fn()} />);
 
     expect(await screen.findByRole("button", { name: "Se désabonner" })).toBeInTheDocument();
-    expect(abonner).toHaveBeenCalledWith(abonnement.toJSON());
+    expect(abonner).toHaveBeenCalledWith(abonnement.toJSON(), "fr");
   });
 
   it("se désabonner retire l'appareil du navigateur et du compte", async () => {
@@ -160,7 +161,7 @@ describe("AbonnementAppareil", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Se désabonner" }));
 
     expect(abonnement.unsubscribe).toHaveBeenCalled();
-    expect(desabonner).toHaveBeenCalledWith(ENDPOINT);
+    expect(desabonner).toHaveBeenCalledWith(ENDPOINT, "fr");
     expect(await screen.findByRole("status")).toHaveTextContent("Cet appareil ne recevra plus les alertes.");
     expect(screen.getByRole("button", { name: "Recevoir les alertes sur cet appareil" })).toBeInTheDocument();
   });
@@ -231,5 +232,55 @@ describe("AbonnementAppareil sur iPhone et iPad", () => {
 
     expect(await screen.findByRole("button", { name: "Recevoir les alertes sur cet appareil" })).toBeInTheDocument();
     expect(screen.queryByText(/ajoutez d'abord siklon/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("AbonnementAppareil en anglais (US-10)", () => {
+  const rendre = (clePublique: string | null, props = actions()) =>
+    render(
+      <FournisseurLangue langue="en">
+        <AbonnementAppareil clePublique={clePublique} {...props} />
+      </FournisseurLangue>,
+    );
+
+  it("présente la section et l'état du navigateur en anglais", async () => {
+    rendre(CLE_PUBLIQUE);
+    expect(screen.getByRole("heading", { name: "Alerts on this device" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Recommended: a notification arrives on this device as soon as an island you follow is threatened, even when Siklon is closed.",
+      ),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("This browser cannot receive alerts on this device.")).toBeInTheDocument();
+  });
+
+  it("web push non configuré, en anglais", async () => {
+    navigateurPush();
+    rendre(null);
+    expect(await screen.findByText("Device alerts are not available yet.")).toBeInTheDocument();
+  });
+
+  it("abonne l'appareil en transmettant la langue de la page, puis propose de se désabonner", async () => {
+    const { abonnement } = navigateurPush();
+    const props = actions();
+    rendre(CLE_PUBLIQUE, props);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Receive alerts on this device" }));
+
+    expect(props.abonner).toHaveBeenCalledWith(abonnement.toJSON(), "en");
+    expect(await screen.findByText("This device receives alerts.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Unsubscribe" }));
+    expect(props.desabonner).toHaveBeenCalledWith(abonnement.endpoint, "en");
+    expect(await screen.findByRole("status")).toHaveTextContent("This device will no longer receive alerts.");
+  });
+
+  it("notifications bloquées, en anglais", async () => {
+    navigateurPush({ permission: "denied" });
+    rendre(CLE_PUBLIQUE);
+    expect(
+      await screen.findByText(
+        "Siklon notifications are blocked in this browser. To receive alerts, allow them in the site settings, then reload the page.",
+      ),
+    ).toBeInTheDocument();
   });
 });

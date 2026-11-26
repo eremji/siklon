@@ -3,6 +3,7 @@
 // le bouton (US-13). Le service worker public/sw.js affiche les alertes reçues.
 // Sur iPhone et iPad, Apple ne l'autorise que depuis l'écran d'accueil : la section explique alors
 // comment y ajouter Siklon (US-07c, #110).
+import { useLangue } from "@/components/langue/ContexteLangue";
 import { Lien } from "@/components/langue/Lien";
 import { useEffect, useState } from "react";
 import { EtapesEcranAccueil } from "@/components/ecranAccueil/EtapesEcranAccueil";
@@ -12,6 +13,8 @@ import {
   situationEcranAccueil,
   VERSION_IOS_MIN,
 } from "@/lib/ecranAccueil/detection";
+import type { Langue } from "@/lib/langues";
+import { COMPTE } from "@/lib/textes/compte";
 
 export type ResultatAbonnement = { ok: true } | { ok: false; message: string };
 
@@ -30,18 +33,19 @@ const BOUTON = "min-h-12 rounded-full bg-accent px-6 text-base font-bold text-on
 const BOUTON_SECONDAIRE =
   "min-h-12 rounded-full border border-accent px-6 text-base font-bold text-accent disabled:opacity-70";
 
-const TEXTES: Partial<Record<Etat, string>> = {
-  verification: "Vérification de cet appareil…",
-  "ios-trop-ancien": `Mettez à jour iOS (${VERSION_IOS_MIN} ou plus récent) pour recevoir les alertes sur cet appareil.`,
-  "ios-autre-navigateur":
-    "Pour recevoir les alertes sur cet appareil, ouvrez Siklon dans Safari, puis ajoutez-le à l'écran d'accueil.",
-  "non-pris-en-charge": "Ce navigateur ne permet pas de recevoir les alertes sur cet appareil.",
-  "non-configure": "Les alertes sur appareil ne sont pas encore disponibles.",
-  refuse:
-    "Les notifications de Siklon sont bloquées dans ce navigateur. Pour recevoir les alertes, autorisez-les dans les réglages du site, puis rechargez la page.",
-};
-
-const ECHEC = "L'abonnement a échoué. Réessayez plus tard.";
+/** Phrase d'état de l'appareil, dans la langue de la page. */
+function texteEtat(etat: Etat, langue: Langue): string | undefined {
+  const textes = COMPTE[langue].appareil;
+  const phrases: Partial<Record<Etat, string>> = {
+    verification: textes.verification,
+    "ios-trop-ancien": textes.iosTropAncien(VERSION_IOS_MIN),
+    "ios-autre-navigateur": textes.iosAutreNavigateur,
+    "non-pris-en-charge": textes.nonPrisEnCharge,
+    "non-configure": textes.nonConfigure,
+    refuse: textes.refuse,
+  };
+  return phrases[etat];
+}
 
 function pushPrisEnCharge(): boolean {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
@@ -59,7 +63,8 @@ function octets(base64url: string): Uint8Array<ArrayBuffer> {
  */
 async function etatAppareil(
   clePublique: string | null,
-  abonner: (abonnement: unknown) => Promise<ResultatAbonnement>,
+  abonner: (abonnement: unknown, langue: Langue) => Promise<ResultatAbonnement>,
+  langue: Langue,
 ): Promise<{ etat: Etat; appareil?: Appareil; message?: string }> {
   const situation = situationEcranAccueil({
     agent: navigator.userAgent,
@@ -74,7 +79,7 @@ async function etatAppareil(
   const enregistrement = await navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
   const abonnement = await enregistrement.pushManager.getSubscription();
   if (!abonnement) return { etat: "non-abonne" };
-  const resultat = await abonner(abonnement.toJSON());
+  const resultat = await abonner(abonnement.toJSON(), langue);
   return resultat.ok ? { etat: "abonne" } : { etat: "non-abonne", message: resultat.message };
 }
 
@@ -84,9 +89,12 @@ export function AbonnementAppareil({
   desabonner,
 }: {
   clePublique: string | null;
-  abonner: (abonnement: unknown) => Promise<ResultatAbonnement>;
-  desabonner: (endpoint: unknown) => Promise<ResultatAbonnement>;
+  /** Server actions : la langue de la page leur est transmise pour leurs messages. */
+  abonner: (abonnement: unknown, langue: Langue) => Promise<ResultatAbonnement>;
+  desabonner: (endpoint: unknown, langue: Langue) => Promise<ResultatAbonnement>;
 }) {
+  const langue = useLangue();
+  const textes = COMPTE[langue].appareil;
   const [etat, setEtat] = useState<Etat>("verification");
   const [appareil, setAppareil] = useState<Appareil>("iphone");
   const [enCours, setEnCours] = useState(false);
@@ -96,7 +104,7 @@ export function AbonnementAppareil({
   useEffect(() => {
     let actif = true;
     void (async () => {
-      const initial = await etatAppareil(clePublique, abonner).catch(() => ({ etat: "non-pris-en-charge" as const }));
+      const initial = await etatAppareil(clePublique, abonner, langue).catch(() => ({ etat: "non-pris-en-charge" as const }));
       if (!actif) return;
       setEtat(initial.etat);
       if ("appareil" in initial && initial.appareil) setAppareil(initial.appareil);
@@ -105,7 +113,7 @@ export function AbonnementAppareil({
     return () => {
       actif = false;
     };
-  }, [clePublique, abonner]);
+  }, [clePublique, abonner, langue]);
 
   async function activer() {
     if (!clePublique) return;
@@ -115,17 +123,17 @@ export function AbonnementAppareil({
     try {
       const permission = await Notification.requestPermission();
       if (permission === "denied") return setEtat("refuse");
-      if (permission !== "granted") return setErreur("Autorisez les notifications quand le navigateur le demande.");
+      if (permission !== "granted") return setErreur(textes.autoriser);
       const { pushManager } = await navigator.serviceWorker.ready;
       const abonnement = await pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: octets(clePublique) });
-      const resultat = await abonner(abonnement.toJSON());
+      const resultat = await abonner(abonnement.toJSON(), langue);
       if (!resultat.ok) {
         await abonnement.unsubscribe();
         return setErreur(resultat.message);
       }
       setEtat("abonne");
     } catch {
-      setErreur(ECHEC);
+      setErreur(textes.echec);
     } finally {
       setEnCours(false);
     }
@@ -140,56 +148,48 @@ export function AbonnementAppareil({
       if (abonnement) {
         const { endpoint } = abonnement;
         await abonnement.unsubscribe();
-        const resultat = await desabonner(endpoint);
+        const resultat = await desabonner(endpoint, langue);
         if (!resultat.ok) return setErreur(resultat.message);
       }
       setEtat("non-abonne");
-      setConfirmation("Cet appareil ne recevra plus les alertes.");
+      setConfirmation(textes.desabonne);
     } catch {
-      setErreur("Le désabonnement a échoué. Réessayez plus tard.");
+      setErreur(textes.echecDesabonnement);
     } finally {
       setEnCours(false);
     }
   }
 
-  const texte = TEXTES[etat];
+  const texte = texteEtat(etat, langue);
   return (
     <section aria-labelledby="appareil-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
       <h2 id="appareil-titre" className="text-xl font-bold">
-        Alertes sur cet appareil
+        {textes.titre}
       </h2>
-      <p className="text-base">
-        Canal recommandé : une notification arrive sur cet appareil dès qu&apos;une île que vous suivez est menacée,
-        même quand Siklon est fermé.
-      </p>
+      <p className="text-base">{textes.texte}</p>
       {texte && <p className={etat === "verification" ? "text-base text-muted" : "text-base font-bold"}>{texte}</p>}
       {etat === "ios-a-installer" && (
         <>
           <div className="flex flex-col gap-3 rounded-xl bg-soft p-4">
-            <p className="text-lg font-bold">
-              Sur {appareil === "ipad" ? "iPad" : "iPhone"}, ajoutez d&apos;abord Siklon à l&apos;écran d&apos;accueil
-            </p>
-            <p className="text-base text-muted">
-              Apple n&apos;autorise les notifications que pour les sites ajoutés à l&apos;écran d&apos;accueil (iOS{" "}
-              {VERSION_IOS_MIN} ou plus récent).
-            </p>
+            <p className="text-lg font-bold">{textes.iosTitre(appareil === "ipad" ? "iPad" : "iPhone")}</p>
+            <p className="text-base text-muted">{textes.iosTexte(VERSION_IOS_MIN)}</p>
             <EtapesEcranAccueil appareil={appareil} />
           </div>
           <Lien href="/compte/ecran-accueil" className={`flex items-center justify-center ${BOUTON_SECONDAIRE}`}>
-            Voir l&apos;aide en images
+            {textes.aide}
           </Lien>
         </>
       )}
       {etat === "non-abonne" && (
         <button type="button" onClick={activer} disabled={enCours} aria-busy={enCours} className={BOUTON}>
-          Recevoir les alertes sur cet appareil
+          {textes.activer}
         </button>
       )}
       {etat === "abonne" && (
         <>
-          <p className="text-base font-bold">Cet appareil reçoit les alertes.</p>
+          <p className="text-base font-bold">{textes.abonne}</p>
           <button type="button" onClick={desactiver} disabled={enCours} aria-busy={enCours} className={BOUTON_SECONDAIRE}>
-            Se désabonner
+            {textes.desabonner}
           </button>
         </>
       )}

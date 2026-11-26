@@ -14,6 +14,7 @@ import {
 } from "@/components/compte/Formulaires";
 import type { Langue } from "@/lib/auth/options";
 import type { UtilisateurCourant } from "@/lib/auth/serveur";
+import { COMPTE } from "@/lib/textes/compte";
 
 const NOMS_LANGUES: Record<Langue, { libelle: string; lang: string }> = {
   fr: { libelle: "Français", lang: "fr" },
@@ -37,6 +38,7 @@ export function EtatCompte({
   enregistrerAlertesEmail,
   clePubliqueVapid,
   google,
+  langue: langueDeLaPage,
 }: {
   utilisateur: UtilisateurCourant | null;
   ilesSuivies?: readonly string[];
@@ -46,26 +48,26 @@ export function EtatCompte({
   supprimer: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
   enregistrerIles: (etat: EtatIles, donnees: FormData) => Promise<EtatIles>;
   renvoyerConfirmation: (etat: EtatFormulaire, donnees: FormData) => Promise<EtatFormulaire>;
-  abonnerAppareil: (abonnement: unknown) => Promise<ResultatAbonnement>;
-  desabonnerAppareil: (endpoint: unknown) => Promise<ResultatAbonnement>;
+  abonnerAppareil: (abonnement: unknown, langue: Langue) => Promise<ResultatAbonnement>;
+  desabonnerAppareil: (endpoint: unknown, langue: Langue) => Promise<ResultatAbonnement>;
   enregistrerAlertesEmail: (etat: EtatAlertesEmail, donnees: FormData) => Promise<EtatAlertesEmail>;
   /** Clé publique VAPID du web push ; `null` s'il n'est pas configuré. */
   clePubliqueVapid: string | null;
   /** Départ vers Google, si la connexion avec Google est configurée. */
   google?: ActionGoogle;
+  /** Langue de la page (US-10) ; celle du compte, `utilisateur.langue`, sert aux messages envoyés. */
+  langue: Langue;
 }) {
+  const textes = COMPTE[langueDeLaPage].etat;
   if (!utilisateur) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-base">
-          Toutes les informations sur les cyclones se consultent sans compte. Un compte servira à suivre vos îles et à
-          recevoir des alertes.
-        </p>
+        <p className="text-base">{textes.sansCompte}</p>
         <Lien href="/compte/connexion" className={LIEN_PRINCIPAL}>
-          Se connecter
+          {textes.seConnecter}
         </Lien>
         <Lien href="/compte/inscription" className={LIEN_SECONDAIRE}>
-          Créer un compte
+          {textes.creer}
         </Lien>
       </div>
     );
@@ -76,28 +78,27 @@ export function EtatCompte({
     <div className="flex flex-col gap-4">
       <dl className="flex flex-col gap-3 rounded-2xl bg-surface p-4 text-base">
         <div>
-          <dt className="text-sm text-muted">Adresse email</dt>
+          <dt className="text-sm text-muted">{textes.email}</dt>
           <dd className="font-bold break-all">{utilisateur.email}</dd>
         </div>
         <div>
-          <dt className="text-sm text-muted">Adresse</dt>
-          <dd className="font-bold">{utilisateur.emailVerifie ? "Confirmée" : "Non confirmée"}</dd>
+          <dt className="text-sm text-muted">{textes.adresse}</dt>
+          <dd className="font-bold">{utilisateur.emailVerifie ? textes.confirmee : textes.nonConfirmee}</dd>
         </div>
         <div>
-          <dt className="text-sm text-muted">Langue des messages</dt>
+          <dt className="text-sm text-muted">{textes.langueMessages}</dt>
           <dd lang={langue.lang} className="font-bold">
             {langue.libelle}
           </dd>
+          <dd className="text-sm text-muted">{textes.langueSuit}</dd>
         </div>
       </dl>
       {!utilisateur.emailVerifie && (
         <section aria-labelledby="confirmation-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
           <h2 id="confirmation-titre" className="text-xl font-bold">
-            Confirmer mon adresse
+            {textes.confirmerTitre}
           </h2>
-          <p className="text-base">
-            Ouvrez le lien envoyé à votre adresse email. Les alertes ne seront envoyées qu&apos;à une adresse confirmée.
-          </p>
+          <p className="text-base">{textes.confirmerTexte}</p>
           <FormulaireRenvoiConfirmation action={renvoyerConfirmation} />
         </section>
       )}
@@ -112,7 +113,7 @@ export function EtatCompte({
       <form action={deconnecter}>
         <ChampLangueInterface />
         <button type="submit" className={`${LIEN_SECONDAIRE} w-full`}>
-          Se déconnecter
+          {textes.deconnexion}
         </button>
       </form>
       <FormulaireSuppression action={supprimer} motDePasse={utilisateur.motDePasse} google={google} />

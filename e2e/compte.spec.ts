@@ -508,3 +508,48 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+test.describe("en anglais (US-10)", () => {
+  test("s'inscrire en anglais : English est coché d'office, puis la langue du compte suit la bascule", async ({
+    page,
+  }, testInfo) => {
+    const email = nouvelEmail(testInfo);
+    await page.goto("/en/compte/inscription");
+    await expect(page).toHaveTitle("Create an account · Siklon");
+    await expect(page.getByRole("radio", { name: "English" })).toBeChecked();
+    await champ(page, "Email address").fill(email);
+    await champ(page, "Password").fill(MOT_DE_PASSE);
+    await page.getByRole("button", { name: "Create my account" }).click();
+
+    await expect(page).toHaveURL("/en/compte");
+    await expect(texteVisible(page, "Not confirmed")).toBeVisible();
+    const langueDuCompte = page.getByRole("main").getByRole("definition").filter({ hasText: /^(English|Français)$/ });
+    await expect(langueDuCompte).toHaveText("English");
+    await expect(texteVisible(page, "Follows the language chosen at the bottom of the page.")).toBeVisible();
+
+    await page.getByRole("contentinfo").getByRole("link", { name: "Français" }).click();
+    await expect(page).toHaveURL("/fr/compte");
+    await expect(page.getByRole("main").getByRole("definition").filter({ hasText: /^(English|Français)$/ })).toHaveText(
+      "Français",
+    );
+  });
+
+  test("une erreur de connexion s'affiche en anglais", async ({ page }, testInfo) => {
+    await page.goto("/en/compte/connexion");
+    await champ(page, "Email address").fill(nouvelEmail(testInfo));
+    await champ(page, "Password").fill("mauvais mot de passe");
+    await envoyer(page, "Sign in");
+    await expect(alerte(page)).toHaveText("Incorrect email or password.");
+  });
+
+  test("la page Compte en anglais, connecté, respecte WCAG AA", async ({ page }, testInfo) => {
+    await page.goto("/en/compte/inscription");
+    await champ(page, "Email address").fill(nouvelEmail(testInfo));
+    await champ(page, "Password").fill(MOT_DE_PASSE);
+    await page.getByRole("button", { name: "Create my account" }).click();
+    await expect(page.getByRole("heading", { name: "My islands" })).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+});
