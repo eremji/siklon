@@ -161,3 +161,93 @@ test.describe("en anglais (US-10)", () => {
     expect(violations, "fiche").toEqual([]);
   });
 });
+
+// US-17 : saison à risque. Assertions valables sur la fixture e2e comme sur la vraie base HURDAT2.
+test.describe("saison à risque (US-17)", () => {
+  const bloc = (page: Page) => page.getByRole("region", { name: "Saison à risque" });
+  const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+  test("le bloc résume les passages par mois au-dessus de la liste", async ({ page }) => {
+    await page.goto("/iles/guadeloupe/historique");
+    await expect(bloc(page).getByRole("heading", { level: 2, name: "Saison à risque" })).toBeVisible();
+    await expect(
+      bloc(page).getByText(
+        /^((\d+ passages sur \d+|Tous les passages) ont eu lieu (en|entre) .+\.|Le seul passage a eu lieu en .+\.|Aucun cyclone n'est passé près de l'île depuis 1966\.)/,
+      ),
+    ).toBeVisible();
+    const valeurs = MOIS.map((mois) => `${mois} \\d+`).join(", ");
+    await expect(bloc(page).getByRole("img", { name: new RegExp(`^Passages à moins de ${RADIUS_IMPACT_KM} km de Pointe-à-Pitre, par mois : ${valeurs}\\.$`) })).toBeVisible();
+    await expect(bloc(page).locator("[data-mois]")).toHaveCount(12);
+    await expect(bloc(page).getByText("Saison officielle : 1er juin au 30 novembre")).toBeVisible();
+    await expect(bloc(page).getByText(/^Source : HURDAT2, NHC\. Import du \d{1,2} \S+ \d{4}\.$/)).toBeVisible();
+
+    // Au-dessus de la liste.
+    await attendreResultats(page);
+    const hautBloc = (await bloc(page).boundingBox())!.y;
+    const hautListe = (await entrees(page).first().boundingBox())!.y;
+    expect(hautBloc).toBeLessThan(hautListe);
+  });
+
+  test("le tableau des 12 mois reprend les chiffres du graphique et de la mention", async ({ page }) => {
+    await page.goto("/iles/guadeloupe/historique");
+    await bloc(page).getByText("Afficher le tableau des 12 mois").click();
+    const tableau = bloc(page).getByRole("table", { name: /^Passages à moins de \d+ km de Pointe-à-Pitre, par mois, de 1966 à \d{4}$/ });
+    await expect(tableau).toBeVisible();
+    const lignes = tableau.getByRole("row");
+    await expect(lignes).toHaveCount(13);
+    await expect(lignes.nth(6)).toContainText("Juin");
+    await expect(lignes.nth(6)).toContainText("oui");
+    await expect(lignes.nth(1)).toContainText("non");
+
+    const comptes = (await tableau.locator("tbody tr td:first-of-type").allTextContents()).map(Number);
+    expect(comptes).toEqual((await bloc(page).locator("[data-mois]").allTextContents()).map(Number));
+    const total = comptes.reduce((a, b) => a + b, 0);
+    await expect(
+      bloc(page).getByText(new RegExp(`^${total} cyclones? passés? à moins de ${RADIUS_IMPACT_KM} km de Pointe-à-Pitre, de 1966 à \\d{4}, comptés au mois de leur plus proche passage \\(heure locale\\)\\.$`)),
+    ).toBeVisible();
+  });
+
+  test("le bloc ne dépend pas des filtres de la liste", async ({ page }) => {
+    await page.goto("/iles/guadeloupe/historique");
+    // Le bloc arrive en streaming : attendre ses 12 barres avant de les lire.
+    await expect(bloc(page).locator("[data-mois]")).toHaveCount(12);
+    const sansFiltre = await bloc(page).locator("[data-mois]").allTextContents();
+    await page.goto("/iles/guadeloupe/historique?categorie=5&de=2000");
+    await attendreResultats(page);
+    await expect(bloc(page).locator("[data-mois]")).toHaveText(sansFiltre);
+  });
+
+  test("le bloc s'affiche pour les 13 îles", async ({ page }) => {
+    await page.goto("/historique");
+    const liens = page.getByRole("main").getByRole("listitem").getByRole("link");
+    await expect(liens).toHaveCount(13);
+    const adresses = await liens.evaluateAll((elements) => elements.map((a) => a.getAttribute("href")!));
+    for (const adresse of adresses) {
+      await page.goto(adresse);
+      await expect(bloc(page).locator("[data-mois]"), adresse).toHaveCount(12);
+    }
+  });
+
+  test("le bloc existe en anglais", async ({ page }) => {
+    await page.goto("/en/iles/guadeloupe/historique");
+    const risque = page.getByRole("region", { name: "Risk season" });
+    await expect(risque.getByText("Official season: 1 June to 30 November")).toBeVisible();
+    await risque.getByText("Show the 12-month table").click();
+    await expect(risque.getByRole("table", { name: /^Passages within \d+ km of Pointe-à-Pitre, by month, from 1966 to \d{4}$/ })).toBeVisible();
+    await expect(risque.getByText(/^Source: HURDAT2, NHC\. Imported on \d{1,2} \S+ \d{4}\.$/)).toBeVisible();
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`le bloc et son tableau respectent WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/iles/guadeloupe/historique");
+      await bloc(page).getByText("Afficher le tableau des 12 mois").click();
+      await expect(bloc(page).getByRole("table")).toBeVisible();
+      const { violations } = await new AxeBuilder({ page })
+        .include("main section")
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(violations).toEqual([]);
+    });
+  }
+});
