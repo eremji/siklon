@@ -1,5 +1,6 @@
 import { LienNhc } from "@/components/LienNhc";
 import { AlerteObsolescence } from "@/components/systemes/AlerteObsolescence";
+import { EchecMiseAJourNhc } from "@/components/systemes/EchecMiseAJourNhc";
 import { Pastille } from "@/components/systemes/Pastille";
 import { RADIUS_WATCH_KM } from "@/lib/constantes";
 import { type Ile, nomIle, nomVille } from "@/lib/iles";
@@ -92,6 +93,7 @@ export function MenaceIle({
   const nom = nomIle(ile, langue);
   return (
     <div className="flex flex-col gap-3">
+      <EchecMiseAJourNhc langue={langue} flux={flux} />
       <p className="text-base">{textes.rayon(RADIUS_WATCH_KM, nomVille(ile, langue), JOURS_PREVUS)}</p>
       <Incompletude sansPrevision={sansPrevision} rejetes={flux.rejetes} langue={langue} />
       {menaces.length > 0 ? (

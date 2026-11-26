@@ -7,6 +7,7 @@ import type { Prevision } from "@/lib/nhc/previsions";
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { SYSTEMES } from "@/lib/textes/systemes";
 import { AlerteObsolescence } from "./AlerteObsolescence";
+import { EchecMiseAJourNhc } from "./EchecMiseAJourNhc";
 import { Pastille } from "./Pastille";
 
 function Source({ systemes, luLe, langue }: { systemes: SystemeActif[]; luLe: string; langue: Langue }) {
@@ -44,6 +45,7 @@ export function ListeSystemes({
   const { systemes, rejetes } = flux;
   return (
     <div className="flex flex-col gap-3">
+      <EchecMiseAJourNhc langue={langue} flux={flux} />
       {rejetes > 0 && (
         <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
           {liste.rejetes(rejetes)} {liste.consultez} <LienNhc />.
