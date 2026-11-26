@@ -157,3 +157,58 @@ test.describe("page d'une île (US-21)", () => {
     expect(resultats.violations).toEqual([]);
   });
 });
+
+test.describe("image d'aperçu du lien partagé (US-21)", () => {
+  /**
+   * Image annoncée par la page (og:image) telle que la lit l'aperçu de WhatsApp : Next sert aux robots
+   * les métadonnées dans le HTML même. L'hôte de l'adresse vient du build ; seul son chemin est gardé.
+   */
+  async function apercuAnnonce(request: import("@playwright/test").APIRequestContext, chemin: string) {
+    const html = await (await request.get(chemin, { headers: { "user-agent": "WhatsApp/2.23.20.0" } })).text();
+    const meta = (propriete: string) => {
+      const valeurs = [...html.matchAll(new RegExp(`<meta property="${propriete}" content="([^"]*)"`, "g"))].map((m) => m[1]);
+      expect(valeurs, `une seule balise ${propriete}`).toHaveLength(1);
+      return valeurs[0].replaceAll("&amp;", "&");
+    };
+    const url = new URL(meta("og:image"));
+    return { chemin: `${url.pathname}${url.search}`, largeur: meta("og:image:width"), hauteur: meta("og:image:height") };
+  }
+
+  /** Dimensions lues dans l'en-tête PNG (IHDR). */
+  const dimensionsPng = (octets: Buffer) => ({ largeur: octets.readUInt32BE(16), hauteur: octets.readUInt32BE(20) });
+
+  test("la page d'une île annonce à WhatsApp une image PNG 1200 × 630 qui suit le dernier bulletin", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureNhc(context, baseURL);
+    await context.addCookies([{ name: "siklon-fixture-vigilance", value: "rouge", url: baseURL ?? "http://localhost:3000" }]);
+    const apercu = await apercuAnnonce(page.request, "/fr/iles/guadeloupe");
+    expect(apercu).toMatchObject({ largeur: "1200", hauteur: "630" });
+    expect(apercu.chemin).toMatch(/^\/fr\/iles\/guadeloupe\/opengraph-image/);
+    const rouge = await page.request.get(apercu.chemin);
+    expect(rouge.status()).toBe(200);
+    expect(rouge.headers()["content-type"]).toBe("image/png");
+    // Un aperçu figé dans les caches ne suivrait plus le bulletin.
+    expect(rouge.headers()["cache-control"] ?? "").not.toContain("immutable");
+    const octetsRouge = await rouge.body();
+    expect(dimensionsPng(octetsRouge)).toEqual({ largeur: 1200, hauteur: 630 });
+
+    // Nouveau bulletin : la même adresse d'image donne le nouvel état.
+    await context.addCookies([{ name: "siklon-fixture-vigilance", value: "vert", url: baseURL ?? "http://localhost:3000" }]);
+    const vert = await page.request.get(apercu.chemin);
+    expect(vert.status()).toBe(200);
+    expect(Buffer.compare(await vert.body(), octetsRouge)).not.toBe(0);
+  });
+
+  test("la fiche d'un système annonce à WhatsApp une image PNG 1200 × 630", async ({ page, context, baseURL }) => {
+    await fixtureNhc(context, baseURL);
+    const apercu = await apercuAnnonce(page.request, "/fr/systemes/al112026");
+    expect(apercu).toMatchObject({ largeur: "1200", hauteur: "630" });
+    const reponse = await page.request.get(apercu.chemin);
+    expect(reponse.status()).toBe(200);
+    expect(reponse.headers()["content-type"]).toBe("image/png");
+    expect(dimensionsPng(await reponse.body())).toEqual({ largeur: 1200, hauteur: 630 });
+  });
+});

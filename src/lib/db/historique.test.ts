@@ -142,6 +142,8 @@ describe("remplacerHistorique", () => {
       fichier: "hurdat2-1851-2024-040425.txt",
       versionNhc: "2025-04-04",
       nbTempetes: 3,
+      // Dernière saison du fichier (US-17 : « de 1966 à 2017 »).
+      derniereAnnee: 2017,
     });
   });
 
