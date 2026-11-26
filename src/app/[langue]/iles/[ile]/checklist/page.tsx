@@ -13,11 +13,15 @@ import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireElementsCoches, lireElementsMasques, lireElementsPerso } from "@/lib/db/checklist";
 import { connexionComptes } from "@/lib/db/pool";
 import { alertesNhcEnCours, vigilanceEnCours } from "@/lib/ecranAccueil/alerteEnCours";
-import { type Emprise, type FichierVigilance, ILES, type Ile, trouverIle } from "@/lib/iles";
+import { type Emprise, type FichierVigilance, ILES, type Ile, nomIle, trouverIle } from "@/lib/iles";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import type { Langue } from "@/lib/langues";
 import { alertesNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDemandee } from "@/lib/nhc/source";
 import { niveauNhc, niveauVigilance } from "@/lib/notifications/evenements";
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
+import { ALERTE } from "@/lib/textes/alerte";
+import { CHECKLIST } from "@/lib/textes/checklist";
 import { vigilanceAffichee } from "@/lib/vigilance/source";
 import {
   ajouterElementChecklist,
@@ -34,8 +38,10 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const langue = await langueDeLaPage();
+  const textes = CHECKLIST[langue].page;
   const ile = trouverIle((await params).ile);
-  return { title: ile ? `Checklist de préparation : ${ile.nom} · Siklon` : "Île introuvable · Siklon" };
+  return { title: ile ? textes.titreOnglet(nomIle(ile, langue)) : textes.introuvable };
 }
 
 // État de la checklist de l'utilisateur connecté, null pour un visiteur. Si la base des comptes ne
@@ -67,7 +73,7 @@ async function compteChecklist(): Promise<CompteChecklist> {
 }
 
 // Une seule lecture de la vigilance par requête : elle alimente l'en-tête et le choix de la liste.
-async function ChecklistMeteoFrance({ ile, fichier }: { ile: Ile; fichier: FichierVigilance }) {
+async function ChecklistMeteoFrance({ ile, fichier, langue }: { ile: Ile; fichier: FichierVigilance; langue: Langue }) {
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
   const [etat, compte] = await Promise.all([
@@ -76,24 +82,28 @@ async function ChecklistMeteoFrance({ ile, fichier }: { ile: Ile; fichier: Fichi
   ]);
   return (
     <>
-      {/* La checklist reste en français jusqu'à sa traduction (US-10, livraison 7). */}
-      <BandeauVigilance langue="fr" nomIle={ile.nom} fichier={fichier} etat={etat} />
+      <BandeauVigilance langue={langue} nomIle={nomIle(ile, langue)} fichier={fichier} etat={etat} />
       <PropositionEcranAccueil alerteEnCours={vigilanceEnCours(etat)} />
-      <Checklist nomIle={ile.nom} source="meteo-france" niveau={niveauVigilance(etat)?.niveau ?? null} compte={compte} />
+      <Checklist
+        langue={langue}
+        nomIle={nomIle(ile, langue)}
+        source="meteo-france"
+        niveau={niveauVigilance(etat)?.niveau ?? null}
+        compte={compte}
+      />
     </>
   );
 }
 
-async function ChecklistNhc({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
+async function ChecklistNhc({ ile, emprise, langue }: { ile: Ile; emprise: Emprise; langue: Langue }) {
   await connection();
   const fixture = fixtureNhcDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE_NHC)?.value);
   const [etat, compte] = await Promise.all([alertesNhc(fixture, emprise), compteChecklist()]);
   return (
     <>
-      {/* La checklist reste en français jusqu'à sa traduction (US-10, livraison 7). */}
-      <AlertesNhc langue="fr" nomIle={ile.nom} etat={etat} />
+      <AlertesNhc langue={langue} nomIle={nomIle(ile, langue)} etat={etat} />
       <PropositionEcranAccueil alerteEnCours={alertesNhcEnCours(etat)} />
-      <Checklist nomIle={ile.nom} source="nhc" niveau={niveauNhc(etat)?.niveau ?? null} compte={compte} />
+      <Checklist langue={langue} nomIle={nomIle(ile, langue)} source="nhc" niveau={niveauNhc(etat)?.niveau ?? null} compte={compte} />
     </>
   );
 }
@@ -102,6 +112,9 @@ async function ChecklistNhc({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
 async function ChecklistIle({ params }: Pick<Props, "params">) {
   const ile = trouverIle((await params).ile);
   if (!ile) notFound();
+  const langue = await langueDeLaPage();
+  const textes = CHECKLIST[langue].page;
+  const nom = nomIle(ile, langue);
 
   return (
     <>
@@ -109,29 +122,30 @@ async function ChecklistIle({ params }: Pick<Props, "params">) {
         href={`/iles/${ile.slug}`}
         className="flex min-h-11 items-center text-base text-accent underline underline-offset-4"
       >
-        {ile.nom} : menaces en cours
+        {ALERTE[langue].page.menaces(nom)}
       </Lien>
       <Suspense
         fallback={
-          <EnTeteIle nomIle={ile.nom}>
-            <p className="text-base">Chargement du niveau d&apos;alerte…</p>
+          <EnTeteIle nomIle={nom}>
+            <p className="text-base">{textes.chargementNiveau}</p>
           </EnTeteIle>
         }
       >
         {ile.alerte.source === "nhc" ? (
-          <ChecklistNhc ile={ile} emprise={ile.alerte.emprise} />
+          <ChecklistNhc ile={ile} emprise={ile.alerte.emprise} langue={langue} />
         ) : (
-          <ChecklistMeteoFrance ile={ile} fichier={ile.alerte.fichier} />
+          <ChecklistMeteoFrance ile={ile} fichier={ile.alerte.fichier} langue={langue} />
         )}
       </Suspense>
     </>
   );
 }
 
-export default function PageChecklist({ params }: Props) {
+export default async function PageChecklist({ params }: Props) {
+  const textes = CHECKLIST[await langueDeLaPage()].page;
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <Suspense fallback={<p className="text-base text-muted">Chargement de l&apos;île…</p>}>
+      <Suspense fallback={<p className="text-base text-muted">{textes.chargement}</p>}>
         <ChecklistIle params={params} />
       </Suspense>
       <MentionOfficielle />

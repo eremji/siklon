@@ -3,24 +3,28 @@
 // est enregistré ; en cas d'échec, elle revient en arrière et le message est annoncé.
 import { useState, useTransition } from "react";
 import type { ResultatCoche } from "@/app/[langue]/iles/[ile]/checklist/actions";
-
-const ECHEC_RESEAU = "Enregistrement impossible. Vérifiez votre connexion et réessayez.";
+import { useLangue } from "@/components/langue/ContexteLangue";
+import type { Langue } from "@/lib/langues";
+import { CHECKLIST } from "@/lib/textes/checklist";
 
 export function CaseElement({ id, texte, cocheInitiale, cocher }: {
   id: string;
   texte: string;
   cocheInitiale: boolean;
-  cocher: (element: string, coche: boolean) => Promise<ResultatCoche>;
+  cocher: (element: string, coche: boolean, langue: Langue) => Promise<ResultatCoche>;
 }) {
   const [coche, setCoche] = useState(cocheInitiale);
   const [erreur, setErreur] = useState<string | null>(null);
   const [, demarrer] = useTransition();
+  const langue = useLangue();
 
   function basculer(nouvelle: boolean) {
     setCoche(nouvelle);
     setErreur(null);
     demarrer(async () => {
-      const resultat = await cocher(id, nouvelle).catch((): ResultatCoche => ({ ok: false, message: ECHEC_RESEAU }));
+      const resultat = await cocher(id, nouvelle, langue).catch(
+        (): ResultatCoche => ({ ok: false, message: CHECKLIST[langue].formulaire.echecReseau }),
+      );
       if (!resultat.ok) {
         setCoche(!nouvelle);
         setErreur(resultat.message);
