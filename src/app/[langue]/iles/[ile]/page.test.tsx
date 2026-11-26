@@ -5,7 +5,7 @@ vi.mock("next/root-params", () => ({ langue: async () => racine.langue }));
 // Lecture du flux NHC (serveur seulement) : couverte par ses propres tests et par les e2e.
 vi.mock("@/lib/nhc/lecture", () => ({ fluxNhc: vi.fn(), positionsNhc: vi.fn() }));
 // Lecture de l'alerte de l'île pour le partage (US-21), serveur seulement : couverte par les e2e.
-vi.mock("@/lib/partage/chargement", () => ({ chargerAlerteIle: vi.fn() }));
+vi.mock("@/lib/partage/chargement", () => ({ chargerPartageIle: vi.fn(), fixturesDemandees: vi.fn() }));
 
 import { generateMetadata } from "./page";
 
