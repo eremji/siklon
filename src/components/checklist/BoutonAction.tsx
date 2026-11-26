@@ -3,6 +3,7 @@
 // supprimer). Fonctionne sans JavaScript ; l'échec éventuel est annoncé sous le bouton.
 import { useActionState } from "react";
 import type { EtatAction } from "@/app/[langue]/iles/[ile]/checklist/actions";
+import { ChampLangueInterface } from "@/components/langue/ContexteLangue";
 
 export function BoutonAction({ action, champs, libelle, description }: {
   action: (etat: EtatAction, donnees: FormData) => Promise<EtatAction>;
@@ -17,6 +18,7 @@ export function BoutonAction({ action, champs, libelle, description }: {
       {Object.entries(champs).map(([nom, valeur]) => (
         <input key={nom} type="hidden" name={nom} value={valeur} />
       ))}
+      <ChampLangueInterface />
       <button
         type="submit"
         aria-label={description}

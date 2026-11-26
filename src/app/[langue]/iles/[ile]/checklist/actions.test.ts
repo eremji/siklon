@@ -204,3 +204,57 @@ describe("supprimerElementChecklist", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 });
+
+describe("messages en anglais (US-10)", () => {
+  const SESSION_EXPIREE_EN = "Your session has expired. Sign in again to save your checklist.";
+  const ELEMENT_INCONNU_EN = "This item is not part of the checklist.";
+
+  it("répond dans la langue de la page à une case cochée", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await cocherElementChecklist("orange-carburant", true, "en")).toEqual({ ok: false, message: SESSION_EXPIREE_EN });
+    expect(await cocherElementPersoChecklist("id-1", true, "en")).toEqual({ ok: false, message: SESSION_EXPIREE_EN });
+
+    utilisateurCourant.mockResolvedValue(utilisateur);
+    expect(await cocherElementChecklist("vert-eau", "oui" as unknown as boolean, "en")).toEqual({
+      ok: false,
+      message: ELEMENT_INCONNU_EN,
+    });
+  });
+
+  it("garde le français pour une langue inconnue", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await cocherElementChecklist("orange-carburant", true, "de" as "en")).toEqual({ ok: false, message: SESSION_EXPIREE });
+  });
+
+  it("lit la langue du formulaire (champ caché langueInterface)", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await masquerElementChecklist(null, formulaire({ element: "x", masque: "1", langueInterface: "en" }))).toEqual({
+      message: SESSION_EXPIREE_EN,
+    });
+    expect(await ajouterElementChecklist(null, formulaire({ texte: "Dog food", langueInterface: "en" }))).toEqual({
+      message: SESSION_EXPIREE_EN,
+      texte: "Dog food",
+    });
+
+    utilisateurCourant.mockResolvedValue(utilisateur);
+    base.supprimer.mockRejectedValue(new ElementInconnuError("id-1"));
+    expect(await supprimerElementChecklist(null, formulaire({ id: "id-1", langueInterface: "en" }))).toEqual({
+      message: ELEMENT_INCONNU_EN,
+    });
+  });
+
+  it("explique en anglais un texte refusé et la limite atteinte", async () => {
+    utilisateurCourant.mockResolvedValue(utilisateur);
+    base.ajouter.mockRejectedValueOnce(new TexteInvalideError());
+    expect(await ajouterElementChecklist(null, formulaire({ texte: " ", langueInterface: "en" }))).toEqual({
+      message: "Write an item of 1 to 200 characters.",
+      texte: " ",
+    });
+
+    base.ajouter.mockRejectedValueOnce(new LimiteAtteinteError());
+    expect(await ajouterElementChecklist(null, formulaire({ texte: "One too many", langueInterface: "en" }))).toEqual({
+      message: "You have already added 50 items. Delete one to add another.",
+      texte: "One too many",
+    });
+  });
+});

@@ -29,7 +29,7 @@ export class LimiteAtteinteError extends Error {
 }
 
 const ELEMENTS = new Set(
-  Object.values(CHECKLISTS).flatMap(({ sections }) => sections.flatMap(({ elements }) => elements.map(({ id }) => id))),
+  Object.values(CHECKLISTS.fr).flatMap(({ sections }) => sections.flatMap(({ elements }) => elements.map(({ id }) => id))),
 );
 
 export function estElementDeBase(element: string): boolean {

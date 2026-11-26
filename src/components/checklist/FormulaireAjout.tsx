@@ -3,6 +3,8 @@
 // comme un formulaire classique ; en cas de refus, la saisie est gardée et le message annoncé.
 import { useActionState } from "react";
 import type { EtatAction } from "@/app/[langue]/iles/[ile]/checklist/actions";
+import { ChampLangueInterface, useLangue } from "@/components/langue/ContexteLangue";
+import { CHECKLIST } from "@/lib/textes/checklist";
 
 // Identifiants fixes : le champ n'existe que sur la page de la checklist (pas de useId, CLAUDE.md).
 const CHAMP = "ajout-element-checklist";
@@ -13,10 +15,12 @@ export function FormulaireAjout({ action, longueurMax }: {
   longueurMax: number;
 }) {
   const [etat, envoyer, enCours] = useActionState(action, null);
+  const textes = CHECKLIST[useLangue()].formulaire;
   return (
     <form action={envoyer} className="flex flex-col gap-2">
+      <ChampLangueInterface />
       <label htmlFor={CHAMP} className="text-base font-bold">
-        Ajouter un élément
+        {textes.ajouterUnElement}
       </label>
       <div className="flex gap-2">
         <input
@@ -35,7 +39,7 @@ export function FormulaireAjout({ action, longueurMax }: {
           disabled={enCours}
           className="min-h-12 shrink-0 cursor-pointer rounded-full bg-accent px-5 text-base font-bold text-on-accent disabled:cursor-wait disabled:opacity-60"
         >
-          Ajouter
+          {textes.ajouter}
         </button>
       </div>
       {etat?.message && (
