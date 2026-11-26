@@ -36,6 +36,11 @@ describe("DessinApercu (US-21)", () => {
     }
   });
 
+  it("écrit tout le dessin en Atkinson Hyperlegible, la police de DESIGN.md", () => {
+    const { container } = render(<DessinApercu apercu={APERCU} />);
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("Atkinson Hyperlegible");
+  });
+
   it("met le niveau sur la couleur de la vigilance pour une alerte réelle", () => {
     render(<DessinApercu apercu={APERCU} />);
     const pastille = screen.getByText("Vigilance rouge · Protégez-vous");

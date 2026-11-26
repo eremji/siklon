@@ -8,6 +8,7 @@ import { LANGUE_PAR_DEFAUT, estLangue } from "@/lib/langues";
 import { apercuIle } from "@/lib/partage/apercu";
 import { chargerPartageIle, fixturesDemandees } from "@/lib/partage/chargement";
 import { CACHE_APERCU, DessinApercu, TAILLE_APERCU } from "@/lib/partage/DessinApercu";
+import { POLICES_APERCU } from "@/lib/partage/polices";
 import { PARTAGE } from "@/lib/textes/partage";
 
 type Parametres = { langue: string; ile: string };
@@ -27,6 +28,7 @@ export default async function Image({ params }: { params: Promise<Parametres> })
   const { menaces, alerte } = await chargerPartageIle(ile, fixturesDemandees(await cookies()));
   return new ImageResponse(<DessinApercu apercu={apercuIle(ile, menaces, alerte, langue, new Date())} />, {
     ...TAILLE_APERCU,
+    fonts: POLICES_APERCU,
     headers: { "cache-control": CACHE_APERCU },
   });
 }

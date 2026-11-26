@@ -7,6 +7,9 @@ import { COULEURS_APERCU as C } from "./couleurs";
 
 export const TAILLE_APERCU = { width: 1200, height: 630 } as const;
 
+/** Police de DESIGN.md ; ses fichiers sont fournis à next/og par polices.ts. */
+export const POLICE_APERCU = "Atkinson Hyperlegible";
+
 /**
  * next/og sert ses images « immutable » pour un an : un aperçu doit au contraire suivre le dernier
  * bulletin : cinq minutes de cache partagé au plus.
@@ -53,6 +56,7 @@ export function DessinApercu({ apercu }: { apercu: Apercu }) {
         padding: "44px 60px 36px",
         background: C.fond,
         color: C.texte,
+        fontFamily: POLICE_APERCU,
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
