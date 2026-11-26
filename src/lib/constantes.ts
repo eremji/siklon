@@ -14,3 +14,13 @@ export const QUOTA_EMAILS_JOUR = 300;
 
 /** Part du quota quotidien jamais prise par les alertes : les e-mails de connexion restent prioritaires. */
 export const RESERVE_EMAILS_AUTH = 50;
+
+/** Saison cyclonique officielle de l'Atlantique (NHC), bornes incluses ; mois de 1 à 12 (US-17, US-18). */
+export const DEBUT_SAISON = { mois: 6, jour: 1 } as const;
+export const FIN_SAISON = { mois: 11, jour: 30 } as const;
+
+/** Première saison comptée par « Saison à risque » (US-17) : début de l'ère satellite, données plus fiables. */
+export const ANNEE_DEBUT_SAISON_RISQUE = 1966;
+
+/** Part des passages que la phrase de « Saison à risque » regroupe dans la plus courte suite de mois (US-17). */
+export const PART_SAISON_RISQUE = 0.75;
