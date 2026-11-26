@@ -191,3 +191,13 @@ describe("ListeSystemes en anglais (US-10)", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("NHC data is temporarily unavailable. See nhc.noaa.gov.");
   });
 });
+
+describe("ListeSystemes quand le NHC ne répond plus (US-11)", () => {
+  it("montre la dernière donnée connue et avertit que la mise à jour a échoué (US-11)", () => {
+    const echecLe = "2026-09-10T17:00:00.000Z";
+    render(<ListeSystemes langue="fr" flux={{ etat: "ok", systemes: [systeme({})], rejetes: 0, luLe, echecLe }} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("La mise à jour des données du NHC a échoué.");
+    expect(screen.getByRole("link", { name: "Kyle" })).toBeInTheDocument();
+  });
+});
