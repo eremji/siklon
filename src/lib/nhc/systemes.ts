@@ -70,7 +70,7 @@ export function categorieSaffirSimpson(ventKt: number): 1 | 2 | 3 | 4 | 5 | null
   return index === -1 ? null : ((5 - index) as 1 | 2 | 3 | 4 | 5);
 }
 
-export function descriptionSysteme(systeme: SystemeActif, langue: Langue): string {
+export function descriptionSysteme(systeme: Pick<SystemeActif, "classification" | "ventKt">, langue: Langue): string {
   const type = libelleType(systeme.classification, langue);
   const categorie = systeme.classification === "HU" ? categorieSaffirSimpson(systeme.ventKt) : null;
   if (!categorie) return type;

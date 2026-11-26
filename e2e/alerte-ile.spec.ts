@@ -172,3 +172,45 @@ for (const colorScheme of ["light", "dark"] as const) {
     });
   }
 }
+
+test.describe("en anglais (US-10)", () => {
+  test("la vigilance est traduite et garde son terme d'origine Météo-France", async ({ page, context, baseURL }) => {
+    await fixtureVigilance(context, baseURL, "orange");
+    await page.goto("/en/iles/guadeloupe/alerte");
+
+    await expect(page).toHaveTitle("Current alert: Guadeloupe · Siklon");
+    const entete = enteteIle(page, "Guadeloupe");
+    await expect(entete.getByText("Orange vigilance")).toBeVisible();
+    await expect(entete.getByText("Get prepared")).toBeVisible();
+    await expect(entete.getByText("(Vigilance orange · Préparez-vous)")).toHaveAttribute("lang", "fr");
+    await expect(page.getByText("Source: Météo-France, updated 9 November at 5:42 am (Atlantic Standard Time, UTC−4).")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Guadeloupe: current threats" })).toHaveAttribute("href", "/en/iles/guadeloupe");
+
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+
+  test("le warning NHC garde son terme d'origine seul, et le système est décrit en anglais", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureNhc(context, baseURL, "actifs");
+    await page.goto("/en/iles/dominique/alerte");
+
+    const entete = enteteIle(page, "Dominica");
+    await expect(entete.getByText("Hurricane Warning", { exact: true })).toBeVisible();
+    await expect(entete.getByText("(Hurricane Warning)")).toHaveCount(0);
+    await expect(entete.getByText("Hurricane conditions expected, generally within 36 hours.")).toBeVisible();
+
+    const alertes = page.getByRole("list", { name: "NHC watches and warnings in effect" }).getByRole("listitem");
+    await expect(alertes).toHaveCount(1);
+    await expect(alertes.first().getByRole("link", { name: "Kyle" })).toHaveAttribute("href", "/en/systemes/al112026");
+    await expect(alertes.first()).toContainText("Kyle (Category 4 hurricane)");
+    await expect(alertes.first().getByText("NHC advisory 14, issued 10 September at 11:00 am.")).toBeVisible();
+    await expect(page.getByText(/^Source: NHC, data read .+ \(Atlantic Standard Time, UTC−4\)\.$/)).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(violations).toEqual([]);
+  });
+});

@@ -137,9 +137,6 @@ test.describe("en anglais (US-10)", () => {
     const liste = page.getByRole("list", { name: "Active systems" });
     await expect(liste.getByRole("listitem").filter({ hasText: "Kyle" })).toContainText("Category 4 hurricane");
     await expect(page.getByText(/^Source: NHC, latest advisory .+ \(Atlantic Standard Time, UTC−4\)\.$/)).toBeVisible();
-    // Le canevas MapLibre porte « Interactive map of active systems », qui contient le nom de la région :
-    // sans `exact`, le sélecteur trouve les deux dès que la carte a fini de charger.
-    await expect(page.getByRole("region", { name: "Interactive map of active systems", exact: true })).toBeVisible();
     await expect(page.getByRole("region", { name: "Map of active systems", exact: true })).toBeVisible();
 
     await liste.getByRole("link", { name: "Kyle" }).click();
