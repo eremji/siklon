@@ -15,7 +15,8 @@ import { type SegmentAlerte, lireWatchWarning } from "./watches";
 
 export const COOKIE_FIXTURE = "siklon-fixture-nhc";
 
-const NOMS_FIXTURES = ["actifs", "vide", "indisponible"] as const;
+// « ancien » : le NHC ne répond pas, la page montre la dernière lecture réussie, d'une heure (US-11).
+const NOMS_FIXTURES = ["actifs", "vide", "indisponible", "ancien"] as const;
 export type NomFixture = (typeof NOMS_FIXTURES)[number];
 
 export function fixtureDemandee(
@@ -26,14 +27,23 @@ export function fixtureDemandee(
   return NOMS_FIXTURES.find((nom) => nom === demande) ?? "actifs";
 }
 
+const HEURE_MS = 3_600_000;
+
 export function etatFixture(nom: NomFixture, luLe: string): EtatFlux {
   if (nom === "indisponible") return { etat: "indisponible", luLe };
+  if (nom === "ancien") {
+    const lu = new Date(Date.parse(luLe) - HEURE_MS).toISOString();
+    return { etat: "ok", ...lireCurrentStorms(actifs), luLe: lu, echecLe: luLe };
+  }
   return { etat: "ok", ...lireCurrentStorms(nom === "actifs" ? actifs : vide), luLe };
 }
 
-// Avec « actifs », seul Kyle (AT1) a une trajectoire et un cône publiés.
+// « ancien » montre les mêmes systèmes que « actifs », lus une heure plus tôt.
+const avecKyle = (nom: NomFixture) => nom === "actifs" || nom === "ancien";
+
+// Avec « actifs » (et « ancien »), seul Kyle (AT1) a une trajectoire et un cône publiés.
 export function previsionsFixture(nom: NomFixture): Record<string, Prevision> {
-  if (nom !== "actifs") return {};
+  if (!avecKyle(nom)) return {};
   const cone = lireCone(coneKyle, "AT1")!;
   const trajectoire = lireTrajectoire(trajectoireKyle, "AT1")!;
   return { al112026: { avis: cone.avis, cone: cone.polygones, trajectoire: trajectoire.lignes } };
@@ -41,13 +51,13 @@ export function previsionsFixture(nom: NomFixture): Record<string, Prevision> {
 
 // Avec « actifs », seul Kyle (AT1) a des positions prévues publiées (US-03).
 export function positionsFixture(nom: NomFixture): Record<string, PositionsPrevues> {
-  if (nom !== "actifs") return {};
+  if (!avecKyle(nom)) return {};
   return { al112026: lirePositionsPrevues(pointsKyle, "AT1")! };
 }
 
 // Avec « actifs », Kyle (AT1) et Thirteen (AT3) ont des watches/warnings publiés (US-06b),
 // lus par le même lecteur que la couche réelle.
 export function watchesFixture(nom: NomFixture): (emplacement: string) => Promise<SegmentAlerte[]> {
-  const couches: Record<string, unknown> = nom === "actifs" ? { AT1: watchesKyle, AT3: watchesThirteen } : {};
+  const couches: Record<string, unknown> = avecKyle(nom) ? { AT1: watchesKyle, AT3: watchesThirteen } : {};
   return async (emplacement) => (couches[emplacement] ? lireWatchWarning(couches[emplacement], emplacement) : []);
 }

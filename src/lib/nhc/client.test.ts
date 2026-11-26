@@ -61,13 +61,14 @@ describe("chargerSystemesActifs", () => {
   });
 
   it("lit le flux par la source fournie (cache partagé) et garde son heure de lecture", async () => {
-    const lire = vi.fn(async () => ({ systemes: [], rejetes: 0, luLe: "2026-09-10T15:59:30.000Z" }));
+    const lu = { systemes: [], rejetes: 0, luLe: "2026-09-10T15:59:30.000Z", brut: { activeStorms: [] } };
+    const lire = vi.fn(async () => lu);
 
     const resultat = await chargerSystemesActifs({ maintenant, lire });
 
     expect(lire).toHaveBeenCalledOnce();
     expect(fetchSimule).not.toHaveBeenCalled();
-    expect(resultat).toEqual({ etat: "ok", systemes: [], rejetes: 0, luLe: "2026-09-10T15:59:30.000Z" });
+    expect(resultat).toEqual({ etat: "ok", ...lu });
   });
 
   it("signale le flux indisponible quand la source échoue", async () => {
@@ -75,6 +76,56 @@ describe("chargerSystemesActifs", () => {
 
     expect(resultat).toEqual({ etat: "indisponible", luLe: "2026-09-10T16:00:00.000Z" });
     expect(warn).toHaveBeenCalled();
+  });
+
+  it("garde la réponse brute du NHC, à mémoriser comme dernière lecture réussie (US-11)", async () => {
+    fetchSimule.mockResolvedValue(reponse(JSON.stringify(actifs)));
+
+    const resultat = await chargerSystemesActifs({ maintenant });
+
+    expect(resultat.etat === "ok" && resultat.brut).toEqual(actifs);
+  });
+
+  describe("quand le NHC ne répond pas, dernière lecture réussie (US-11)", () => {
+    const echec = () => Promise.reject(new Error("HTTP 503"));
+
+    it("rend la dernière donnée connue avec son heure de lecture et l'heure de l'échec", async () => {
+      const secours = vi.fn(async () => ({ contenu: actifs, luLe: "2026-09-10T12:00:00.000Z" }));
+
+      const resultat = await chargerSystemesActifs({ maintenant, lire: echec, secours });
+
+      expect(resultat).toMatchObject({
+        etat: "ok",
+        rejetes: 0,
+        luLe: "2026-09-10T12:00:00.000Z",
+        echecLe: "2026-09-10T16:00:00.000Z",
+      });
+      expect(resultat.etat === "ok" && resultat.systemes.map((s) => s.nom)).toEqual(["Kyle", "Leah", "Thirteen"]);
+      expect(warn).toHaveBeenCalled();
+    });
+
+    it("ne la lit pas quand le NHC répond", async () => {
+      const secours = vi.fn(async () => null);
+
+      const resultat = await chargerSystemesActifs({
+        maintenant,
+        lire: async () => ({ systemes: [], rejetes: 0, luLe: "2026-09-10T15:59:30.000Z", brut: { activeStorms: [] } }),
+        secours,
+      });
+
+      expect(secours).not.toHaveBeenCalled();
+      expect(resultat).not.toHaveProperty("echecLe");
+    });
+
+    it.each([
+      ["aucune lecture n'a jamais réussi", async () => null],
+      ["la base ne répond pas non plus", () => Promise.reject(new Error("ECONNREFUSED"))],
+      ["la lecture gardée n'est plus lisible", async () => ({ contenu: { storms: [] }, luLe: "2026-09-10T12:00:00.000Z" })],
+    ])("signale le flux indisponible quand %s", async (_cas, secours) => {
+      const resultat = await chargerSystemesActifs({ maintenant, lire: echec, secours });
+
+      expect(resultat).toEqual({ etat: "indisponible", luLe: "2026-09-10T16:00:00.000Z" });
+    });
   });
 
   it("ne recopie pas la réponse reçue dans le journal", async () => {

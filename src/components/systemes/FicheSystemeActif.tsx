@@ -4,6 +4,7 @@ import type { EtatFlux } from "@/lib/nhc/client";
 import type { Langue } from "@/lib/langues";
 import { formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur";
 import { SYSTEMES } from "@/lib/textes/systemes";
+import { EchecMiseAJourNhc } from "./EchecMiseAJourNhc";
 import { FicheSysteme } from "./FicheSysteme";
 
 /** Fiche d'un système selon l'état du flux NHC : disponible, système disparu, ou flux indisponible. */
@@ -21,11 +22,20 @@ export function FicheSystemeActif({ langue, flux, id }: { langue: Langue; flux: 
     );
   }
 
+  const echec = <EchecMiseAJourNhc langue={langue} flux={flux} />;
   const systeme = flux.systemes.find((candidat) => candidat.id === id);
-  if (systeme) return <FicheSysteme langue={langue} systeme={systeme} />;
+  if (systeme) {
+    return (
+      <>
+        {echec}
+        <FicheSysteme langue={langue} systeme={systeme} />
+      </>
+    );
+  }
 
   return (
     <>
+      {echec}
       <h1 className="text-3xl font-bold">{fiche.introuvable}</h1>
       <p className="rounded-2xl bg-surface p-4 text-base">{fiche.plusSuivi}</p>
       <Lien href="/" className="flex min-h-11 items-center text-base text-accent underline underline-offset-4">
