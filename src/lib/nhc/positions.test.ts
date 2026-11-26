@@ -214,3 +214,54 @@ describe("chargerToutesPositions", () => {
     expect(Object.keys(toutes)).toEqual(["al112026"]);
   });
 });
+
+describe("chargerToutesPositions : dernières positions connues (US-11)", () => {
+  const maintenant = () => new Date("2026-09-10T20:00:00.000Z");
+  const kyle = lirePositionsPrevues(points, "AT1")!;
+  const systemes = [
+    { id: "al112026", emplacement: "AT1" },
+    { id: "al122026", emplacement: "AT2" },
+  ];
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("rend les dernières positions connues d'un système dont la lecture échoue, avec l'heure de l'échec", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const source = vi.fn(async (emplacement: string) => {
+      if (emplacement === "AT1") throw new Error("HTTP 503");
+      return null;
+    });
+    const secours = vi.fn(async () => ({ contenu: kyle, luLe: "2026-09-10T18:00:00.000Z" }));
+
+    const toutes = await chargerToutesPositions(systemes, source, { secours, maintenant });
+
+    expect(secours).toHaveBeenCalledOnce();
+    expect(secours).toHaveBeenCalledWith("al112026");
+    expect(toutes).toEqual({ al112026: { ...kyle, echecLe: "2026-09-10T20:00:00.000Z" } });
+  });
+
+  it("ne la lit pas pour des positions lues ou simplement pas publiées", async () => {
+    const source = vi.fn(async (emplacement: string) => (emplacement === "AT1" ? kyle : null));
+    const secours = vi.fn(async () => null);
+
+    expect(await chargerToutesPositions(systemes, source, { secours, maintenant })).toEqual({ al112026: kyle });
+    expect(secours).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["aucune lecture n'a jamais réussi", async () => null],
+    ["la base ne répond pas non plus", () => Promise.reject(new Error("ECONNREFUSED"))],
+    ["une position gardée est hors bornes", async () => ({
+      contenu: { ...kyle, positions: [{ ...kyle.positions[0], lat: 120 }] },
+      luLe: "2026-09-10T18:00:00.000Z",
+    })],
+    ["l'avis gardé est invalide", async () => ({ contenu: { ...kyle, avis: { numero: 14 } }, luLe: "x" })],
+  ])("ne donne rien pour ce système quand %s", async (_cas, secours) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const source = async () => {
+      throw new Error("HTTP 503");
+    };
+
+    expect(await chargerToutesPositions(systemes.slice(0, 1), source, { secours, maintenant })).toEqual({});
+  });
+});

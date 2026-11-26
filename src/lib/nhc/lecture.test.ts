@@ -13,7 +13,7 @@ vi.mock("@/lib/db/pool", () => ({ connexion: () => baseLecture }));
 const lireDerniereLecture = vi.fn();
 vi.mock("@/lib/db/dernieresLectures", () => ({ lireDerniereLecture }));
 
-const { alertesNhc, fluxNhc, fluxNhcEnDirect, positionsNhc } = await import("./lecture");
+const { alertesNhc, fluxNhc, fluxNhcEnDirect, positionsNhc, positionsNhcEnDirect } = await import("./lecture");
 
 const DOMINIQUE = { slug: "dominique", emprise: { latMin: 15.18, latMax: 15.67, lonMin: -61.51, lonMax: -61.22 } };
 
@@ -157,8 +157,33 @@ describe("positionsNhc : positions prévues des systèmes actifs, par le cache p
   it("écarte un système dont la lecture en cache échoue, sans lever d'erreur", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     positionsEnCache.mockRejectedValue(new Error("HTTP 503"));
+    lireDerniereLecture.mockResolvedValue(null);
 
     expect(await positionsNhc(null, systemes)).toEqual({});
+  });
+
+  it("rend les dernières positions connues d'un système, gardées en base, quand sa lecture échoue (US-11)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const gardees = { avis: { numero: "13", emisLe: "2026-09-10T09:00:00.000Z" }, positions: [] };
+    positionsEnCache.mockImplementation(async (emplacement: string) => {
+      if (emplacement === "AT1") throw new Error("HTTP 503");
+      return null;
+    });
+    lireDerniereLecture.mockResolvedValue({ contenu: gardees, luLe: "2026-09-10T10:00:00.000Z" });
+
+    const lues = await positionsNhc(null, systemes, maintenant);
+
+    expect(lireDerniereLecture).toHaveBeenCalledWith(baseLecture, "positions:al112026");
+    expect(lues).toEqual({ al112026: { ...gardees, echecLe: "2026-09-10T16:00:00.000Z" } });
+  });
+
+  it("en direct (vérification des alertes), ne rend jamais des positions anciennes", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    positionsEnCache.mockRejectedValue(new Error("HTTP 503"));
+    lireDerniereLecture.mockReset();
+
+    expect(await positionsNhcEnDirect(null, systemes)).toEqual({});
+    expect(lireDerniereLecture).not.toHaveBeenCalled();
   });
 
   it("lit la fixture demandée sans toucher au cache ni au réseau", async () => {

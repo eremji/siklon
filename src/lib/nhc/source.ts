@@ -50,9 +50,13 @@ export function previsionsFixture(nom: NomFixture): Record<string, Prevision> {
 }
 
 // Avec « actifs », seul Kyle (AT1) a des positions prévues publiées (US-03).
+// Avec « ancien », la lecture des positions a échoué aussi : ce sont les dernières connues (US-11).
+const ECHEC_POSITIONS_FIXTURE = "2026-09-10T18:00:00.000Z";
+
 export function positionsFixture(nom: NomFixture): Record<string, PositionsPrevues> {
   if (!avecKyle(nom)) return {};
-  return { al112026: lirePositionsPrevues(pointsKyle, "AT1")! };
+  const kyle = lirePositionsPrevues(pointsKyle, "AT1")!;
+  return { al112026: nom === "ancien" ? { ...kyle, echecLe: ECHEC_POSITIONS_FIXTURE } : kyle };
 }
 
 // Avec « actifs », Kyle (AT1) et Thirteen (AT3) ont des watches/warnings publiés (US-06b),

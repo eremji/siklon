@@ -1,7 +1,7 @@
 // Vérification planifiée des alertes (US-07) : lit les sources, détecte les événements de chaque île
 // (entrée d'un système dans le rayon, changement de niveau d'alerte) et prévient ceux qui la suivent.
 // Appelée chaque minute (route /api/alertes/verifier) ; mémorise aussi le flux NHC, les niveaux de
-// vigilance et les alertes NHC lus en direct (US-11).
+// vigilance, les alertes NHC et les positions prévues lus en direct (US-11).
 // Deux vérifications simultanées ne préviennent qu'une fois : le niveau est enregistré par
 // compare-and-set, chaque envoi réservé par canal.
 import { enregistrerLecture } from "../db/dernieresLectures";
@@ -126,6 +126,18 @@ async function memoriserAlertesNhc(db: Executeur, alertesNhcLues: Map<string, Et
   }
 }
 
+/** Mémorise les positions prévues lues en direct de chaque système (US-11), jamais des positions de secours. */
+async function memoriserPositions(db: Executeur, positions: Record<string, PositionsPrevues>) {
+  for (const [id, lues] of Object.entries(positions)) {
+    if (lues.echecLe) continue;
+    try {
+      await enregistrerLecture(db, `positions:${id}`, lues, new Date().toISOString());
+    } catch (erreur) {
+      console.error(`[alertes] dernières positions de ${id} non mémorisées (${typeErreur(erreur)})`);
+    }
+  }
+}
+
 /**
  * Enregistre le niveau observé s'il diffère du dernier connu, et rend l'événement à notifier.
  * Le premier niveau connu d'une île est enregistré ; il n'est notifié que s'il y a une alerte.
@@ -188,5 +200,6 @@ export async function verifierAlertes(
   }
   await memoriserVigilances(db, vigilances);
   await memoriserAlertesNhc(db, alertesNhcLues);
+  await memoriserPositions(db, positions);
   return bilan;
 }

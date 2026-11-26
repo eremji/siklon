@@ -236,3 +236,33 @@ describe("MenaceIle quand le NHC ne répond plus (US-11)", () => {
     expect(screen.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" })).toBeInTheDocument();
   });
 });
+
+describe("MenaceIle quand les positions prévues d'un système ne répondent plus (US-11)", () => {
+  beforeEach(() => vi.useFakeTimers({ now: new Date("2026-09-10T19:00:00.000Z") }));
+  afterEach(() => vi.useRealTimers());
+
+  const anciennes = { al112026: { ...positionsKyle.al112026, echecLe: "2026-09-10T18:00:00.000Z" } };
+
+  it("garde l'estimation calculée sur les dernières positions connues et nomme le système concerné", () => {
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={anciennes} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "La mise à jour des positions prévues du NHC a échoué pour Kyle : son estimation est calculée sur la dernière donnée connue.",
+    );
+    expect(screen.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" })).toHaveTextContent("Dans environ 12 h");
+  });
+
+  it("existe en anglais", () => {
+    render(<MenaceIle langue="en" ile={guadeloupe} flux={ok([systeme()])} positions={anciennes} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The NHC forecast positions update failed for Kyle: its estimate uses the last known data.",
+    );
+  });
+
+  it("n'avertit pas quand les positions sont à jour", () => {
+    render(<MenaceIle langue="fr" ile={guadeloupe} flux={ok([systeme()])} positions={positionsKyle} />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
