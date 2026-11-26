@@ -31,7 +31,7 @@ export type ResultatAuth = { ok: true; corps?: unknown } | { ok: false; message:
  * Appelle une route Better Auth au nom du visiteur (cookie et IP), puis recopie les cookies de
  * session dans la réponse de la server action. À n'appeler que depuis une server action.
  */
-export async function appelerAuth(chemin: string, corps: object): Promise<ResultatAuth> {
+export async function appelerAuth(chemin: string, corps: object, langue: Langue): Promise<ResultatAuth> {
   const entetes = await headers();
   const { baseURL } = configurationAuth(process.env);
   const reponse = await auth().handler(requeteAuth(baseURL, chemin, corps, entetes));
@@ -39,7 +39,7 @@ export async function appelerAuth(chemin: string, corps: object): Promise<Result
   for (const { nom, valeur, options } of cookiesDeLaReponse(reponse.headers)) magasin.set(nom, valeur, options);
   if (reponse.ok) return { ok: true, corps: await reponse.json().catch(() => undefined) };
   const contenu: unknown = await reponse.json().catch(() => ({}));
-  return { ok: false, message: messageErreur(reponse.status, contenu, reponse.headers) };
+  return { ok: false, message: messageErreur(reponse.status, contenu, reponse.headers, langue) };
 }
 
 /**
@@ -54,13 +54,13 @@ export function retourFournisseur(requete: Request): Promise<Response> {
  * Confirme l'adresse avec le jeton du lien reçu par email. Route GET de Better Auth : on l'appelle
  * côté serveur, depuis la server action du bouton « Confirmer mon adresse ».
  */
-export async function confirmerEmail(jeton: string): Promise<ResultatAuth> {
+export async function confirmerEmail(jeton: string, langue: Langue): Promise<ResultatAuth> {
   try {
     await auth().api.verifyEmail({ query: { token: jeton }, headers: await headers() });
     return { ok: true };
   } catch (erreur) {
     if (!(erreur instanceof APIError)) throw erreur;
-    return { ok: false, message: messageErreur(erreur.statusCode, erreur.body, new Headers()) };
+    return { ok: false, message: messageErreur(erreur.statusCode, erreur.body, new Headers(), langue) };
   }
 }
 
@@ -84,3 +84,16 @@ export async function utilisateurCourant(): Promise<UtilisateurCourant | null> {
   const motDePasse = comptes.some((compte) => compte.providerId === "credential");
   return { id, email, emailVerifie: emailVerified, motDePasse, langue: langue as Langue };
 }
+
+/**
+ * Langue du compte connecté (emails, notifications) : suit la bascule de langue du site (US-10).
+ * Renvoie faux sans session. Lit la requête : à appeler depuis une route ou une server action.
+ */
+export async function changerLangueCompte(langue: Langue): Promise<boolean> {
+  const entetes = await headers();
+  const session = await auth().api.getSession({ headers: entetes });
+  if (!session) return false;
+  if (session.user.langue !== langue) await auth().api.updateUser({ body: { langue }, headers: entetes });
+  return true;
+}
+

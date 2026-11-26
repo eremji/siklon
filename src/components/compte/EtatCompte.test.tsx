@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { EtatCompte } from "./EtatCompte";
@@ -12,6 +13,7 @@ const actions = {
   desabonnerAppareil: vi.fn(),
   enregistrerAlertesEmail: vi.fn(),
   clePubliqueVapid: null,
+  langue: "fr" as const,
 };
 
 describe("EtatCompte", () => {
@@ -108,3 +110,37 @@ describe("EtatCompte", () => {
     expect(screen.getByRole("button", { name: "Me reconnecter avec Google" })).toBeInTheDocument();
   });
 });
+
+describe("EtatCompte en anglais (US-10)", () => {
+  const anglais = { ...actions, langue: "en" as const };
+  const rendre = (element: ReactNode) => render(<FournisseurLangue langue="en">{element}</FournisseurLangue>);
+
+  it("sans session, invite à se connecter en anglais", () => {
+    rendre(<EtatCompte utilisateur={null} {...anglais} />);
+    expect(
+      screen.getByText("All cyclone information is available without an account. An account lets you follow your islands and receive alerts."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/en/compte/connexion");
+    expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/en/compte/inscription");
+  });
+
+  it("connecté, résume le compte en anglais et dit que la langue suit le choix du pied de page", () => {
+    rendre(
+      <EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: false, motDePasse: true, langue: "en" }} {...anglais} />,
+    );
+    expect(screen.getByText("Email address")).toBeInTheDocument();
+    expect(screen.getByText("Not confirmed")).toBeInTheDocument();
+    expect(screen.getByText("Message language")).toBeInTheDocument();
+    expect(screen.getByText("Follows the language chosen at the bottom of the page.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Confirm my address" })).toBeInTheDocument();
+    expect(screen.getByText("Open the link sent to your email address. Alerts are only sent to a confirmed address.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+  });
+
+  it("adresse confirmée, en anglais", () => {
+    rendre(<EtatCompte utilisateur={{ id: "id-1", email: "a@b.fr", emailVerifie: true, motDePasse: true, langue: "en" }} {...anglais} />);
+    expect(screen.getByText("Confirmed")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Alerts on this device" })).toBeInTheDocument();
+  });
+});
+
