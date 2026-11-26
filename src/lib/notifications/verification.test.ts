@@ -154,7 +154,7 @@ describe("changement du niveau d'alerte d'une île", () => {
       alertes: [
         {
           code: "HWA",
-          systeme: { id: "al112026", nom: "Kyle", description: "Ouragan" },
+          systeme: { id: "al112026", nom: "Kyle", classification: "HU", ventKt: 120 },
           avis: { numero: "12", emisLe: "2026-09-10T15:00:00.000Z" },
         },
       ],

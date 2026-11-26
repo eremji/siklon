@@ -14,7 +14,7 @@ describe("BandeauVigilance", () => {
     ["violet", "Vigilance violette", "Confinez-vous", "bg-vig-violet text-on-vig-fonce"],
     ["gris", "Vigilance grise", "Restez prudents", "bg-vig-gris text-on-vig-fonce"],
   ] as const)("affiche le niveau %s en toutes lettres, avec sa consigne et sa couleur", (niveau, libelle, consigne, classes) => {
-    render(<BandeauVigilance {...guadeloupe} etat={{ etat: "ok", niveau, misAJour }} />);
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "ok", niveau, misAJour }} />);
 
     const entete = screen.getByRole("heading", { level: 1, name: "Guadeloupe" }).closest("header")!;
     expect(within(entete).getByText(libelle)).toBeInTheDocument();
@@ -23,17 +23,17 @@ describe("BandeauVigilance", () => {
   });
 
   it("indique qu'aucune alerte n'est en cours en vigilance verte", () => {
-    render(<BandeauVigilance {...guadeloupe} etat={{ etat: "ok", niveau: "vert", misAJour }} />);
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "ok", niveau: "vert", misAJour }} />);
     expect(screen.getByText("Aucune alerte en cours pour Guadeloupe.")).toBeInTheDocument();
   });
 
   it("n'annonce pas l'absence d'alerte quand une vigilance est en cours", () => {
-    render(<BandeauVigilance {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour }} />);
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour }} />);
     expect(screen.queryByText(/Aucune alerte en cours/)).not.toBeInTheDocument();
   });
 
   it("affiche la source et l'heure de mise à jour Météo-France, à l'heure des Antilles", () => {
-    render(<BandeauVigilance {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour }} />);
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour }} />);
 
     expect(screen.getByText("Source : Météo-France, mise à jour du 9 novembre à 05 h 42 (heure des Antilles françaises).")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toHaveAttribute(
@@ -43,7 +43,7 @@ describe("BandeauVigilance", () => {
   });
 
   it("renvoie vers la page de vigilance outre-mer de l'île, pas vers celle de l'Hexagone", () => {
-    render(<BandeauVigilance nomIle="Martinique" fichier="CDPV85TFFF" etat={{ etat: "indisponible" }} />);
+    render(<BandeauVigilance langue="fr" nomIle="Martinique" fichier="CDPV85TFFF" etat={{ etat: "indisponible" }} />);
     expect(screen.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toHaveAttribute(
       "href",
       "https://meteofrance.mq/fr/vigilance",
@@ -51,7 +51,7 @@ describe("BandeauVigilance", () => {
   });
 
   it("signale un flux indisponible sans afficher de niveau ni d'heure", () => {
-    render(<BandeauVigilance {...guadeloupe} etat={{ etat: "indisponible" }} />);
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "indisponible" }} />);
 
     const entete = screen.getByRole("heading", { level: 1, name: "Guadeloupe" }).closest("header")!;
     expect(within(entete).getByText("Niveau de vigilance indisponible")).toBeInTheDocument();
@@ -61,5 +61,41 @@ describe("BandeauVigilance", () => {
     expect(screen.queryByText(/mise à jour/)).not.toBeInTheDocument();
     expect(screen.getByText("Source : Météo-France.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Consulter la vigilance sur le site de Météo-France" })).toBeInTheDocument();
+  });
+});
+
+describe("BandeauVigilance en anglais (US-10)", () => {
+  it("traduit le niveau et la consigne, en gardant le terme d'origine de Météo-France en français", () => {
+    render(<BandeauVigilance langue="en" {...guadeloupe} etat={{ etat: "ok", niveau: "orange", misAJour }} />);
+
+    const entete = screen.getByRole("heading", { level: 1, name: "Guadeloupe" }).closest("header")!;
+    expect(within(entete).getByText("Orange vigilance")).toBeInTheDocument();
+    expect(within(entete).getByText("Get prepared")).toBeInTheDocument();
+    expect(within(entete).getByText("(Vigilance orange · Préparez-vous)")).toHaveAttribute("lang", "fr");
+    expect(entete).toHaveClass("bg-vig-orange");
+    expect(screen.queryByText(/No alert in effect/)).not.toBeInTheDocument();
+  });
+
+  it("indique en anglais qu'aucune alerte n'est en cours en vigilance verte", () => {
+    render(<BandeauVigilance langue="en" {...guadeloupe} etat={{ etat: "ok", niveau: "vert", misAJour }} />);
+    expect(screen.getByText("No alert in effect for Guadeloupe.")).toBeInTheDocument();
+  });
+
+  it("donne la source, l'heure de mise à jour et le lien vers Météo-France en anglais", () => {
+    render(<BandeauVigilance langue="en" {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour }} />);
+
+    expect(
+      screen.getByText("Source: Météo-France, updated 9 November at 5:42 am (Atlantic Standard Time, UTC−4)."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See the vigilance on the Météo-France website (in French)" })).toHaveAttribute(
+      "href",
+      "https://meteofrance.gp/fr/vigilance/guadeloupe",
+    );
+  });
+
+  it("signale en anglais un flux indisponible", () => {
+    render(<BandeauVigilance langue="en" {...guadeloupe} etat={{ etat: "indisponible" }} />);
+    expect(screen.getByText("Vigilance level unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Source: Météo-France.")).toBeInTheDocument();
   });
 });

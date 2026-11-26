@@ -20,7 +20,7 @@ describe("alerte en cours sur la page : la feuille cède la place au bandeau (US
       alertesNhcEnCours({
         etat: "ok",
         luLe,
-        alertes: [{ code: "TWA", systeme: { id: "al05", nom: "Ernesto", description: "" }, avis: { numero: "5", emisLe: luLe } }],
+        alertes: [{ code: "TWA", systeme: { id: "al05", nom: "Ernesto", classification: "TS", ventKt: 50 }, avis: { numero: "5", emisLe: luLe } }],
       }),
     ).toBe(true);
   });

@@ -77,7 +77,8 @@ async function ChecklistMeteoFrance({ ile, fichier }: { ile: Ile; fichier: Fichi
   ]);
   return (
     <>
-      <BandeauVigilance nomIle={ile.nom} fichier={fichier} etat={etat} />
+      {/* La checklist reste en français jusqu'à sa traduction (US-10, livraison 7). */}
+      <BandeauVigilance langue="fr" nomIle={ile.nom} fichier={fichier} etat={etat} />
       <PropositionEcranAccueil alerteEnCours={vigilanceEnCours(etat)} />
       <Checklist nomIle={ile.nom} source="meteo-france" niveau={niveauVigilance(etat)?.niveau ?? null} compte={compte} />
     </>
@@ -90,7 +91,8 @@ async function ChecklistNhc({ ile, emprise }: { ile: Ile; emprise: Emprise }) {
   const [etat, compte] = await Promise.all([alertesNhc(fixture, emprise), compteChecklist()]);
   return (
     <>
-      <AlertesNhc nomIle={ile.nom} etat={etat} />
+      {/* La checklist reste en français jusqu'à sa traduction (US-10, livraison 7). */}
+      <AlertesNhc langue="fr" nomIle={ile.nom} etat={etat} />
       <PropositionEcranAccueil alerteEnCours={alertesNhcEnCours(etat)} />
       <Checklist nomIle={ile.nom} source="nhc" niveau={niveauNhc(etat)?.niveau ?? null} compte={compte} />
     </>
