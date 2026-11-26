@@ -6,6 +6,7 @@ import { createECDH, randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateVAPIDKeys } from "web-push";
 import { enregistrerAbonnement } from "../db/abonnementsPush";
+import { lireDerniereLecture } from "../db/dernieresLectures";
 import { enregistrerIlesSuivies } from "../db/ilesSuivies";
 import { lireNiveauxIles } from "../db/notifications";
 import { type FichierVigilance, trouverIle } from "../iles";
@@ -232,5 +233,41 @@ describe("robustesse", () => {
     expect(enPanne).toHaveBeenCalledOnce();
     expect(service.recus).toEqual([guadeloupe.endpoint]);
     expect(bilan).toMatchObject({ envoyes: 1, echecs: 1 });
+  });
+});
+
+describe("dernière lecture réussie du flux NHC (US-11)", () => {
+  const ACTIFS = { ...etatFixture("actifs", LU_LE), brut: { activeStorms: [] } };
+
+  it("mémorise le flux lu en direct, pour que les pages le montrent si le NHC ne répond plus", async () => {
+    await verifier({ flux: ACTIFS }, servicePush().envoyer);
+
+    expect(await lireDerniereLecture(db, "nhc-systemes")).toEqual({ contenu: { activeStorms: [] }, luLe: LU_LE });
+  });
+
+  it("ne mémorise rien quand le NHC ne répond pas", async () => {
+    await verifier({ flux: { etat: "indisponible", luLe: LU_LE } }, servicePush().envoyer);
+
+    expect(await lireDerniereLecture(db, "nhc-systemes")).toBeNull();
+  });
+
+  it("vérifie les alertes même si la lecture ne peut pas être mémorisée", async () => {
+    const guadeloupe = await abonne(["guadeloupe"]);
+    const service = servicePush();
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+    const enPanne = {
+      query: (texte: string, params?: unknown[]) =>
+        texte.includes("dernieres_lectures") ? Promise.reject(new Error("base saturée")) : db.query(texte, params),
+    };
+    const jaune = { CDPV85TFFR: { etat: "ok", niveau: "jaune", misAJour: "2026-09-10T16:00:00.000Z" } as const };
+
+    const bilan = await verifierAlertes(enPanne, sources({ flux: ACTIFS, vigilance: jaune }), {
+      canaux: [service.envoyer],
+      base: BASE,
+    });
+
+    expect(service.recus).toEqual([guadeloupe.endpoint]);
+    expect(bilan.envoyes).toBe(1);
+    expect(journal.mock.calls.flat().join(" ")).toContain("[alertes]");
   });
 });

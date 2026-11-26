@@ -1,7 +1,9 @@
 // Vérification planifiée des alertes (US-07) : lit les sources, détecte les événements de chaque île
 // (entrée d'un système dans le rayon, changement de niveau d'alerte) et prévient ceux qui la suivent.
-// Appelée chaque minute (route /api/alertes/verifier). Deux vérifications simultanées ne préviennent
-// qu'une fois : le niveau est enregistré par compare-and-set, chaque envoi réservé par canal.
+// Appelée chaque minute (route /api/alertes/verifier) ; mémorise aussi le flux NHC lu (US-11).
+// Deux vérifications simultanées ne préviennent qu'une fois : le niveau est enregistré par
+// compare-and-set, chaque envoi réservé par canal.
+import { enregistrerLecture } from "../db/dernieresLectures";
 import type { Executeur } from "../db/historique";
 import { destinataires, enregistrerNiveau, lireNiveauxIles } from "../db/notifications";
 import { type Emprise, type FichierVigilance, ILES, type Ile } from "../iles";
@@ -79,6 +81,19 @@ async function observerNiveau(
 }
 
 /**
+ * Mémorise le flux lu en direct comme dernière lecture réussie (US-11) : les pages le montrent, avec son
+ * heure, quand le NHC ne répond plus. Une panne d'écriture n'empêche pas de vérifier les alertes.
+ */
+async function memoriserFlux(db: Executeur, flux: EtatFlux): Promise<void> {
+  if (flux.etat !== "ok" || flux.echecLe || flux.brut === undefined) return;
+  try {
+    await enregistrerLecture(db, "nhc-systemes", flux.brut, flux.luLe);
+  } catch (erreur) {
+    console.error(`[alertes] dernière lecture du flux NHC non mémorisée (${typeErreur(erreur)})`);
+  }
+}
+
+/**
  * Enregistre le niveau observé s'il diffère du dernier connu, et rend l'événement à notifier.
  * Le premier niveau connu d'une île est enregistré ; il n'est notifié que s'il y a une alerte.
  */
@@ -101,6 +116,7 @@ export async function verifierAlertes(
 ): Promise<BilanVerification> {
   const bilan: BilanVerification = { evenements: 0, envoyes: 0, echecs: 0 };
   const flux = await lireFlux(sources);
+  await memoriserFlux(db, flux);
   const systemes = flux.etat === "ok" ? flux.systemes : [];
   const positions = systemes.length > 0 ? await sources.positions(systemes) : {};
   const niveaux = await lireNiveauxIles(db);

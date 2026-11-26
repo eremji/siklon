@@ -8,8 +8,12 @@ const fluxEnCache = vi.fn();
 const watchesEnCache = vi.fn();
 const positionsEnCache = vi.fn();
 vi.mock("./cache", () => ({ fluxEnCache, positionsEnCache, watchesEnCache }));
+const baseLecture = { query: vi.fn() };
+vi.mock("@/lib/db/pool", () => ({ connexion: () => baseLecture }));
+const lireDerniereLecture = vi.fn();
+vi.mock("@/lib/db/dernieresLectures", () => ({ lireDerniereLecture }));
 
-const { alertesNhc, fluxNhc, positionsNhc } = await import("./lecture");
+const { alertesNhc, fluxNhc, fluxNhcEnDirect, positionsNhc } = await import("./lecture");
 
 const DOMINIQUE = { latMin: 15.18, latMax: 15.67, lonMin: -61.51, lonMax: -61.22 };
 
@@ -22,9 +26,30 @@ describe("fluxNhc : point d'entrée unique des pages vers le flux CurrentStorms"
   afterEach(() => {
     fluxEnCache.mockReset();
     watchesEnCache.mockReset();
+    lireDerniereLecture.mockReset();
     fetchSimule.mockReset();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it("rend la dernière lecture réussie, gardée en base, quand le NHC ne répond pas (US-11)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fluxEnCache.mockRejectedValue(new Error("HTTP 503"));
+    lireDerniereLecture.mockResolvedValue({ contenu: actifs, luLe: "2026-09-10T12:00:00.000Z" });
+
+    const flux = await fluxNhc(null, maintenant);
+
+    expect(lireDerniereLecture).toHaveBeenCalledWith(baseLecture, "nhc-systemes");
+    expect(flux).toMatchObject({ etat: "ok", luLe: "2026-09-10T12:00:00.000Z", echecLe: "2026-09-10T16:00:00.000Z" });
+  });
+
+  it("en direct (vérification des alertes), ne rend jamais une lecture ancienne", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fluxEnCache.mockRejectedValue(new Error("HTTP 503"));
+    lireDerniereLecture.mockResolvedValue({ contenu: actifs, luLe: "2026-09-10T12:00:00.000Z" });
+
+    expect(await fluxNhcEnDirect(null, maintenant)).toEqual({ etat: "indisponible", luLe: "2026-09-10T16:00:00.000Z" });
+    expect(lireDerniereLecture).not.toHaveBeenCalled();
   });
 
   it("lit le flux à travers le cache partagé, jamais directement", async () => {
