@@ -46,6 +46,8 @@ export interface DernierImport {
   versionNhc: string;
   nbTempetes: number;
   importeLe: Date;
+  /** Dernière saison présente dans la base, ou null si elle est vide. */
+  derniereAnnee: number | null;
 }
 
 /** Passages près d'une île, du plus récent au plus ancien ; la période porte sur la saison (année HURDAT2). */
@@ -89,7 +91,8 @@ export async function lireTempete(db: Executeur, id: string): Promise<TempeteHis
 export async function lireDernierImport(db: Executeur): Promise<DernierImport | null> {
   const { rows } = await db.query(
     `select fichier, to_char(version_nhc, 'YYYY-MM-DD') as "versionNhc", nb_tempetes as "nbTempetes",
-            importe_le as "importeLe"
+            importe_le as "importeLe",
+            (select max(annee) from public.hurdat2_tempetes) as "derniereAnnee"
        from public.hurdat2_imports order by id desc limit 1`,
   );
   return (rows[0] as DernierImport | undefined) ?? null;

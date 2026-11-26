@@ -231,8 +231,10 @@ de mon île, afin de savoir quand être le plus vigilant.
 - Le bloc cite HURDAT2, la période utilisée et la date du dernier import.
 - Les barres utilisent les jetons de DESIGN.md, jamais une couleur de
   vigilance.
-- À décider : période de référence (toute la base ou depuis 1966, ère
-  satellite) ; découpage en mois ou en demi-mois.
+- Période : de `ANNEE_DEBUT_SAISON_RISQUE` (1966, ère satellite) à la
+  dernière saison importée ; découpage en 12 mois ; la phrase cite la plus
+  courte suite de mois qui regroupe au moins `PART_SAISON_RISQUE` des
+  passages (« X passages sur 10 », chiffres exacts sous 10 passages).
 
 ### US-18 : Voir le bilan de la saison en cours et de la dernière saison terminée
 En tant que visiteur, je veux voir le bilan de la saison en cours et celui
@@ -330,6 +332,8 @@ Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.
 | `QUOTA_EMAILS_JOUR` | 300 | E-mails par jour de l'offre gratuite de Brevo (voir « Choix techniques »). |
 | `RESERVE_EMAILS_AUTH` | 50 | Part du quota quotidien jamais prise par les alertes (US-07) : au plus 250 e-mails d'alerte par jour (UTC), pour que les e-mails de confirmation et de réinitialisation restent prioritaires. |
 | `DEBUT_SAISON` · `FIN_SAISON` | 1er juin · 30 novembre | Saison cyclonique officielle de l'Atlantique (NHC), utilisée par US-17 et US-18. |
+| `ANNEE_DEBUT_SAISON_RISQUE` | 1966 | Première saison comptée par « Saison à risque » (US-17) : début de l'ère satellite, où les trajectoires sont plus fiables. |
+| `PART_SAISON_RISQUE` | 75 % | La phrase de « Saison à risque » (US-17) cite la plus courte suite de mois consécutifs qui regroupe au moins cette part des passages. |
 | `MOYENNE_TEMPETES_NOMMEES` | 14 | Moyenne annuelle 1991-2020 du bassin Atlantique publiée par la NOAA (US-18). |
 | `MOYENNE_OURAGANS` | 7 | Même source. |
 | `MOYENNE_OURAGANS_MAJEURS` | 3 | Même source ; catégorie 3 et plus. |
