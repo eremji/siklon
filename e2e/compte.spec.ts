@@ -372,8 +372,16 @@ async function simulerServicePush(page: Page) {
   });
 }
 
+// Le serveur peut écrire l'email de confirmation (after) avant que le navigateur ait reçu la réponse de
+// l'inscription, qui porte le cookie de session. Sous charge, suivre le lien à ce moment-là interrompait
+// l'inscription : la page Compte s'affichait déconnectée et le test attendait sa section jusqu'au délai
+// du test. On attend donc la réponse de l'inscription, puis le cookie de session, avant de suivre le lien.
 async function compteConfirme(page: Page, email: string) {
-  await inscrire(page, email);
+  await Promise.all([
+    page.waitForResponse((reponse) => reponse.request().method() === "POST" && reponse.url().includes("/compte/inscription")),
+    inscrire(page, email),
+  ]);
+  await expect.poll(async () => (await page.context().cookies()).some((cookie) => cookie.name.endsWith("session_token"))).toBe(true);
   await suivreLien(page, email, "Confirmez votre adresse email");
   await page.getByRole("button", { name: "Confirmer mon adresse" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Votre adresse est confirmée." })).toBeVisible();

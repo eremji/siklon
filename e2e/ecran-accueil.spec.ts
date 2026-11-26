@@ -88,11 +88,20 @@ test.describe("sur iPhone, dans Safari : la feuille du bas", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
+  // Pendant l'animation d'ouverture (translation de 220 ms), le rectangle mesuré flotte de quelques
+  // dix-millièmes de pixel (47,9999 au lieu de 48). On mesure donc la feuille immobile, au centième de pixel.
+  async function hauteurUneFoisOuverte(page: import("@playwright/test").Page, bouton: import("@playwright/test").Locator) {
+    await feuille(page).evaluate((el) => Promise.all(el.getAnimations().map((animation) => animation.finished)));
+    const boite = await bouton.boundingBox();
+    if (!boite) throw new Error("bouton introuvable");
+    return Math.round(boite.height * 100) / 100;
+  }
+
   test("se ferme avec « Plus tard » (48 px au moins)", async ({ page }) => {
     await dejaVenuUnAutreJour(page);
     await page.goto("/fr");
     const plusTard = feuille(page).getByRole("button", { name: "Plus tard" });
-    expect((await plusTard.boundingBox())?.height).toBeGreaterThanOrEqual(48);
+    expect(await hauteurUneFoisOuverte(page, plusTard)).toBeGreaterThanOrEqual(48);
     await plusTard.click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
@@ -101,7 +110,7 @@ test.describe("sur iPhone, dans Safari : la feuille du bas", () => {
     await dejaVenuUnAutreJour(page);
     await page.goto("/fr");
     const fermer = feuille(page).getByRole("button", { name: "Fermer" });
-    expect((await fermer.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    expect(await hauteurUneFoisOuverte(page, fermer)).toBeGreaterThanOrEqual(44);
     await fermer.click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
