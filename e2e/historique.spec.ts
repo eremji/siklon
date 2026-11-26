@@ -209,6 +209,8 @@ test.describe("saison à risque (US-17)", () => {
 
   test("le bloc ne dépend pas des filtres de la liste", async ({ page }) => {
     await page.goto("/iles/guadeloupe/historique");
+    // Le bloc arrive en streaming : attendre ses 12 barres avant de les lire.
+    await expect(bloc(page).locator("[data-mois]")).toHaveCount(12);
     const sansFiltre = await bloc(page).locator("[data-mois]").allTextContents();
     await page.goto("/iles/guadeloupe/historique?categorie=5&de=2000");
     await attendreResultats(page);
