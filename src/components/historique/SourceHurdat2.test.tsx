@@ -8,6 +8,7 @@ const dernierImport = {
   versionNhc: "2025-04-04",
   nbTempetes: 1991,
   importeLe: new Date("2026-11-04T20:00:00Z"),
+  derniereAnnee: 2024,
 };
 
 describe("SourceHurdat2", () => {

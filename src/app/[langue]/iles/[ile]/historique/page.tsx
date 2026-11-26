@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { FormulaireFiltres } from "@/components/historique/FormulaireFiltres";
 import { ListeHistorique } from "@/components/historique/ListeHistorique";
+import { SaisonRisque } from "@/components/historique/SaisonRisque";
 import { SourceHurdat2 } from "@/components/historique/SourceHurdat2";
-import { RADIUS_IMPACT_KM } from "@/lib/constantes";
+import { ANNEE_DEBUT_SAISON_RISQUE, RADIUS_IMPACT_KM } from "@/lib/constantes";
 import type { DernierImport, EntreeHistorique } from "@/lib/db/historique";
 import { chargerDernierImport, chargerPassages } from "@/lib/historique/chargement";
 import { lireFiltres } from "@/lib/historique/filtres";
+import { calculerSaison } from "@/lib/historique/saison";
 import { type Ile, ILES, nomIle, nomVille, trouverIle } from "@/lib/iles";
 import { langueDeLaPage } from "@/lib/langueDeLaPage";
 import type { Langue } from "@/lib/langues";
@@ -58,10 +61,36 @@ async function Contenu({ params, searchParams }: PageProps<"/[langue]/iles/[ile]
     <>
       <h1 className="text-3xl font-bold">{textes.titre(nomIle(ile, langue))}</h1>
       <p className="text-base">{textes.intro(RADIUS_IMPACT_KM, nomVille(ile, langue))}</p>
+      <Suspense fallback={null}>
+        <BlocSaison ile={ile} langue={langue} />
+      </Suspense>
       <Suspense fallback={<p className="text-base">{textes.chargement}</p>}>
         <Resultats ile={ile} langue={langue} searchParams={searchParams} />
       </Suspense>
     </>
+  );
+}
+
+/**
+ * Saison à risque (US-17) : toujours depuis ANNEE_DEBUT_SAISON_RISQUE, indépendante des filtres de la liste.
+ * Lue à chaque requête, par le cache partagé, jamais pendant le build (qui n'a pas de base).
+ */
+async function BlocSaison({ ile, langue }: { ile: Ile; langue: Langue }) {
+  await connection();
+  let entrees: EntreeHistorique[];
+  let dernierImport: DernierImport | null;
+  try {
+    [entrees, dernierImport] = await Promise.all([
+      chargerPassages({ ileSlug: ile.slug, anneeMin: ANNEE_DEBUT_SAISON_RISQUE }),
+      chargerDernierImport(),
+    ]);
+  } catch (erreur) {
+    // La liste, chargée à côté, affiche déjà le message d'indisponibilité.
+    console.error("Saison à risque indisponible :", erreur instanceof Error ? erreur.message : "erreur inconnue");
+    return null;
+  }
+  return (
+    <SaisonRisque saison={calculerSaison(entrees, ile.fuseau)} ile={ile} langue={langue} dernierImport={dernierImport} />
   );
 }
 

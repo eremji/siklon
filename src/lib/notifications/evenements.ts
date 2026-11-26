@@ -4,7 +4,7 @@
 import type { Ile } from "@/lib/iles";
 import type { EtatAlertesNhc } from "@/lib/nhc/alertes";
 import type { Menace, Passage } from "@/lib/nhc/menace";
-import { descriptionSysteme, type SystemeActif } from "@/lib/nhc/systemes";
+import type { SystemeActif } from "@/lib/nhc/systemes";
 import type { CodeAlerte } from "@/lib/nhc/watches";
 import type { Niveau } from "@/lib/vigilance/niveaux";
 import type { EtatVigilance } from "@/lib/vigilance/vigilance";
@@ -23,7 +23,8 @@ export interface EvenementRayon {
   /** Identifie l'alerte : une même clé n'est envoyée qu'une fois par canal. */
   cle: string;
   ile: Ile;
-  systeme: { id: string; nom: string; description: string };
+  // Classification et vent plutôt qu'une description : elle est rédigée dans la langue du destinataire (US-10).
+  systeme: Pick<SystemeActif, "id" | "nom" | "classification" | "ventKt">;
   passage: Passage;
   avis: SystemeActif["avis"];
 }
@@ -48,7 +49,7 @@ export function entreesRayon(ile: Ile, menaces: Menace<SystemeActif>[]): Eveneme
     type: "entree-rayon",
     cle: `rayon:${ile.slug}:${systeme.id}`,
     ile,
-    systeme: { id: systeme.id, nom: systeme.nom, description: descriptionSysteme(systeme, "fr") },
+    systeme: { id: systeme.id, nom: systeme.nom, classification: systeme.classification, ventKt: systeme.ventKt },
     passage,
     avis: systeme.avis,
   }));

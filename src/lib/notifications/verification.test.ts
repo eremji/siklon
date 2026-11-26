@@ -18,7 +18,7 @@ import { etatFixture, positionsFixture } from "../nhc/source";
 import { baseMigree } from "../test/poolPglite";
 import type { EtatVigilance } from "../vigilance/vigilance";
 import { envoyerPush } from "./push";
-import { type SourcesAlertes, verifierAlertes } from "./verification";
+import { type Canal, type SourcesAlertes, verifierAlertes } from "./verification";
 
 const DEMARRAGE_PGLITE_MS = 30_000;
 const BASE = "https://siklon.exemple";
@@ -39,12 +39,12 @@ afterEach(async () => {
 });
 
 /** Utilisateur à l'adresse confirmée, qui suit ces îles avec un appareil abonné. */
-async function abonne(iles: string[]): Promise<{ id: string; endpoint: string }> {
+async function abonne(iles: string[], langue: "fr" | "en" = "fr"): Promise<{ id: string; endpoint: string }> {
   const {
     rows: [{ id }],
   } = await db.query<{ id: string }>(
-    "insert into public.utilisateurs (nom, email, email_verifie, langue) values ('', $1, true, 'fr') returning id",
-    [`verif${++numero}@exemple.org`],
+    "insert into public.utilisateurs (nom, email, email_verifie, langue) values ('', $1, true, $2) returning id",
+    [`verif${++numero}@exemple.org`, langue],
   );
   await enregistrerIlesSuivies(db, id, iles);
   const ecdh = createECDH("prime256v1");
@@ -233,6 +233,32 @@ describe("robustesse", () => {
     expect(enPanne).toHaveBeenCalledOnce();
     expect(service.recus).toEqual([guadeloupe.endpoint]);
     expect(bilan).toMatchObject({ envoyes: 1, echecs: 1 });
+  });
+});
+
+describe("langue du compte (US-10)", () => {
+  it("prévient chaque abonné dans la langue de son compte", async () => {
+    const francais = await abonne(["guadeloupe"], "fr");
+    const anglais = await abonne(["guadeloupe"], "en");
+    const recues: { id: string; titre: string; lien: string; langue: string }[] = [];
+    const canal: Canal = async ({ destinataire, contenu }) => {
+      recues.push({ id: destinataire.id, titre: contenu.titre, lien: contenu.lien, langue: contenu.langue });
+      return { envoyes: 1, echecs: 0 };
+    };
+    const orange = { CDPV85TFFR: { etat: "ok", niveau: "orange", misAJour: "2026-09-10T16:00:00.000Z" } as const };
+
+    await verifierAlertes(db, sources(), { canaux: [canal], base: BASE });
+    await verifierAlertes(db, sources({ vigilance: orange }), { canaux: [canal], base: BASE });
+
+    expect(recues).toEqual([
+      { id: francais.id, titre: "Guadeloupe : Vigilance orange", lien: `${BASE}/fr/iles/guadeloupe/alerte`, langue: "fr" },
+      {
+        id: anglais.id,
+        titre: "Guadeloupe: Orange vigilance (Vigilance orange)",
+        lien: `${BASE}/en/iles/guadeloupe/alerte`,
+        langue: "en",
+      },
+    ]);
   });
 });
 

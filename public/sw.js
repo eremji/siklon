@@ -1,18 +1,24 @@
 // Service worker de Siklon (US-07) : affiche les alertes reçues par web push et, au clic, ouvre la
 // fiche concernée. Il ne met rien en cache. Le message vient de messagePush
-// (src/lib/notifications/push.ts) : { titre, texte, lien, etiquette }.
+// (src/lib/notifications/push.ts) : { titre, texte, lien, etiquette, langue }.
 
 const ALERTE_GENERIQUE = { titre: "Siklon : nouvelle alerte", texte: "Ouvrez Siklon pour voir l'alerte.", lien: "/" };
 
-// Seules les pages de Siklon s'ouvrent depuis une notification.
-function lienSiklon(lien) {
+// Langue du compte (US-10) : le français si elle manque ou n'est pas connue.
+function langueDuMessage(message) {
+  return message.langue === "en" || message.langue === "fr" ? message.langue : "fr";
+}
+
+// Seules les pages de Siklon s'ouvrent depuis une notification. Sinon l'accueil, dans la langue
+// donnée, ou sans langue (le proxy choisit celle du visiteur).
+function lienSiklon(lien, langue) {
   try {
     const url = new URL(lien, self.location.origin);
     if (url.origin === self.location.origin) return url.href;
   } catch {
     // Lien illisible : l'accueil.
   }
-  return new URL("/", self.location.origin).href;
+  return new URL(langue ? `/${langue}` : "/", self.location.origin).href;
 }
 
 function lireMessage(evenement) {
@@ -36,7 +42,10 @@ self.addEventListener("activate", (evenement) => {
 // Chaque message reçu affiche une notification, même illisible : le navigateur l'exige.
 self.addEventListener("push", (evenement) => {
   const message = lireMessage(evenement);
-  const options = { body: message.texte, lang: "fr", data: { lien: lienSiklon(message.lien) } };
+  const lang = langueDuMessage(message);
+  // Alerte générique : langue inconnue, l'accueil sans langue.
+  const lien = lienSiklon(message.lien, message === ALERTE_GENERIQUE ? undefined : lang);
+  const options = { body: message.texte, lang, data: { lien } };
   if (typeof message.etiquette === "string") options.tag = message.etiquette;
   evenement.waitUntil(self.registration.showNotification(message.titre, options));
 });

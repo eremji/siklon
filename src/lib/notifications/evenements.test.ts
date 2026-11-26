@@ -33,14 +33,14 @@ function alerte(code: AlerteNhc["code"], emisLe = AVIS.emisLe): AlerteNhc {
 }
 
 describe("entreesRayon", () => {
-  it("donne un événement par système dont la trajectoire passe dans le rayon de l'île", () => {
+  it("donne un événement par système dont la trajectoire passe dans le rayon de l'île, sans texte rédigé", () => {
     const evenements = entreesRayon(guadeloupe, [menace("al052026", "Kyle"), menace("al062026", "Lena")]);
 
     expect(evenements).toHaveLength(2);
     expect(evenements[0]).toMatchObject({
       type: "entree-rayon",
       ile: guadeloupe,
-      systeme: { id: "al052026", nom: "Kyle", description: "Ouragan de catégorie 3" },
+      systeme: { id: "al052026", nom: "Kyle", classification: "HU", ventKt: 100 },
       passage: { heure: "2026-09-12T06:00:00.000Z", distanceKm: 180 },
       avis: { numero: "12", emisLe: AVIS.emisLe, url: "https://www.nhc.noaa.gov/text/al052026.shtml" },
     });

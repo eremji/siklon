@@ -71,6 +71,42 @@ export const HISTORIQUE = traductions(
       colonnes: ["Date et heure", "Stade", "Position", "Vent maximal", "Pression"],
       atterrissage: " (atterrissage)",
     },
+    saison: {
+      titre: "Saison à risque",
+      mois: [
+        "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+      ],
+      initiales: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+      liste: (elements: string[]) =>
+        elements.length < 2 ? elements.join("") : `${elements.slice(0, -1).join(", ")} et ${elements.at(-1)}`,
+      tous: "Tous les passages",
+      surDix: (n: number) => `${n} passages sur 10`,
+      exact: (n: number, total: number) => `${n} passages sur ${total}`,
+      en: (mois: string) => `en ${mois}`,
+      entre: (debut: string, fin: string) => `entre ${debut} et ${fin}`,
+      ontEuLieu: (sujet: string, quand: string) => `${sujet} ont eu lieu ${quand}.`,
+      seul: (quand: string) => `Le seul passage a eu lieu ${quand}.`,
+      plusActif: (mois: string) => `Le mois le plus actif est ${mois}.`,
+      plusActifs: (mois: string) => `Les mois les plus actifs sont ${mois}.`,
+      aucun: (annee: number) => `Aucun cyclone n'est passé près de l'île depuis ${annee}.`,
+      graphique: (km: number, ville: string, valeurs: string) =>
+        `Passages à moins de ${km} km de ${ville}, par mois : ${valeurs}.`,
+      valeur: (mois: string, n: number) => `${mois} ${n}`,
+      jour: (jour: number, mois: string) => `${jour === 1 ? "1er" : jour} ${mois}`,
+      saisonOfficielle: (debut: string, fin: string) => `Saison officielle : ${debut} au ${fin}`,
+      afficherTableau: "Afficher le tableau des 12 mois",
+      legendeTableau: (km: number, ville: string, periode: string) =>
+        `Passages à moins de ${km} km de ${ville}, par mois, ${periode}`,
+      colonnes: ["Mois", "Passages", "Saison officielle"],
+      oui: "oui",
+      non: "non",
+      periode: (debut: number, fin: number | null) => (fin === null ? `depuis ${debut}` : `de ${debut} à ${fin}`),
+      mention: (n: number, km: number, ville: string, periode: string) =>
+        `${n} ${n > 1 ? "cyclones passés" : "cyclone passé"} à moins de ${km} km de ${ville}, ${periode}, ` +
+        `comptés au mois de leur plus proche passage (heure locale).`,
+      source: (date: string | null) => `Source : HURDAT2, NHC.${date ? ` Import du ${date}.` : ""}`,
+    },
     source: {
       version: (date: string) => `Source : base HURDAT2 du National Hurricane Center (NHC), version du ${date}.`,
       sansVersion: "Source : base HURDAT2 du National Hurricane Center (NHC).",
@@ -142,6 +178,42 @@ export const HISTORIQUE = traductions(
       legende: (n: number) => `Track points (${n}), times in UTC`,
       colonnes: ["Date and time", "Stage", "Position", "Maximum wind", "Pressure"],
       atterrissage: " (landfall)",
+    },
+    saison: {
+      titre: "Risk season",
+      mois: [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+      ],
+      initiales: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+      liste: (elements: string[]) =>
+        elements.length < 2 ? elements.join("") : `${elements.slice(0, -1).join(", ")} and ${elements.at(-1)}`,
+      tous: "All passages",
+      surDix: (n: number) => `${n} in 10 passages`,
+      exact: (n: number, total: number) => `${n} of ${total} passages`,
+      en: (mois: string) => `in ${mois}`,
+      entre: (debut: string, fin: string) => `between ${debut} and ${fin}`,
+      ontEuLieu: (sujet: string, quand: string) => `${sujet} took place ${quand}.`,
+      seul: (quand: string) => `The only passage took place ${quand}.`,
+      plusActif: (mois: string) => `The most active month is ${mois}.`,
+      plusActifs: (mois: string) => `The most active months are ${mois}.`,
+      aucun: (annee: number) => `No storm has passed near the island since ${annee}.`,
+      graphique: (km: number, ville: string, valeurs: string) =>
+        `Passages within ${km} km of ${ville}, by month: ${valeurs}.`,
+      valeur: (mois: string, n: number) => `${mois} ${n}`,
+      jour: (jour: number, mois: string) => `${jour} ${mois}`,
+      saisonOfficielle: (debut: string, fin: string) => `Official season: ${debut} to ${fin}`,
+      afficherTableau: "Show the 12-month table",
+      legendeTableau: (km: number, ville: string, periode: string) =>
+        `Passages within ${km} km of ${ville}, by month, ${periode}`,
+      colonnes: ["Month", "Passages", "Official season"],
+      oui: "yes",
+      non: "no",
+      periode: (debut: number, fin: number | null) => (fin === null ? `since ${debut}` : `from ${debut} to ${fin}`),
+      mention: (n: number, km: number, ville: string, periode: string) =>
+        `${n} ${n === 1 ? "storm" : "storms"} passed within ${km} km of ${ville}, ${periode}, ` +
+        `counted in the month of their closest approach (local time).`,
+      source: (date: string | null) => `Source: HURDAT2, NHC.${date ? ` Imported on ${date}.` : ""}`,
     },
     source: {
       version: (date: string) => `Source: National Hurricane Center (NHC) HURDAT2 database, version of ${date}.`,

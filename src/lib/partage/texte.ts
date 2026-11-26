@@ -18,7 +18,7 @@ export function nomComplet(systeme: SystemeActif, langue: Langue): string {
   return PARTAGE[langue].nomSysteme(libelleType(systeme.classification, langue), systeme.nom, categorie);
 }
 
-function deplacement({ deplacement }: SystemeActif, langue: Langue): string | null {
+export function deplacement({ deplacement }: SystemeActif, langue: Langue): string | null {
   const textes = PARTAGE[langue];
   if (!deplacement) return null;
   if (deplacement.vitesseMph === 0) return textes.stationnaire;

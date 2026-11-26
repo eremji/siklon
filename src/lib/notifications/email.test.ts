@@ -15,8 +15,9 @@ const BASE = "https://siklon.exemple";
 const CONTENU: ContenuNotification = {
   titre: "Haïti : Veille d'ouragan (Hurricane Watch)",
   corps: "Le NHC a émis pour l'île une veille d'ouragan (Hurricane Watch) : conditions possibles. Avis du 10 septembre à 11 h.",
-  lien: `${BASE}/iles/haiti/alerte`,
+  lien: `${BASE}/fr/iles/haiti/alerte`,
   source: { nom: "NHC", url: "https://www.nhc.noaa.gov/" },
+  langue: "fr",
 };
 
 let db: PGlite;
@@ -63,12 +64,48 @@ describe("contenu de l'e-mail d'alerte", () => {
     const { sujet, texte, html } = messageEmailAlerte(CONTENU, BASE);
 
     expect(sujet).toBe("Haïti : Veille d'ouragan (Hurricane Watch) · Siklon");
-    for (const attendu of [CONTENU.corps, "Source : NHC (https://www.nhc.noaa.gov/)", CONTENU.lien, `${BASE}/compte`]) {
-      expect(texte).toContain(attendu);
-    }
-    expect(texte).toContain("Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.");
-    expect(html).toContain(`<a href="${CONTENU.lien}">`);
-    expect(html).toContain(`<a href="${BASE}/compte">`);
+    expect(texte).toBe(
+      [
+        CONTENU.corps,
+        "",
+        "Source : NHC (https://www.nhc.noaa.gov/)",
+        `Voir la fiche : ${CONTENU.lien}`,
+        "",
+        "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
+        `Gérer vos alertes : ${BASE}/fr/compte`,
+      ].join("\n"),
+    );
+    expect(html).toContain('<html lang="fr">');
+    expect(html).toContain(`<a href="${CONTENU.lien}">Voir la fiche</a>`);
+    expect(html).toContain(`<a href="${BASE}/fr/compte">Gérer vos alertes</a>`);
+  });
+
+  it("écrit en anglais pour un compte en anglais", () => {
+    const contenu: ContenuNotification = {
+      titre: "Haiti: Hurricane Watch",
+      corps: "The NHC has issued a Hurricane Watch for the island: conditions possible.",
+      lien: `${BASE}/en/iles/haiti/alerte`,
+      source: { nom: "NHC", url: "https://www.nhc.noaa.gov/" },
+      langue: "en",
+    };
+    const { sujet, texte, html } = messageEmailAlerte(contenu, BASE);
+
+    expect(sujet).toBe("Haiti: Hurricane Watch · Siklon");
+    expect(texte).toBe(
+      [
+        contenu.corps,
+        "",
+        "Source: NHC (https://www.nhc.noaa.gov/)",
+        `View details: ${contenu.lien}`,
+        "",
+        "Siklon does not replace official instructions. Follow local authorities.",
+        `Manage your alerts: ${BASE}/en/compte`,
+      ].join("\n"),
+    );
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<p>Source: <a href="https://www.nhc.noaa.gov/">NHC</a></p>');
+    expect(html).toContain(`<a href="${contenu.lien}">View details</a>`);
+    expect(html).toContain(`<a href="${BASE}/en/compte">Manage your alerts</a>`);
   });
 
   it("échappe le HTML du contenu", () => {
