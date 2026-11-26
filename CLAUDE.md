@@ -93,16 +93,18 @@ plus chaque action coûte. Garder les sessions courtes et les sorties brèves.
 - Une session par livraison : une fois la PR d'une livraison ouverte avec la CI verte,
   écrire la note de passation, puis arrêter. La livraison suivante démarre dans une
   session neuve (l'utilisateur archive l'ancienne).
-- Note de passation : `/Users/arawak/WORKSPACE/Siklon/.claude/passations/us-<n°>.md`
-  (ignoré par git, lisible depuis tous les worktrees). Une seule note par US, mise à
-  jour à chaque livraison, 40 lignes au plus, sans recopier l'issue ni le code :
+- Note de passation : un commentaire sur l'issue de l'US, qui commence par
+  `## Passation`, publié avec `gh issue comment <n°> --body-file <fichier>` (accessible
+  depuis tous les worktrees). Un nouveau commentaire à chaque livraison, complet à lui
+  seul : le dernier fait foi. 40 lignes au plus, sans recopier l'issue ni le code :
   1. État : PR fusionnées et ouvertes, branche, livraisons restantes ;
   2. Décisions de l'utilisateur (avec la date) ;
   3. Pièges et faits non évidents rencontrés ;
   4. Prochaine étape : critères restants et premier test à écrire ;
   5. Déjà vérifié, à ne pas refaire.
-  Une session qui reprend une US lit cette note et l'issue, puis commence ; elle ne
-  relit pas les anciennes conversations et ne réexplore pas ce que la note établit.
+  Aucun secret ni donnée personnelle : le commentaire est public.
+  Une session qui reprend une US lit la dernière passation et l'issue, puis commence ;
+  elle ne relit pas les anciennes conversations et ne réexplore pas ce que la note établit.
 - Modèle des sessions lancées : Sonnet (`claude-sonnet-5-5`) pour les tâches
   mécaniques (mise à jour Dependabot, conflit ou rebase, test instable, captures,
   modification de documentation) ; Opus pour concevoir et développer une US.
