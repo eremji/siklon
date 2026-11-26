@@ -4,6 +4,7 @@ import { formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur
 import { type SystemeActif, descriptionSysteme } from "@/lib/nhc/systemes";
 import { SYSTEMES } from "@/lib/textes/systemes";
 import { directionDeplacement, formaterPosition, ktVersKmh, ktVersMph, mphVersKmh } from "@/lib/unites";
+import { PartageSysteme } from "@/components/partage/PartageSysteme";
 import { AlerteObsolescence } from "./AlerteObsolescence";
 import { Pastille } from "./Pastille";
 
@@ -83,6 +84,8 @@ export function FicheSysteme({ langue, systeme }: { langue: Langue; systeme: Sys
           </Mesure>
         </dl>
       </section>
+
+      <PartageSysteme systeme={systeme} />
 
       <details className="group rounded-2xl bg-surface px-4">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-base font-bold text-accent">

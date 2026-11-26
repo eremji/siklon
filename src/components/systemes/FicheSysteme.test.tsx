@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import type { SystemeActif } from "@/lib/nhc/systemes";
 import { FicheSysteme } from "./FicheSysteme";
 
@@ -97,6 +98,24 @@ describe("FicheSysteme", () => {
       "href",
       "https://www.nhc.noaa.gov/",
     );
+  });
+
+  it("partage le résumé officiel du système avec un lien sans langue (US-21)", async () => {
+    const utilisateur = userEvent.setup();
+    const share = vi.fn(async () => {});
+    Object.defineProperty(navigator, "share", { configurable: true, value: share });
+    vi.useFakeTimers({ now: new Date("2026-09-10T17:00:00.000Z"), toFake: ["Date"] });
+    render(<FicheSysteme langue="fr" systeme={systeme()} />);
+
+    await utilisateur.click(screen.getByRole("button", { name: "Partager cette alerte" }));
+
+    expect(share).toHaveBeenCalledWith({
+      title: "Ouragan Kyle · Siklon",
+      text: expect.stringMatching(/^Ouragan Kyle \(cat\. 4\) : vents maximaux de 220 km\/h, .* avis n° 14 du 10 septembre à 11 h 00/),
+      url: `${window.location.origin}/systemes/al112026`,
+    });
+    vi.useRealTimers();
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
   });
 });
 
