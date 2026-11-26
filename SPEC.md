@@ -212,6 +212,114 @@ coupure de courant, afin de ménager mes yeux et ma batterie.
 - En mode sombre, tous les contrastes restent AA et l'en-tête de la page
   île garde la couleur de la vigilance en cours (voir DESIGN.md).
 
+## Évolutions après la V1
+Issues #126 à #131. L'ordre de livraison reste à fixer. Les maquettes
+sont dans le canevas « Siklon · US-17 à US-22 » (lien dans chaque issue).
+
+### US-17 : Connaître la saison à risque de mon île
+En tant que visiteur, je veux voir à quels mois les cyclones passent près
+de mon île, afin de savoir quand être le plus vigilant.
+- La page historique d'une île affiche un bloc « Saison à risque » : un
+  graphique de 12 barres, une par mois, qui compte les passages HURDAT2 à
+  moins de `RADIUS_IMPACT_KM` du point de référence (même règle que US-04).
+- Un cyclone compte une fois, au mois de son plus proche passage.
+- La saison officielle (`DEBUT_SAISON` à `FIN_SAISON`) est repérée ; les
+  mois hors saison restent affichés, même à zéro.
+- Une phrase calculée résume le graphique (« 7 passages sur 10 entre
+  mi-août et fin septembre ») ; un tableau des 12 mois sert d'équivalent
+  texte (US-15).
+- Le bloc cite HURDAT2, la période utilisée et la date du dernier import.
+- Les barres utilisent les jetons de DESIGN.md, jamais une couleur de
+  vigilance.
+- À décider : période de référence (toute la base ou depuis 1966, ère
+  satellite) ; découpage en mois ou en demi-mois.
+
+### US-18 : Voir le bilan de la saison en cours et de la dernière saison terminée
+En tant que visiteur, je veux voir le bilan de la saison en cours et celui
+de la dernière saison terminée, afin de savoir si la saison est calme ou
+active.
+- Une page « Saisons » affiche les deux bilans ; hors saison, la dernière
+  saison terminée passe en premier.
+- Chaque bilan compte les tempêtes nommées, les ouragans et les ouragans
+  majeurs (catégorie 3 et plus) du bassin Atlantique, et les compare aux
+  moyennes `MOYENNE_TEMPETES_NOMMEES`, `MOYENNE_OURAGANS` et
+  `MOYENNE_OURAGANS_MAJEURS`.
+- Chaque bilan liste ses systèmes (nom, dates, intensité maximale, îles
+  approchées à moins de `RADIUS_IMPACT_KM`) et montre leurs trajectoires
+  sur une carte ; chaque ligne ouvre la fiche du système.
+- La saison en cours est marquée « données provisoires » tant qu'elle
+  n'est pas dans HURDAT2 ; la source et l'heure de mise à jour sont
+  affichées.
+- La page d'accueil affiche un résumé d'une ligne qui mène à la page.
+- Les comparaisons sont écrites en toutes lettres (« 2 de plus que la
+  moyenne »), pas seulement en couleur.
+- À décider : source de la saison en cours (« best tracks » provisoires
+  du NHC ou systèmes enregistrés depuis `CurrentStorms.json`) ; compter
+  ou non les dépressions non nommées.
+
+### US-19 : Voir ce qui a été mesuré sur mon île pendant un cyclone passé
+En tant que visiteur, je veux voir le vent et la pression mesurés sur mon
+île pendant un cyclone passé, afin de comprendre ce que l'île a vraiment
+subi.
+- La fiche d'un cyclone historique ouverte depuis une île affiche la
+  rafale maximale, le vent moyen maximal et la pression minimale, avec la
+  station et l'heure de chaque valeur.
+- Les valeurs viennent de l'archive SYNOP (voir « Stations SYNOP
+  Météo-France »), sur la période où le centre était à moins de
+  `RADIUS_WATCH_KM` de l'île.
+- Une phrase compare avec HURDAT2 (vent au centre et rafale mesurée).
+- Sans mesure (avant 1996, station en panne, île sans station, île non
+  française), le bloc l'écrit ; aucune valeur n'est estimée.
+- Les mesures des stations antillaises sont importées dans Postgres par
+  un script, comme HURDAT2.
+
+### US-20 : Savoir si ma commune a été reconnue en catastrophe naturelle
+En tant qu'habitant d'une île française, je veux savoir si ma commune a
+été reconnue en état de catastrophe naturelle après un cyclone, afin de
+faire valoir mes droits auprès de mon assureur.
+- La fiche d'un cyclone historique ouverte depuis une île française liste
+  les communes reconnues pour un événement qui recoupe le passage du
+  cyclone, avec le type et la date de l'arrêté au Journal officiel.
+- La page historique de l'île affiche le nombre d'arrêtés liés aux
+  cyclones sur 20 ans et la date du dernier.
+- Données, types retenus et codes des îles : voir « Arrêtés de
+  catastrophe naturelle ». Le millésime du fichier est affiché avec la
+  source.
+- Une phrase rappelle de déclarer le sinistre à son assureur, avec le
+  lien vers la page officielle qui fixe le délai.
+- Sans arrêté connu, le bloc l'écrit et précise que la reconnaissance
+  peut prendre plusieurs semaines. Rien pour les îles non françaises.
+
+### US-21 : Partager une alerte
+En tant que visiteur, je veux partager en un geste la menace qui pèse sur
+une île, afin de prévenir mes proches avec une information officielle et
+datée.
+- Un bouton « Partager » figure sur la fiche d'un système actif et sur la
+  page d'une île menacée.
+- Il ouvre le partage du téléphone avec un texte court et le lien ; sans
+  partage natif, il copie le lien et le confirme à l'écran.
+- Le texte ne contient que des données officielles, avec leur source et
+  leur heure.
+- Le lien affiche un aperçu (image 1200 × 630) qui suit le dernier
+  bulletin : système, distance et délai, niveau d'alerte, source et heure.
+- Le lien ne contient pas de langue (US-10).
+
+### US-22 : Savoir quoi faire après le passage du cyclone
+En tant qu'habitant d'une île qui vient d'être touchée, je veux que l'app
+me dise quoi faire après le passage, afin de rester en sécurité et de
+faire les bonnes démarches.
+- La page de l'île passe en mode « Après le passage » quand un système
+  venu à moins de `RADIUS_WATCH_KM` s'éloigne et que l'alerte retombe
+  (vigilance grise ou fin de vigilance, levée des watches/warnings NHC).
+- Ce mode dure `DUREE_APRES_PASSAGE_JOURS` ; un nouveau système menaçant
+  reprend toujours la priorité.
+- Le bloc affiche, dans cet ordre : consignes de sécurité officielles
+  avec leur source, numéros utiles de l'île (liste relue et datée),
+  démarches auprès de l'assureur (lien vers US-20).
+- Le contenu est relu et validé par le porteur du projet, comme la
+  checklist ; celle-ci gagne une section « Après le passage » (US-08).
+- À décider : notifier ou non la fin d'alerte (US-07).
+
 ## Constantes et référentiels
 Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.
 
@@ -221,6 +329,11 @@ Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.
 | `RADIUS_WATCH_KM` | 300 | Rayon de surveillance et d'alerte. Choix produit : les vents de force tempête peuvent s'étendre à plus de 300 km du centre (jusqu'à 335 km pour l'ouragan Alex), l'alerte part donc avant leur arrivée pour un cyclone de taille moyenne. |
 | `QUOTA_EMAILS_JOUR` | 300 | E-mails par jour de l'offre gratuite de Brevo (voir « Choix techniques »). |
 | `RESERVE_EMAILS_AUTH` | 50 | Part du quota quotidien jamais prise par les alertes (US-07) : au plus 250 e-mails d'alerte par jour (UTC), pour que les e-mails de confirmation et de réinitialisation restent prioritaires. |
+| `DEBUT_SAISON` · `FIN_SAISON` | 1er juin · 30 novembre | Saison cyclonique officielle de l'Atlantique (NHC), utilisée par US-17 et US-18. |
+| `MOYENNE_TEMPETES_NOMMEES` | 14 | Moyenne annuelle 1991-2020 du bassin Atlantique publiée par la NOAA (US-18). |
+| `MOYENNE_OURAGANS` | 7 | Même source. |
+| `MOYENNE_OURAGANS_MAJEURS` | 3 | Même source ; catégorie 3 et plus. |
+| `DUREE_APRES_PASSAGE_JOURS` | 7 (à confirmer) | Durée du mode « Après le passage » (US-22). Proposition, à valider avant de coder. |
 
 Toutes les distances sont des distances orthodromiques (sur la sphère)
 entre le centre du système et le point de référence de l'île.
@@ -291,6 +404,33 @@ d'ouragan), `TWR` (avertissement de tempête tropicale), `HWA` (veille
 d'ouragan), `TWA` (veille de tempête tropicale). Un avertissement
 annonce des conditions attendues, une veille des conditions possibles :
 les avertissements passent donc avant les veilles.
+
+### Stations SYNOP Météo-France
+- Source : archive SYNOP OMM de Météo-France sur data.gouv.fr (Licence
+  Ouverte 2.0), un fichier CSV compressé par an depuis 1996, environ
+  70 Mo chacun ; l'import ne garde que les stations ci-dessous (US-19).
+- À vérifier avant de coder : les colonnes (rafale, vent moyen, pression
+  au niveau de la mer), leur pas de temps et la présence des cinq
+  stations dans les fichiers annuels.
+
+| Île | Stations (indicatif OMM) |
+|---|---|
+| Guadeloupe | Le Raizet (78897), La Désirade (78890) |
+| Martinique | Lamentin (78925), Trinité-Caravel (78922) |
+| Saint-Barthélemy | Saint-Barthélemy (78894) |
+| Saint-Martin | aucune station dans l'archive |
+
+### Arrêtés de catastrophe naturelle
+- Source : fichier « Arrêtés de catastrophe naturelle par commune »
+  (base GASPAR) sur data.gouv.fr, Licence Ouverte 2.0 (US-20).
+- Communes rattachées par code INSEE : 971 Guadeloupe, 972 Martinique,
+  977 Saint-Barthélemy, 978 Saint-Martin.
+- Types retenus : vents cycloniques, submersion marine et action des
+  vagues, inondations.
+- À vérifier avant de coder : les libellés exacts des types, les codes
+  de Saint-Martin et Saint-Barthélemy dans le fichier (97801 et 97701,
+  ou anciens codes 97127 et 97123) et la présence des arrêtés d'Irma
+  (2017).
 
 ## Hors périmètre V1
 - Dégâts, nombre de blessés et de morts des cyclones historiques (V2).
