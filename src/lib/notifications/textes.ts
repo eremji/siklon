@@ -45,10 +45,10 @@ function contenuNiveau({ ile, precedent, niveau, misAJour }: EvenementNiveau, ba
   const heure = formaterHeureAvis(misAJour, ile.fuseau, "fr");
 
   if (ile.alerte.source === "meteo-france" && estNiveau(niveau) && estNiveau(precedent)) {
-    const { libelle, consigne } = infoNiveau(niveau);
+    const { libelle, consigne } = infoNiveau(niveau, "fr");
     return {
       titre: `${ile.nom} : ${libelle}`,
-      corps: `${consigne}. Météo-France passe de la ${minuscule(infoNiveau(precedent).libelle)} à la ${minuscule(libelle)} (mise à jour du ${heure}).`,
+      corps: `${consigne}. Météo-France passe de la ${minuscule(infoNiveau(precedent, "fr").libelle)} à la ${minuscule(libelle)} (mise à jour du ${heure}).`,
       lien: lienAlerte(ile, base),
       source: { nom: "Météo-France", url: pageVigilance(ile.alerte.fichier) },
     };
