@@ -337,6 +337,8 @@ Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.
 | `MOYENNE_TEMPETES_NOMMEES` | 14 | Moyenne annuelle 1991-2020 du bassin Atlantique publiée par la NOAA (US-18). |
 | `MOYENNE_OURAGANS` | 7 | Même source. |
 | `MOYENNE_OURAGANS_MAJEURS` | 3 | Même source ; catégorie 3 et plus. |
+| `INTERVALLE_MAX_LECTURE_NHC_MIN` | 15 | Écart maximal entre deux lectures du flux NHC `CurrentStorms.json` (US-11). Au-delà sans lecture réussie d'une source, la vérification de chaque minute le signale au journal. |
+| `INTERVALLE_CONTROLE_VIGILANCE_S` | 60 | Le fichier de contrôle de la vigilance Météo-France est relu chaque minute (US-11). |
 | `DUREE_APRES_PASSAGE_JOURS` | 7 (à confirmer) | Durée du mode « Après le passage » (US-22). Proposition, à valider avant de coder. |
 
 Toutes les distances sont des distances orthodromiques (sur la sphère)

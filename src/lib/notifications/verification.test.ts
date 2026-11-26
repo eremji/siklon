@@ -374,3 +374,59 @@ describe("dernières positions prévues lues (US-11, livraison 3b)", () => {
     expect(await lireDerniereLecture(db, "positions:al112026")).toBeNull();
   });
 });
+
+describe("cadence et surveillance des lectures (US-11, livraison 4)", () => {
+  const ORANGE = { CDPV85TFFR: { etat: "ok", niveau: "orange", misAJour: "2026-09-10T16:00:00.000Z" } as const };
+  const ACTIFS = { ...etatFixture("vide", LU_LE), brut: { activeStorms: [] } };
+  const INDISPONIBLE = { etat: "indisponible", luLe: LU_LE } as const;
+  const aMinutes = (minutes: number) => () => new Date(Date.parse(LU_LE) + minutes * 60_000);
+
+  const verifierA = (situation: Situation, maintenant: () => Date) =>
+    verifierAlertes(db, sources(situation), { canaux: [servicePush().envoyer], base: BASE, maintenant });
+
+  /** Lignes « aucune lecture réussie » écrites au journal pendant `action`. */
+  async function signalements(action: () => Promise<unknown>): Promise<string[]> {
+    const journal = vi.spyOn(console, "error").mockImplementation(() => {});
+    await action();
+    const lignes = journal.mock.calls.map((appel) => appel.join(" ")).filter((ligne) => ligne.includes("aucune lecture réussie"));
+    journal.mockRestore();
+    return lignes;
+  }
+
+  it("un changement de niveau prévient dans le passage même où il est lu, sans attendre le suivant", async () => {
+    const guadeloupe = await abonne(["guadeloupe"]);
+    const service = servicePush();
+
+    await verifierAlertes(db, sources(), { canaux: [service.envoyer], base: BASE });
+    expect(service.recus).toEqual([]);
+
+    const bilan = await verifierAlertes(db, sources({ vigilance: ORANGE }), { canaux: [service.envoyer], base: BASE });
+
+    expect(service.recus).toEqual([guadeloupe.endpoint]);
+    expect(bilan).toMatchObject({ evenements: 1, envoyes: 1 });
+  });
+
+  it("ne signale rien quand chaque source vient d'être lue", async () => {
+    expect(await signalements(() => verifierA({ flux: ACTIFS }, aMinutes(1)))).toEqual([]);
+  });
+
+  it("signale le flux NHC sans lecture réussie depuis plus de 15 minutes", async () => {
+    await verifierA({ flux: ACTIFS }, aMinutes(1));
+
+    expect(await signalements(() => verifierA({ flux: INDISPONIBLE }, aMinutes(10)))).toEqual([]);
+    expect(await signalements(() => verifierA({ flux: INDISPONIBLE }, aMinutes(17)))).toEqual([
+      "[alertes] aucune lecture réussie de nhc-systemes depuis plus de 15 min",
+    ]);
+  });
+
+  it("signale une source qui n'a jamais été lue, comme un fichier de vigilance muet", async () => {
+    const lignes = await signalements(() =>
+      verifierA({ flux: INDISPONIBLE, vigilance: { CDPV85TFFF: { etat: "indisponible" } } }, aMinutes(1)),
+    );
+
+    expect(lignes).toEqual([
+      "[alertes] aucune lecture réussie de nhc-systemes depuis plus de 15 min",
+      "[alertes] aucune lecture réussie de vigilance:CDPV85TFFF depuis plus de 15 min",
+    ]);
+  });
+});

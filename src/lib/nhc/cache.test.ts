@@ -6,6 +6,7 @@ vi.mock("server-only", () => ({}));
 const cacheLife = vi.fn();
 vi.mock("next/cache", () => ({ cacheLife }));
 
+const { INTERVALLE_MAX_LECTURE_NHC_MIN } = await import("@/lib/constantes");
 const { DUREE_CACHE_NHC, fluxEnCache, positionsEnCache, previsionEnCache, watchesEnCache } = await import("./cache");
 
 describe("cache partagé des flux NHC", () => {
@@ -20,6 +21,12 @@ describe("cache partagé des flux NHC", () => {
 
   it("relit le NHC au plus une fois par minute", () => {
     expect(DUREE_CACHE_NHC).toEqual({ stale: 60, revalidate: 60, expire: 300 });
+  });
+
+  it("relit le flux CurrentStorms au moins toutes les 15 minutes : aucune lecture gardée plus longtemps (US-11)", () => {
+    expect(INTERVALLE_MAX_LECTURE_NHC_MIN).toBe(15);
+    expect(DUREE_CACHE_NHC.revalidate).toBeLessThanOrEqual(INTERVALLE_MAX_LECTURE_NHC_MIN * 60);
+    expect(DUREE_CACHE_NHC.expire).toBeLessThanOrEqual(INTERVALLE_MAX_LECTURE_NHC_MIN * 60);
   });
 
   it("met en cache le flux CurrentStorms avec cette durée", async () => {
