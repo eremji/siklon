@@ -26,7 +26,7 @@ export function ileMenacee(menaces: Menace<SystemeActif>[], alerte: AlerteIle): 
 }
 
 /** « dans environ 12 h », ou null quand l'heure estimée du passage est atteinte. */
-function delai(heure: string, maintenant: Date, langue: Langue): string | null {
+export function delaiPassage(heure: string, maintenant: Date, langue: Langue): string | null {
   if (Date.parse(heure) <= maintenant.getTime()) return null;
   const texte = formaterDelai(heure, maintenant, langue);
   return `${texte.charAt(0).toLowerCase()}${texte.slice(1)}`;
@@ -47,28 +47,10 @@ function phraseAlerte(nom: string, alerte: AlerteIle, langue: Langue): string | 
   return textes.alerteNhc(nom, libelle, origine, plusGrave.systeme.nom);
 }
 
-export function partageIle(
-  ile: Ile,
-  menaces: Menace<SystemeActif>[],
-  alerte: AlerteIle,
-  langue: Langue,
-  maintenant: Date,
-): ContenuPartage {
+/** « Sources : NHC, avis n° 14 du … ; Météo-France, mise à jour du … (heure locale). », ou null. */
+export function sourcesIle(ile: Ile, menaces: Menace<SystemeActif>[], alerte: AlerteIle, langue: Langue): string | null {
   const textes = PARTAGE[langue];
-  const nom = nomIle(ile, langue);
   const heure = (iso: string) => formaterJourHeure(new Date(iso), ile.fuseau, langue);
-
-  const phrases = menaces.map(({ systeme, passage }) =>
-    textes.menace(
-      nomComplet(systeme, langue),
-      formaterDistance(passage.distanceKm, langue),
-      nomVille(ile, langue),
-      delai(passage.heure, maintenant, langue),
-    ),
-  );
-  const niveau = phraseAlerte(nom, alerte, langue);
-  if (niveau) phrases.push(niveau);
-
   // Un avis NHC par système cité, qu'il vienne des positions prévues ou des watches/warnings.
   const avisNhc = new Map<string, { numero: string; emisLe: string }>();
   for (const { systeme, avis } of menaces) avisNhc.set(systeme.id, avis);
@@ -80,7 +62,32 @@ export function partageIle(
     sources.push(textes.avisNhc([...avisNhc.values()].map(({ numero, emisLe }) => textes.avis(numero, heure(emisLe)))));
   }
   if (alerte.source === "meteo-france" && alerte.etat.etat === "ok") sources.push(textes.meteoFrance(heure(alerte.etat.misAJour)));
-  if (sources.length > 0) phrases.push(textes.sources(sources, textes.heureLocale));
+  return sources.length > 0 ? textes.sources(sources, textes.heureLocale) : null;
+}
+
+export function partageIle(
+  ile: Ile,
+  menaces: Menace<SystemeActif>[],
+  alerte: AlerteIle,
+  langue: Langue,
+  maintenant: Date,
+): ContenuPartage {
+  const textes = PARTAGE[langue];
+  const nom = nomIle(ile, langue);
+
+  const phrases = menaces.map(({ systeme, passage }) =>
+    textes.menace(
+      nomComplet(systeme, langue),
+      formaterDistance(passage.distanceKm, langue),
+      nomVille(ile, langue),
+      delaiPassage(passage.heure, maintenant, langue),
+    ),
+  );
+  const niveau = phraseAlerte(nom, alerte, langue);
+  if (niveau) phrases.push(niveau);
+
+  const sources = sourcesIle(ile, menaces, alerte, langue);
+  if (sources) phrases.push(sources);
 
   if (menaces.some(({ avis }) => estObsolete(avis.emisLe, maintenant))) {
     phrases.push(SYSTEMES[langue].obsolescence(SEUIL_OBSOLESCENCE_H));
