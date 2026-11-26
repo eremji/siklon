@@ -6,6 +6,8 @@ import { type ClesVapidWebPush, generateRequestDetails } from "web-push";
 import { type AbonnementPush, lireAbonnements, supprimerAbonnementExpire } from "../db/abonnementsPush";
 import type { Executeur } from "../db/historique";
 import { type Destinataire, reserverEnvoi } from "../db/notifications";
+import type { Langue } from "../langues";
+import { NOTIFICATIONS } from "../textes/notifications";
 import type { ContenuNotification } from "./textes";
 
 /** Une alerte qui n'a pas pu être remise dans ce délai n'a plus de sens : le service push l'abandonne. */
@@ -21,6 +23,8 @@ export interface MessagePush {
   lien: string;
   /** Une même alerte arrivée deux fois sur un appareil n'y est affichée qu'une fois. */
   etiquette: string;
+  /** Langue du texte, déclarée à la notification (`lang`) : celle du compte. */
+  langue: Langue;
 }
 
 export interface AlertePush {
@@ -37,8 +41,8 @@ export interface BilanPush {
   echecs: number;
 }
 
-export function messagePush({ titre, corps, lien, source }: ContenuNotification, cle: string): MessagePush {
-  return { titre, texte: `${corps}\nSource : ${source.nom}.`, lien, etiquette: cle };
+export function messagePush({ titre, corps, lien, source, langue }: ContenuNotification, cle: string): MessagePush {
+  return { titre, texte: `${corps}\n${NOTIFICATIONS[langue].push.source(source.nom)}`, lien, etiquette: cle, langue };
 }
 
 type Resultat = "envoye" | "expire" | "echec";
