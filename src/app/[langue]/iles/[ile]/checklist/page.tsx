@@ -22,8 +22,7 @@ import { niveauNhc, niveauVigilance } from "@/lib/notifications/evenements";
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
 import { ALERTE } from "@/lib/textes/alerte";
 import { CHECKLIST } from "@/lib/textes/checklist";
-import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
-import { chargerVigilance } from "@/lib/vigilance/vigilance";
+import { vigilanceAffichee } from "@/lib/vigilance/source";
 import {
   ajouterElementChecklist,
   cocherElementChecklist,
@@ -78,7 +77,7 @@ async function ChecklistMeteoFrance({ ile, fichier, langue }: { ile: Ile; fichie
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
   const [etat, compte] = await Promise.all([
-    fixture ? etatFixture(fixture) : chargerVigilance(fichier, SOURCES_METEO_FRANCE),
+    fixture ? etatFixture(fixture) : vigilanceAffichee(fichier),
     compteChecklist(),
   ]);
   return (

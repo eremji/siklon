@@ -80,4 +80,42 @@ describe("chargerVigilance", () => {
       expect.objectContaining({ fichier: "CDPV85TFFR", raison: expect.any(String) }),
     );
   });
+
+  describe("quand Météo-France ne répond pas, dernière lecture réussie (US-11)", () => {
+    const maintenant = () => new Date("2026-11-09T12:00:00.000Z");
+
+    it("rend le dernier niveau connu, son heure Météo-France et l'heure de l'échec", async () => {
+      controle.mockRejectedValue(new Error("HTTP 503"));
+      const secours = vi.fn(async () => ({ contenu: jaune, luLe: "2026-11-09T11:58:00.000Z" }));
+
+      await expect(chargerVigilance("CDPV85TFFR", sources, { secours, maintenant })).resolves.toEqual({
+        etat: "ok",
+        ...jaune,
+        echecLe: "2026-11-09T12:00:00.000Z",
+      });
+    });
+
+    it("ne la lit pas quand Météo-France répond", async () => {
+      const secours = vi.fn(async () => null);
+
+      await expect(chargerVigilance("CDPV85TFFR", sources, { secours, maintenant })).resolves.toEqual({
+        etat: "ok",
+        ...jaune,
+      });
+      expect(secours).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["aucune lecture n'a jamais réussi", async () => null],
+      ["la base ne répond pas non plus", () => Promise.reject(new Error("ECONNREFUSED"))],
+      ["le niveau gardé est inconnu", async () => ({ contenu: { niveau: "bleu", misAJour: jaune.misAJour }, luLe: "x" })],
+      ["l'heure gardée est invalide", async () => ({ contenu: { niveau: "jaune", misAJour: "hier" }, luLe: "x" })],
+    ])("signale la vigilance indisponible quand %s", async (_cas, secours) => {
+      controle.mockRejectedValue(new Error("HTTP 503"));
+
+      await expect(chargerVigilance("CDPV85TFFR", sources, { secours, maintenant })).resolves.toEqual({
+        etat: "indisponible",
+      });
+    });
+  });
 });

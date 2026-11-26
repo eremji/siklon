@@ -19,6 +19,8 @@ export const ALERTE = traductions(
       aucune: (ile: string) => `Aucune alerte en cours pour ${ile}.`,
       source: (heure: string, fuseau: string) => `Source : Météo-France, mise à jour du ${heure} (${fuseau}).`,
       sourceSansHeure: "Source : Météo-France.",
+      echec: (heure: string, fuseau: string) =>
+        `La mise à jour de la vigilance Météo-France a échoué. Dernier niveau connu, publié le ${heure} (${fuseau}).`,
       fuseau: "heure des Antilles françaises",
       lien: "Consulter la vigilance sur le site de Météo-France",
     },
@@ -54,6 +56,8 @@ export const ALERTE = traductions(
       aucune: (ile: string) => `No alert in effect for ${ile}.`,
       source: (heure: string, fuseau: string) => `Source: Météo-France, updated ${heure} (${fuseau}).`,
       sourceSansHeure: "Source: Météo-France.",
+      echec: (heure: string, fuseau: string) =>
+        `The Météo-France vigilance update failed. Last known level, issued ${heure} (${fuseau}).`,
       fuseau: "Atlantic Standard Time, UTC−4",
       lien: "See the vigilance on the Météo-France website (in French)",
     },

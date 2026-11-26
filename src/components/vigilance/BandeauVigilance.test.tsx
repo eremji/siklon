@@ -99,3 +99,32 @@ describe("BandeauVigilance en anglais (US-10)", () => {
     expect(screen.getByText("Source: Météo-France.")).toBeInTheDocument();
   });
 });
+
+describe("BandeauVigilance quand Météo-France ne répond plus (US-11)", () => {
+  const echecLe = "2026-11-09T13:00:00.000Z";
+
+  it("garde le dernier niveau connu et avertit que la mise à jour a échoué, avec l'heure du niveau", () => {
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour, echecLe }} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "La mise à jour de la vigilance Météo-France a échoué. Dernier niveau connu, publié le 9 novembre à 05 h 42 " +
+        "(heure des Antilles françaises).",
+    );
+    expect(screen.getByText("Vigilance jaune")).toBeInTheDocument();
+  });
+
+  it("existe en anglais", () => {
+    render(<BandeauVigilance langue="en" {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour, echecLe }} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The Météo-France vigilance update failed. Last known level, issued 9 November at 5:42 am " +
+        "(Atlantic Standard Time, UTC−4).",
+    );
+  });
+
+  it("n'avertit pas quand le niveau est à jour", () => {
+    render(<BandeauVigilance langue="fr" {...guadeloupe} etat={{ etat: "ok", niveau: "jaune", misAJour }} />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});

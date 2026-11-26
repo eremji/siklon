@@ -66,3 +66,55 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+// Livraison 2 : la fixture vigilance « ancien » simule un Météo-France muet dont le dernier niveau lu est jaune.
+async function fixtureVigilance(context: BrowserContext, baseURL: string | undefined, nom: string) {
+  await context.addCookies([{ name: "siklon-fixture-vigilance", value: nom, url: baseURL ?? "http://localhost:3000" }]);
+}
+
+const AVERTISSEMENT_VIGILANCE =
+  /La mise à jour de la vigilance Météo-France a échoué\. Dernier niveau connu, publié le .+ \(heure des Antilles françaises\)\./;
+
+test("la page Alerte garde le dernier niveau de vigilance connu et avertit que la mise à jour a échoué", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await fixtureVigilance(context, baseURL, "ancien");
+  await page.goto("/iles/guadeloupe/alerte");
+
+  await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_VIGILANCE })).toBeVisible();
+  await expect(page.getByText("Vigilance jaune")).toBeVisible();
+  await expect(page.getByText("Niveau de vigilance indisponible")).toHaveCount(0);
+});
+
+test("l'avertissement de vigilance existe en anglais et sur la checklist", async ({ page, context, baseURL }) => {
+  await fixtureVigilance(context, baseURL, "ancien");
+
+  await page.goto("/en/iles/martinique/alerte");
+  await expect(
+    page.getByRole("alert").filter({ hasText: /The Météo-France vigilance update failed\. Last known level, issued .+\./ }),
+  ).toBeVisible();
+
+  await page.goto("/iles/guadeloupe/checklist");
+  await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_VIGILANCE })).toBeVisible();
+});
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`l'avertissement de vigilance respecte WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureVigilance(context, baseURL, "ancien");
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/iles/guadeloupe/alerte");
+    await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_VIGILANCE })).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page })
+      .include("[role=alert]")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(violations).toEqual([]);
+  });
+}

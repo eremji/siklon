@@ -14,8 +14,7 @@ import type { Langue } from "@/lib/langues";
 import { alertesNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE as COOKIE_FIXTURE_NHC, fixtureDemandee as fixtureNhcDemandee } from "@/lib/nhc/source";
 import { COOKIE_FIXTURE, etatFixture, fixtureDemandee } from "@/lib/vigilance/fixtures";
-import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
-import { chargerVigilance } from "@/lib/vigilance/vigilance";
+import { vigilanceAffichee } from "@/lib/vigilance/source";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
 import { ALERTE } from "@/lib/textes/alerte";
 
@@ -40,7 +39,7 @@ function Chargement({ texte }: { texte: string }) {
 async function VigilanceIle({ ile, fichier, langue }: { ile: Ile; fichier: FichierVigilance; langue: Langue }) {
   await connection();
   const fixture = fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value);
-  const etat = fixture ? etatFixture(fixture) : await chargerVigilance(fichier, SOURCES_METEO_FRANCE);
+  const etat = fixture ? etatFixture(fixture) : await vigilanceAffichee(fichier);
   return (
     <>
       <BandeauVigilance langue={langue} nomIle={nomIle(ile, langue)} fichier={fichier} etat={etat} />
