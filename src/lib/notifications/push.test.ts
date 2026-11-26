@@ -16,8 +16,9 @@ const VAPID = { subject: "mailto:alertes@exemple.org", ...generateVAPIDKeys() };
 const CONTENU: ContenuNotification = {
   titre: "Guadeloupe : Vigilance orange",
   corps: "Préparez-vous. Météo-France passe de la vigilance jaune à la vigilance orange (mise à jour du 10 septembre à 12 h).",
-  lien: "https://siklon.exemple/iles/guadeloupe/alerte",
+  lien: "https://siklon.exemple/fr/iles/guadeloupe/alerte",
   source: { nom: "Météo-France", url: "https://vigilance.meteofrance.fr/fr/guadeloupe" },
+  langue: "fr",
 };
 
 let db: PGlite;
@@ -72,6 +73,22 @@ describe("message affiché par la notification", () => {
       texte: `${CONTENU.corps}\nSource : Météo-France.`,
       lien: CONTENU.lien,
       etiquette: "niveau:guadeloupe:orange:2026-09-10T16:00:00Z",
+      langue: "fr",
+    });
+  });
+
+  it("en anglais, écrit la source à l'anglaise et transmet la langue au service worker", () => {
+    const contenu: ContenuNotification = {
+      titre: "Puerto Rico: Hurricane Warning",
+      corps: "The NHC has issued a Hurricane Warning for the island: conditions expected.",
+      lien: "https://siklon.exemple/en/iles/porto-rico/alerte",
+      source: { nom: "NHC", url: "https://www.nhc.noaa.gov/" },
+      langue: "en",
+    };
+
+    expect(messagePush(contenu, "niveau:porto-rico:HWR:2026-09-10T16:00:00Z")).toMatchObject({
+      texte: `${contenu.corps}\nSource: NHC.`,
+      langue: "en",
     });
   });
 });

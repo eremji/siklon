@@ -41,6 +41,7 @@ const MESSAGE = messagePush(
     corps: "Protégez-vous.",
     lien: `${ORIGINE}/iles/martinique/alerte`,
     source: { nom: "Météo-France", url: "https://vigilance.meteofrance.fr/" },
+    langue: "fr",
   },
   "niveau:martinique:rouge:2026-09-10T16:00:00Z",
 );
@@ -78,13 +79,33 @@ describe("service worker : réception d'une alerte", () => {
     );
   });
 
-  it("remplace un lien vers un autre site par l'accueil de Siklon", async () => {
+  it("remplace un lien vers un autre site par l'accueil de Siklon dans la langue du message", async () => {
     await sw.declencher("push", push({ ...MESSAGE, lien: "https://exemple.org/piege" }));
+    await sw.declencher("push", push({ ...MESSAGE, langue: "en", lien: "https://exemple.org/piege" }));
 
-    expect(sw.self.registration.showNotification).toHaveBeenCalledWith(
+    expect(sw.self.registration.showNotification).toHaveBeenNthCalledWith(
+      1,
       MESSAGE.titre,
-      expect.objectContaining({ data: { lien: `${ORIGINE}/` } }),
+      expect.objectContaining({ data: { lien: `${ORIGINE}/fr` } }),
     );
+    expect(sw.self.registration.showNotification).toHaveBeenNthCalledWith(
+      2,
+      MESSAGE.titre,
+      expect.objectContaining({ data: { lien: `${ORIGINE}/en` } }),
+    );
+  });
+
+  it("déclare la langue du message, le français si elle manque ou est inconnue", async () => {
+    await sw.declencher("push", push({ ...MESSAGE, langue: "en" }));
+    await sw.declencher("push", push({ ...MESSAGE, langue: undefined }));
+    await sw.declencher("push", push({ ...MESSAGE, langue: "<script>" }));
+
+    const langues = sw.self.registration.showNotification.mock.calls.map((appel) => (appel as unknown[])[1]);
+    expect(langues).toEqual([
+      expect.objectContaining({ lang: "en" }),
+      expect.objectContaining({ lang: "fr" }),
+      expect.objectContaining({ lang: "fr" }),
+    ]);
   });
 });
 

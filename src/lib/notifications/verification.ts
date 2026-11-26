@@ -7,6 +7,7 @@ import { enregistrerLecture } from "../db/dernieresLectures";
 import type { Executeur } from "../db/historique";
 import { destinataires, enregistrerNiveau, lireNiveauxIles } from "../db/notifications";
 import { type Emprise, type FichierVigilance, ILES, type Ile } from "../iles";
+import type { Langue } from "../langues";
 import type { EtatAlertesNhc } from "../nhc/alertes";
 import type { EtatFlux } from "../nhc/client";
 import { evaluerMenaces } from "../nhc/menace";
@@ -23,7 +24,7 @@ import {
   niveauVigilance,
 } from "./evenements";
 import type { AlertePush } from "./push";
-import { contenuNotification } from "./textes";
+import { type ContenuNotification, contenuNotification } from "./textes";
 
 /** Sources lues par la vérification : caches partagés en production, simulées dans les tests. */
 export interface SourcesAlertes {
@@ -132,8 +133,12 @@ export async function verifierAlertes(
     bilan.evenements += evenements.length;
     const abonnes = await destinataires(db, ile.slug);
     for (const evenement of evenements) {
-      const contenu = contenuNotification(evenement, base);
+      // Un contenu par langue de compte (US-10), rédigé une seule fois pour tous ceux qui la partagent.
+      const contenus = new Map<Langue, ContenuNotification>();
       for (const destinataire of abonnes) {
+        const { langue } = destinataire;
+        const contenu = contenus.get(langue) ?? contenuNotification(evenement, base, langue);
+        contenus.set(langue, contenu);
         // Chaque canal à part : une panne de l'un n'empêche pas l'autre de prévenir.
         for (const envoyer of canaux) {
           try {
