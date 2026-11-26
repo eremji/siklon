@@ -13,7 +13,7 @@ export interface ContenuPartage {
 }
 
 /** « Ouragan Kyle (cat. 4) », « Tempête tropicale Leah ». */
-function nomComplet(systeme: SystemeActif, langue: Langue): string {
+export function nomComplet(systeme: SystemeActif, langue: Langue): string {
   const categorie = systeme.classification === "HU" ? categorieSaffirSimpson(systeme.ventKt) : null;
   return PARTAGE[langue].nomSysteme(libelleType(systeme.classification, langue), systeme.nom, categorie);
 }
