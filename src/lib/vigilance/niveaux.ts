@@ -1,4 +1,7 @@
 // Niveaux de vigilance Météo-France aux Antilles : libellés et consignes de DESIGN.md.
+// En anglais (US-10), une traduction : le terme d'origine reste le français (infoNiveau(n, "fr")).
+import type { Langue } from "@/lib/langues";
+
 export const NIVEAUX = ["vert", "jaune", "orange", "rouge", "violet", "gris"] as const;
 
 export type Niveau = (typeof NIVEAUX)[number];
@@ -10,13 +13,23 @@ export interface InfoNiveau {
   alerte: boolean;
 }
 
-const INFOS: Record<Niveau, InfoNiveau> = {
-  vert: { libelle: "Vigilance verte", consigne: "Pas de vigilance", alerte: false },
-  jaune: { libelle: "Vigilance jaune", consigne: "Soyez attentifs", alerte: true },
-  orange: { libelle: "Vigilance orange", consigne: "Préparez-vous", alerte: true },
-  rouge: { libelle: "Vigilance rouge", consigne: "Protégez-vous", alerte: true },
-  violet: { libelle: "Vigilance violette", consigne: "Confinez-vous", alerte: true },
-  gris: { libelle: "Vigilance grise", consigne: "Restez prudents", alerte: true },
+const INFOS: Record<Langue, Record<Niveau, InfoNiveau>> = {
+  fr: {
+    vert: { libelle: "Vigilance verte", consigne: "Pas de vigilance", alerte: false },
+    jaune: { libelle: "Vigilance jaune", consigne: "Soyez attentifs", alerte: true },
+    orange: { libelle: "Vigilance orange", consigne: "Préparez-vous", alerte: true },
+    rouge: { libelle: "Vigilance rouge", consigne: "Protégez-vous", alerte: true },
+    violet: { libelle: "Vigilance violette", consigne: "Confinez-vous", alerte: true },
+    gris: { libelle: "Vigilance grise", consigne: "Restez prudents", alerte: true },
+  },
+  en: {
+    vert: { libelle: "Green vigilance", consigne: "No vigilance", alerte: false },
+    jaune: { libelle: "Yellow vigilance", consigne: "Be aware", alerte: true },
+    orange: { libelle: "Orange vigilance", consigne: "Get prepared", alerte: true },
+    rouge: { libelle: "Red vigilance", consigne: "Protect yourself", alerte: true },
+    violet: { libelle: "Purple vigilance", consigne: "Shelter in place", alerte: true },
+    gris: { libelle: "Grey vigilance", consigne: "Remain cautious", alerte: true },
+  },
 };
 
 export function estNiveau(valeur: unknown): valeur is Niveau {
@@ -31,6 +44,6 @@ export function niveauDepuisCode(code: unknown): Niveau | undefined {
   return Number.isInteger(code) ? NIVEAUX[(code as number) - 1] : undefined;
 }
 
-export function infoNiveau(niveau: Niveau): InfoNiveau {
-  return INFOS[niveau];
+export function infoNiveau(niveau: Niveau, langue: Langue): InfoNiveau {
+  return INFOS[langue][niveau];
 }

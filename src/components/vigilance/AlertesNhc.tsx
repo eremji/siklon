@@ -1,6 +1,9 @@
 import { Lien } from "@/components/langue/Lien";
 import { type EtatAlertesNhc, TYPES_ALERTE } from "@/lib/nhc/alertes";
+import type { Langue } from "@/lib/langues";
 import { formaterHeureAntilles } from "@/lib/nhc/fraicheur";
+import { descriptionSysteme } from "@/lib/nhc/systemes";
+import { ALERTE } from "@/lib/textes/alerte";
 import type { CodeAlerte } from "@/lib/nhc/watches";
 import { EnTeteIle } from "./BandeauVigilance";
 
@@ -12,41 +15,42 @@ const COULEURS: Record<CodeAlerte, string> = {
   TWA: "bg-nhc-twa text-on-vig-clair",
 };
 
-// Définitions du NHC : une veille annonce des conditions possibles, un avertissement des conditions attendues.
-const DEFINITIONS: Record<CodeAlerte, string> = {
-  HWR: "Conditions d'ouragan attendues, en général dans les 36 heures.",
-  TWR: "Conditions de tempête tropicale attendues, en général dans les 36 heures.",
-  HWA: "Conditions d'ouragan possibles, en général dans les 48 heures.",
-  TWA: "Conditions de tempête tropicale possibles, en général dans les 48 heures.",
-};
+// Libellé d'un type dans la langue de la page : en français avec le terme d'origine, en anglais le terme seul.
+function libelles(code: CodeAlerte, langue: Langue) {
+  const { libelle, origine } = TYPES_ALERTE[code];
+  return langue === "fr" ? { titre: libelle, origine: `(${origine})`, complet: `${libelle} (${origine})` } : { titre: origine, origine: null, complet: origine };
+}
 
-function Source({ luLe }: { luLe?: string }) {
+function Source({ luLe, langue }: { luLe?: string; langue: Langue }) {
+  const textes = ALERTE[langue].nhc;
+  const fuseau = ALERTE[langue].vigilance.fuseau;
   return (
     <div className="flex flex-col gap-1">
       <p className="text-sm text-muted">
         {luLe
-          ? `Source : NHC, données lues le ${formaterHeureAntilles(luLe, "fr")} (heure des Antilles françaises).`
-          : "Source : NHC."}
+          ? textes.source(formaterHeureAntilles(luLe, langue), fuseau)
+          : textes.sourceSansHeure}
       </p>
       <a
         href="https://www.nhc.noaa.gov/"
         className="flex min-h-11 items-center text-base font-bold text-accent underline underline-offset-2"
       >
-        Consulter les alertes sur le site du NHC
+        {textes.lien}
       </a>
     </div>
   );
 }
 
 /** Watches/warnings NHC d'une île sans vigilance Météo-France (US-06b). */
-export function AlertesNhc({ nomIle, etat }: { nomIle: string; etat: EtatAlertesNhc }) {
+export function AlertesNhc({ nomIle, etat, langue }: { nomIle: string; etat: EtatAlertesNhc; langue: Langue }) {
+  const textes = ALERTE[langue].nhc;
   if (etat.etat === "indisponible") {
     return (
       <>
         <EnTeteIle nomIle={nomIle}>
-          <p className="text-3xl font-bold">Veilles et avertissements NHC indisponibles</p>
+          <p className="text-3xl font-bold">{textes.indisponible}</p>
         </EnTeteIle>
-        <Source />
+        <Source langue={langue} />
       </>
     );
   }
@@ -56,41 +60,39 @@ export function AlertesNhc({ nomIle, etat }: { nomIle: string; etat: EtatAlertes
     return (
       <>
         <EnTeteIle nomIle={nomIle}>
-          <p className="text-3xl font-bold">Aucune veille ni aucun avertissement</p>
+          <p className="text-3xl font-bold">{textes.aucune}</p>
         </EnTeteIle>
-        <p className="text-base">Aucune veille ni aucun avertissement NHC en cours pour {nomIle}.</p>
-        <Source luLe={etat.luLe} />
+        <p className="text-base">{textes.aucunePour(nomIle)}</p>
+        <Source luLe={etat.luLe} langue={langue} />
       </>
     );
   }
 
-  const type = TYPES_ALERTE[plusGrave.code];
+  const type = libelles(plusGrave.code, langue);
   return (
     <>
       <EnTeteIle nomIle={nomIle} className={COULEURS[plusGrave.code]}>
-        <p className="text-3xl font-bold">{type.libelle}</p>
-        <p className="text-xl font-bold">({type.origine})</p>
-        <p className="text-base">{DEFINITIONS[plusGrave.code]}</p>
+        <p className="text-3xl font-bold">{type.titre}</p>
+        {type.origine && <p className="text-xl font-bold">{type.origine}</p>}
+        <p className="text-base">{textes.definitions[plusGrave.code]}</p>
       </EnTeteIle>
-      <ul aria-label="Veilles et avertissements NHC en cours" className="flex flex-col gap-3">
+      <ul aria-label={textes.liste} className="flex flex-col gap-3">
         {etat.alertes.map(({ code, systeme, avis }) => (
           <li key={`${code} ${systeme.id}`} className="flex flex-col gap-1 rounded-2xl bg-surface p-4">
-            <p className="text-lg font-bold">
-              {TYPES_ALERTE[code].libelle} ({TYPES_ALERTE[code].origine})
-            </p>
+            <p className="text-lg font-bold">{libelles(code, langue).complet}</p>
             <p className="text-base">
               <Lien href={`/systemes/${systeme.id}`} className="font-bold text-accent underline underline-offset-2">
                 {systeme.nom}
               </Lien>{" "}
-              ({systeme.description})
+              ({descriptionSysteme(systeme, langue)})
             </p>
             <p className="text-sm text-muted">
-              Avis n° {avis.numero} du NHC, émis le {formaterHeureAntilles(avis.emisLe, "fr")}.
+              {textes.avis(avis.numero, formaterHeureAntilles(avis.emisLe, langue))}
             </p>
           </li>
         ))}
       </ul>
-      <Source luLe={etat.luLe} />
+      <Source luLe={etat.luLe} langue={langue} />
     </>
   );
 }

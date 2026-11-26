@@ -29,7 +29,7 @@ function menace(id: string, nom: string): Menace<SystemeActif> {
 }
 
 function alerte(code: AlerteNhc["code"], emisLe = AVIS.emisLe): AlerteNhc {
-  return { code, systeme: { id: "al052026", nom: "Kyle", description: "Ouragan" }, avis: { numero: "12", emisLe } };
+  return { code, systeme: { id: "al052026", nom: "Kyle", classification: "HU", ventKt: 100 }, avis: { numero: "12", emisLe } };
 }
 
 describe("entreesRayon", () => {

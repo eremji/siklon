@@ -3,7 +3,7 @@
 import type { Emprise } from "@/lib/iles";
 import type { EtatFlux } from "./client";
 import { raisonEchec } from "./journal";
-import { descriptionSysteme } from "./systemes";
+import type { SystemeActif } from "./systemes";
 import { CODES_ALERTE, type CodeAlerte, lireWatches, type SegmentAlerte } from "./watches";
 
 /** Libellés français des quatre types, avec leur terme d'origine (DESIGN.md). */
@@ -16,7 +16,8 @@ export const TYPES_ALERTE: Record<CodeAlerte, { libelle: string; origine: string
 
 export interface AlerteNhc {
   code: CodeAlerte;
-  systeme: { id: string; nom: string; description: string };
+  // Classification et vent plutôt qu'une description : elle est rédigée dans la langue de la page (US-10).
+  systeme: Pick<SystemeActif, "id" | "nom" | "classification" | "ventKt">;
   avis: { numero: string; emisLe: string };
 }
 
@@ -70,7 +71,7 @@ export async function chargerAlertesNhc(
       if (alertes.has(cle) || !segmentDansEmprise(segment, emprise)) continue;
       alertes.set(cle, {
         code: segment.code,
-        systeme: { id: systeme.id, nom: systeme.nom, description: descriptionSysteme(systeme, "fr") },
+        systeme: { id: systeme.id, nom: systeme.nom, classification: systeme.classification, ventKt: systeme.ventKt },
         avis: segment.avis,
       });
     }

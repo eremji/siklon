@@ -89,7 +89,8 @@ describe("segmentDansEmprise", () => {
 });
 
 describe("chargerAlertesNhc", () => {
-  const kyle = { id: "al112026", nom: "Kyle", description: "Ouragan de catégorie 4" };
+  // La description est rédigée à l'affichage, dans la langue de la page (US-10).
+  const kyle = { id: "al112026", nom: "Kyle", classification: "HU", ventKt: 120 };
 
   it("donne l'avertissement d'ouragan de Kyle pour la Dominique, avec son avis", async () => {
     const etat = await chargerAlertesNhc(FLUX, emprise("dominique"), lireFixtures);
@@ -115,7 +116,7 @@ describe("chargerAlertesNhc", () => {
       alertes: [
         {
           code: "TWA",
-          systeme: { id: "al132026", nom: "Thirteen", description: "Dépression tropicale" },
+          systeme: { id: "al132026", nom: "Thirteen", classification: "TD", ventKt: 30 },
           avis: { numero: "1", emisLe: "2026-09-10T12:00:00.000Z" },
         },
       ],

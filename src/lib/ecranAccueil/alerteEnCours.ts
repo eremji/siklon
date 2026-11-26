@@ -6,7 +6,7 @@ import type { EtatVigilance } from "@/lib/vigilance/vigilance";
 
 /** Vigilance Météo-France jaune ou plus (tout niveau sauf le vert). */
 export function vigilanceEnCours(etat: EtatVigilance): boolean {
-  return etat.etat === "ok" && infoNiveau(etat.niveau).alerte;
+  return etat.etat === "ok" && infoNiveau(etat.niveau, "fr").alerte;
 }
 
 /** Au moins une veille ou un avertissement du NHC sur l'île. */

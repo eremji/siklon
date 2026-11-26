@@ -14,11 +14,23 @@ describe("niveaux de vigilance Météo-France", () => {
     ["violet", "Vigilance violette", "Confinez-vous"],
     ["gris", "Vigilance grise", "Restez prudents"],
   ] as const)("le niveau %s s'écrit « %s » avec la consigne « %s »", (niveau, libelle, consigne) => {
-    expect(infoNiveau(niveau)).toMatchObject({ libelle, consigne });
+    expect(infoNiveau(niveau, "fr")).toMatchObject({ libelle, consigne });
   });
 
   it("seul le vert signifie qu'aucune alerte n'est en cours", () => {
-    expect(NIVEAUX.filter((n) => !infoNiveau(n).alerte)).toEqual(["vert"]);
+    expect(NIVEAUX.filter((n) => !infoNiveau(n, "fr").alerte)).toEqual(["vert"]);
+    expect(NIVEAUX.filter((n) => !infoNiveau(n, "en").alerte)).toEqual(["vert"]);
+  });
+
+  it.each([
+    ["vert", "Green vigilance", "No vigilance"],
+    ["jaune", "Yellow vigilance", "Be aware"],
+    ["orange", "Orange vigilance", "Get prepared"],
+    ["rouge", "Red vigilance", "Protect yourself"],
+    ["violet", "Purple vigilance", "Shelter in place"],
+    ["gris", "Grey vigilance", "Remain cautious"],
+  ] as const)("en anglais, le niveau %s s'écrit « %s » avec la consigne « %s » (US-10)", (niveau, libelle, consigne) => {
+    expect(infoNiveau(niveau, "en")).toMatchObject({ libelle, consigne });
   });
 
   it.each([
