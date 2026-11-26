@@ -1,10 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { FournisseurLangue } from "@/components/langue/ContexteLangue";
+import { CHECKLISTS } from "@/lib/checklist/contenu";
 import { Checklist, type CompteChecklist } from "./Checklist";
 
-const guadeloupe = { nomIle: "Guadeloupe", source: "meteo-france" } as const;
-const dominique = { nomIle: "Dominique", source: "nhc" } as const;
+const guadeloupe = { langue: "fr", nomIle: "Guadeloupe", source: "meteo-france" } as const;
+const dominique = { langue: "fr", nomIle: "Dominique", source: "nhc" } as const;
 
 function listeEnCours() {
   return screen.getByRole("list", { name: /^Liste en cours/ });
@@ -125,8 +127,8 @@ describe("Checklist d'un utilisateur connecté", () => {
     await userEvent.click(screen.getByRole("checkbox", { name: "Retirer de l'argent liquide." }));
     await userEvent.click(screen.getByRole("checkbox", { name: "Faire le plein de carburant." }));
 
-    expect(cocher).toHaveBeenNthCalledWith(1, "orange-argent", true);
-    expect(cocher).toHaveBeenNthCalledWith(2, "orange-carburant", false);
+    expect(cocher).toHaveBeenNthCalledWith(1, "orange-argent", true, "fr");
+    expect(cocher).toHaveBeenNthCalledWith(2, "orange-carburant", false, "fr");
     expect(screen.getByRole("checkbox", { name: "Retirer de l'argent liquide." })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Faire le plein de carburant." })).not.toBeChecked();
   });
@@ -179,7 +181,7 @@ describe("masquage des éléments de base", () => {
     await userEvent.click(screen.getByRole("button", { name: "Masquer : Mettre les bateaux à l'abri ou les sortir de l'eau." }));
 
     const donnees = masquer.mock.calls[0][1] as FormData;
-    expect(Object.fromEntries(donnees)).toEqual({ element: "orange-bateaux", masque: "1" });
+    expect(Object.fromEntries(donnees)).toEqual({ element: "orange-bateaux", masque: "1", langueInterface: "fr" });
   });
 
   it("retire les éléments masqués des listes et les regroupe, repliés, pour les réafficher", async () => {
@@ -191,7 +193,7 @@ describe("masquage des éléments de base", () => {
     expect(masques).not.toHaveAttribute("open");
     await userEvent.click(within(masques).getByRole("button", { name: "Réafficher : Jeux, livres, bloc-notes." }));
 
-    expect(Object.fromEntries(masquer.mock.calls[0][1] as FormData)).toEqual({ element: "vert-loisirs", masque: "0" });
+    expect(Object.fromEntries(masquer.mock.calls[0][1] as FormData)).toEqual({ element: "vert-loisirs", masque: "0", langueInterface: "fr" });
   });
 
   it("n'affiche pas la section des éléments masqués quand il n'y en a aucun", () => {
@@ -222,7 +224,7 @@ describe("éléments ajoutés par l'utilisateur", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Mes éléments" })).toBeInTheDocument();
     expect(within(liste).getByRole("checkbox", { name: "Croquettes du chien" })).toBeChecked();
     await userEvent.click(within(liste).getByRole("checkbox", { name: "Lunettes de rechange" }));
-    expect(cocherPerso).toHaveBeenCalledWith("22222222-2222-2222-2222-222222222222", true);
+    expect(cocherPerso).toHaveBeenCalledWith("22222222-2222-2222-2222-222222222222", true, "fr");
   });
 
   it("supprime un élément ajouté", async () => {
@@ -230,7 +232,7 @@ describe("éléments ajoutés par l'utilisateur", () => {
     render(<Checklist {...guadeloupe} niveau="orange" compte={compteComplet({ perso, supprimer })} />);
 
     await userEvent.click(screen.getByRole("button", { name: "Supprimer : Croquettes du chien" }));
-    expect(Object.fromEntries(supprimer.mock.calls[0][1] as FormData)).toEqual({ id: "11111111-1111-1111-1111-111111111111" });
+    expect(Object.fromEntries(supprimer.mock.calls[0][1] as FormData)).toEqual({ id: "11111111-1111-1111-1111-111111111111", langueInterface: "fr" });
   });
 
   it("ajoute un élément avec le formulaire, limité à 200 caractères", async () => {
@@ -242,7 +244,7 @@ describe("éléments ajoutés par l'utilisateur", () => {
     await userEvent.type(champ, "Croquettes du chien");
     await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
 
-    expect(Object.fromEntries(ajouter.mock.calls[0][1] as FormData)).toEqual({ texte: "Croquettes du chien" });
+    expect(Object.fromEntries(ajouter.mock.calls[0][1] as FormData)).toEqual({ texte: "Croquettes du chien", langueInterface: "fr" });
   });
 
   it("annonce un ajout refusé et garde la saisie", async () => {
@@ -271,3 +273,126 @@ describe("éléments ajoutés par l'utilisateur", () => {
     expect(screen.queryByRole("heading", { name: "Mes éléments" })).not.toBeInTheDocument();
   });
 });
+
+describe("Checklist en anglais (US-10)", () => {
+  const guadeloupeEn = { langue: "en", nomIle: "Guadeloupe", source: "meteo-france" } as const;
+  const dominica = { langue: "en", nomIle: "Dominica", source: "nhc" } as const;
+  const enAnglais = (element: React.ReactNode) => render(<FournisseurLangue langue="en">{element}</FournisseurLangue>);
+
+  it("affiche la liste en cours traduite, avec le terme d'origine Météo-France en français", () => {
+    enAnglais(<Checklist {...guadeloupeEn} niveau="orange" compte={null} />);
+
+    expect(screen.getByRole("heading", { level: 2, name: "Preparedness checklist" })).toBeInTheDocument();
+    const titre = screen.getByRole("heading", { level: 3, name: "Orange vigilance: get prepared (Vigilance orange · Préparez-vous)" });
+    expect(within(titre).getByText("(Vigilance orange · Préparez-vous)")).toHaveAttribute("lang", "fr");
+    expect(screen.getByText("Threat becoming clearer, within 24 to 36 hours. (Prefecture of Guadeloupe)")).toBeInTheDocument();
+    const liste = screen.getByRole("list", { name: "Current list: Orange vigilance: get prepared" });
+    const carburant = within(liste).getByText("Fill up with fuel.").closest("li")!;
+    expect(
+      within(carburant).getByText("Source: Prefecture of Saint-Barthélemy and Saint-Martin; Prefecture of Guadeloupe; French Red Cross (PIRAC)"),
+    ).toBeInTheDocument();
+  });
+
+  it("dit que la checklist est traduite de documents officiels français", () => {
+    enAnglais(<Checklist {...guadeloupeEn} niveau="orange" compte={null} />);
+
+    expect(
+      screen.getByText(
+        "This checklist is translated from official French guides (prefectures of the French Antilles, French Red Cross). The sources are in French.",
+      ),
+    ).toBeInTheDocument();
+    const sources = screen.getByRole("list", { name: "Checklist sources" });
+    expect(within(sources).getByRole("link", { name: "French Red Cross (PIRAC): Emergency kit (2025, in French)" })).toHaveAttribute(
+      "href",
+      "https://pirac.croix-rouge.fr/pirac-itsyourmove-kit-de-secours-fr-2",
+    );
+  });
+
+  it("n'affiche pas cet avertissement en français", () => {
+    render(<Checklist {...guadeloupe} niveau="orange" compte={null} />);
+    expect(screen.queryByText(/translated from official French guides/)).not.toBeInTheDocument();
+  });
+
+  it("traduit les rappels repliés, l'avant-saison n'ayant pas de terme d'origine", () => {
+    enAnglais(<Checklist {...guadeloupeEn} niveau="orange" compte={null} />);
+
+    expect(screen.getAllByText(/^If not done yet: /).map((rappel) => rappel.textContent)).toEqual([
+      "If not done yet: Before the hurricane season (June to November)",
+      "If not done yet: Yellow vigilance: be aware (Vigilance jaune · Soyez attentifs)",
+    ]);
+  });
+
+  it("précise l'origine des consignes pour une île suivie par le NHC", () => {
+    enAnglais(<Checklist {...dominica} niveau="HWR" compte={null} />);
+
+    expect(screen.getByRole("heading", { level: 3, name: /^Red vigilance: protect yourself/ })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "These lists come from the guides of the French prefectures of the Antilles and the French Red Cross. Follow the instructions of the authorities of Dominica first.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("traduit le niveau indisponible et l'invitation à se connecter", () => {
+    enAnglais(<Checklist {...guadeloupeEn} niveau={null} compte={null} />);
+
+    expect(screen.getByText("Alert level unavailable: choose the list that matches the authorities' instructions.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in to check off items and keep your progress" })).toHaveAttribute(
+      "href",
+      "/en/compte/connexion",
+    );
+  });
+
+  it("traduit les actions d'un utilisateur connecté et transmet la langue aux server actions", async () => {
+    const cocher = vi.fn().mockResolvedValue({ ok: true });
+    const masquer = vi.fn().mockResolvedValue({});
+    const ajouter = vi.fn().mockResolvedValue({ ajoute: true });
+    const compte = compteComplet({
+      cocher,
+      masquer,
+      ajouter,
+      masques: ["vert-loisirs"],
+      perso: [{ id: "id-1", texte: "Dog food", coche: false }],
+    });
+    enAnglais(<Checklist {...guadeloupeEn} niveau="orange" compte={compte} />);
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Withdraw cash." }));
+    expect(cocher).toHaveBeenCalledWith("orange-argent", true, "en");
+
+    await userEvent.click(screen.getByRole("button", { name: "Hide: Fill up with fuel." }));
+    expect(Object.fromEntries(masquer.mock.calls[0][1] as FormData)).toEqual({
+      element: "orange-carburant",
+      masque: "1",
+      langueInterface: "en",
+    });
+
+    expect(screen.getByRole("heading", { level: 3, name: "My items" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete: Dog food" })).toBeInTheDocument();
+    expect(screen.getByText("Hidden items (1)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show again: Games, books, notepad." })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole("textbox", { name: "Add an item" }), "Spare glasses");
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(Object.fromEntries(ajouter.mock.calls[0][1] as FormData)).toEqual({ texte: "Spare glasses", langueInterface: "en" });
+  });
+
+  it("traduit les textes d'une liste vide et d'éléments tous masqués", () => {
+    const tous = CHECKLISTS_EN_IDS("jaune");
+    enAnglais(<Checklist {...guadeloupeEn} niveau="jaune" compte={compteComplet({ masques: tous })} />);
+
+    expect(screen.getByText("Add what your household needs: it will appear at every alert level.")).toBeInTheDocument();
+    expect(screen.getByText("You have hidden every item in this list.")).toBeInTheDocument();
+  });
+
+  it("annonce en anglais un enregistrement impossible", async () => {
+    const cocher = vi.fn().mockRejectedValue(new Error("réseau"));
+    enAnglais(<Checklist {...guadeloupeEn} niveau="orange" compte={compteComplet({ cocher })} />);
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Withdraw cash." }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not save. Check your connection and try again.");
+  });
+});
+
+function CHECKLISTS_EN_IDS(niveau: "jaune"): string[] {
+  return CHECKLISTS.en[niveau].sections.flatMap(({ elements }) => elements.map(({ id }) => id));
+}
