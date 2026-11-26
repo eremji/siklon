@@ -1,10 +1,11 @@
 // Watches/warnings NHC en cours pour une île sans vigilance Météo-France (US-06b) :
 // segments de côte des systèmes actifs de l'Atlantique, rattachés à l'île par son emprise.
+import type { Lecture } from "@/lib/db/dernieresLectures";
 import type { Emprise } from "@/lib/iles";
 import type { EtatFlux } from "./client";
 import { raisonEchec } from "./journal";
-import type { SystemeActif } from "./systemes";
-import { CODES_ALERTE, type CodeAlerte, lireWatches, type SegmentAlerte } from "./watches";
+import { CLASSIFICATIONS, type SystemeActif } from "./systemes";
+import { CODES_ALERTE, type CodeAlerte, estCode, lireWatches, type SegmentAlerte } from "./watches";
 
 /** Libellés français des quatre types, avec leur terme d'origine (DESIGN.md). */
 export const TYPES_ALERTE: Record<CodeAlerte, { libelle: string; origine: string; nature: "veille" | "avertissement" }> = {
@@ -21,7 +22,19 @@ export interface AlerteNhc {
   avis: { numero: string; emisLe: string };
 }
 
-export type EtatAlertesNhc = { etat: "ok"; alertes: AlerteNhc[]; luLe: string } | { etat: "indisponible"; luLe: string };
+/**
+ * Alertes NHC d'une île. Quand le NHC ou la NOAA ne répond pas, les dernières alertes connues peuvent
+ * les remplacer (US-11) : `luLe` est alors leur heure de lecture, et `echecLe` l'heure de l'échec.
+ */
+export type EtatAlertesNhc =
+  | { etat: "ok"; alertes: AlerteNhc[]; luLe: string; echecLe?: string }
+  | { etat: "indisponible"; luLe: string };
+
+interface OptionsAlertes {
+  /** Dernières alertes connues de l'île, relues quand une source ne répond pas (US-11). */
+  secours?: () => Promise<Lecture | null>;
+  maintenant?: () => Date;
+}
 
 /** Source des segments d'un emplacement : le cache partagé en production, la lecture directe par défaut. */
 export type SourceWatches = (emplacement: string) => Promise<SegmentAlerte[]>;
@@ -42,7 +55,14 @@ export async function chargerAlertesNhc(
   flux: EtatFlux,
   emprise: Emprise,
   lire: SourceWatches = lireWatches,
+  options: OptionsAlertes = {},
 ): Promise<EtatAlertesNhc> {
+  const etat = await alertesEnDirect(flux, emprise, lire);
+  if (etat.etat === "ok") return etat;
+  return (await dernieresAlertes(options)) ?? etat;
+}
+
+async function alertesEnDirect(flux: EtatFlux, emprise: Emprise, lire: SourceWatches): Promise<EtatAlertesNhc> {
   if (flux.etat === "indisponible") return flux;
   const systemes = flux.systemes.filter((systeme) => EMPLACEMENT_ATLANTIQUE.test(systeme.emplacement));
 
@@ -80,5 +100,53 @@ export async function chargerAlertesNhc(
   const triees = [...alertes.values()].sort(
     (a, b) => gravite(a.code) - gravite(b.code) || a.systeme.nom.localeCompare(b.systeme.nom, "fr"),
   );
-  return { etat: "ok", alertes: triees, luLe: flux.luLe };
+  // Un flux qui est lui-même la dernière donnée connue (US-11) rend ces alertes anciennes aussi.
+  return { etat: "ok", alertes: triees, luLe: flux.luLe, ...(flux.echecLe && { echecLe: flux.echecLe }) };
+}
+
+const estObjet = (valeur: unknown): valeur is Record<string, unknown> =>
+  typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
+
+/** Alerte gardée en base, revalidée : un contenu inattendu rend toute la lecture illisible. */
+function lireAlerteGardee(valeur: unknown): AlerteNhc {
+  if (!estObjet(valeur) || !estCode(valeur.code) || !estObjet(valeur.systeme) || !estObjet(valeur.avis)) {
+    throw new Error("alerte gardée invalide");
+  }
+  const { id, nom, classification, ventKt } = valeur.systeme;
+  const { numero, emisLe } = valeur.avis;
+  if (
+    typeof id !== "string" ||
+    typeof nom !== "string" ||
+    !CLASSIFICATIONS.some((c) => c === classification) ||
+    typeof ventKt !== "number" ||
+    typeof numero !== "string" ||
+    typeof emisLe !== "string" ||
+    Number.isNaN(Date.parse(emisLe))
+  ) {
+    throw new Error("alerte gardée invalide");
+  }
+  return {
+    code: valeur.code,
+    systeme: { id, nom, classification: classification as SystemeActif["classification"], ventKt },
+    avis: { numero, emisLe },
+  };
+}
+
+async function dernieresAlertes({ secours, maintenant = () => new Date() }: OptionsAlertes): Promise<EtatAlertesNhc | null> {
+  if (!secours) return null;
+  try {
+    const lecture = await secours();
+    if (!lecture) return null;
+    const alertes = estObjet(lecture.contenu) ? lecture.contenu.alertes : undefined;
+    if (!Array.isArray(alertes)) throw new Error("alertes gardées invalides");
+    return {
+      etat: "ok",
+      alertes: alertes.map(lireAlerteGardee),
+      luLe: lecture.luLe,
+      echecLe: maintenant().toISOString(),
+    };
+  } catch (erreur) {
+    console.warn("[nhc] dernières alertes illisibles", { raison: raisonEchec(erreur) });
+    return null;
+  }
 }

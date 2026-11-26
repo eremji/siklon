@@ -31,7 +31,7 @@ export function fixturesDemandees(biscuits: { get(nom: string): { value: string 
 }
 
 export async function chargerAlerteIle(ile: Ile, fixtures: Fixtures): Promise<AlerteIle> {
-  if (ile.alerte.source === "nhc") return { source: "nhc", etat: await alertesNhc(fixtures.nhc, ile.alerte.emprise) };
+  if (ile.alerte.source === "nhc") return { source: "nhc", etat: await alertesNhc(fixtures.nhc, { slug: ile.slug, emprise: ile.alerte.emprise }) };
   const etat = fixtures.vigilance
     ? etatFixture(fixtures.vigilance)
     : await chargerVigilance(ile.alerte.fichier, SOURCES_METEO_FRANCE);

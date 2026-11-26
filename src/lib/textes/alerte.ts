@@ -37,6 +37,8 @@ export const ALERTE = traductions(
       liste: "Veilles et avertissements NHC en cours",
       avis: (numero: string, heure: string) => `Avis n° ${numero} du NHC, émis le ${heure}.`,
       source: (heure: string, fuseau: string) => `Source : NHC, données lues le ${heure} (${fuseau}).`,
+      echec: (heure: string, fuseau: string) =>
+        `La mise à jour des veilles et avertissements du NHC a échoué. Dernière donnée connue, lue le ${heure} (${fuseau}).`,
       sourceSansHeure: "Source : NHC.",
       lien: "Consulter les alertes sur le site du NHC",
     },
@@ -74,6 +76,8 @@ export const ALERTE = traductions(
       liste: "NHC watches and warnings in effect",
       avis: (numero: string, heure: string) => `NHC advisory ${numero}, issued ${heure}.`,
       source: (heure: string, fuseau: string) => `Source: NHC, data read ${heure} (${fuseau}).`,
+      echec: (heure: string, fuseau: string) =>
+        `The NHC watches and warnings update failed. Last known data, read ${heure} (${fuseau}).`,
       sourceSansHeure: "Source: NHC.",
       lien: "See the alerts on the NHC website",
     },

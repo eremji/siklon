@@ -15,7 +15,7 @@ vi.mock("@/lib/db/dernieresLectures", () => ({ lireDerniereLecture }));
 
 const { alertesNhc, fluxNhc, fluxNhcEnDirect, positionsNhc } = await import("./lecture");
 
-const DOMINIQUE = { latMin: 15.18, latMax: 15.67, lonMin: -61.51, lonMax: -61.22 };
+const DOMINIQUE = { slug: "dominique", emprise: { latMin: 15.18, latMax: 15.67, lonMin: -61.51, lonMax: -61.22 } };
 
 const maintenant = () => new Date("2026-09-10T16:00:00.000Z");
 
@@ -109,6 +109,25 @@ describe("alertesNhc : watches/warnings d'une île, par le cache partagé ou la 
     expect(watchesEnCache).not.toHaveBeenCalled();
     expect(fetchSimule).not.toHaveBeenCalled();
     expect(etat.etat === "ok" && etat.alertes.map((a) => `${a.code} ${a.systeme.nom}`)).toEqual(["HWR Kyle"]);
+  });
+
+  it("avec la fixture « ancien », signale des alertes tirées de la dernière donnée connue (US-11)", async () => {
+    const etat = await alertesNhc("ancien", DOMINIQUE, maintenant);
+
+    expect(etat).toMatchObject({ etat: "ok", echecLe: "2026-09-10T16:00:00.000Z" });
+    expect(etat.etat === "ok" && etat.alertes.map((a) => `${a.code} ${a.systeme.nom}`)).toEqual(["HWR Kyle"]);
+  });
+
+  it("rend les dernières alertes connues de l'île, gardées en base, quand une couche échoue (US-11)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fluxEnCache.mockResolvedValue({ ...lireCurrentStorms(actifs), luLe: "2026-09-10T15:59:00.000Z" });
+    watchesEnCache.mockRejectedValue(new Error("HTTP 503"));
+    lireDerniereLecture.mockResolvedValue({ contenu: { alertes: [] }, luLe: "2026-09-10T14:00:00.000Z" });
+
+    const etat = await alertesNhc(null, DOMINIQUE, maintenant);
+
+    expect(lireDerniereLecture).toHaveBeenCalledWith(baseLecture, "alertes-nhc:dominique");
+    expect(etat).toEqual({ etat: "ok", alertes: [], luLe: "2026-09-10T14:00:00.000Z", echecLe: "2026-09-10T16:00:00.000Z" });
   });
 });
 

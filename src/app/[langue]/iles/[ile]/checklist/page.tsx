@@ -98,7 +98,7 @@ async function ChecklistMeteoFrance({ ile, fichier, langue }: { ile: Ile; fichie
 async function ChecklistNhc({ ile, emprise, langue }: { ile: Ile; emprise: Emprise; langue: Langue }) {
   await connection();
   const fixture = fixtureNhcDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE_NHC)?.value);
-  const [etat, compte] = await Promise.all([alertesNhc(fixture, emprise), compteChecklist()]);
+  const [etat, compte] = await Promise.all([alertesNhc(fixture, { slug: ile.slug, emprise }), compteChecklist()]);
   return (
     <>
       <AlertesNhc langue={langue} nomIle={nomIle(ile, langue)} etat={etat} />

@@ -90,7 +90,7 @@ describe("segmentDansEmprise", () => {
 
 describe("chargerAlertesNhc", () => {
   // La description est rédigée à l'affichage, dans la langue de la page (US-10).
-  const kyle = { id: "al112026", nom: "Kyle", classification: "HU", ventKt: 120 };
+  const kyle = { id: "al112026", nom: "Kyle", classification: "HU", ventKt: 120 } as const;
 
   it("donne l'avertissement d'ouragan de Kyle pour la Dominique, avec son avis", async () => {
     const etat = await chargerAlertesNhc(FLUX, emprise("dominique"), lireFixtures);
@@ -196,5 +196,70 @@ describe("chargerAlertesNhc", () => {
     const lire = async (emplacement: string) => lireWatchWarning({ type: "Feature" }, emplacement);
 
     expect(await chargerAlertesNhc(FLUX, emprise("dominique"), lire)).toEqual({ etat: "indisponible", luLe: LU_LE });
+  });
+
+  describe("dernière donnée connue (US-11)", () => {
+    const maintenant = () => new Date("2026-09-10T16:00:00.000Z");
+    const kyleHwr: AlerteNhc = {
+      code: "HWR",
+      systeme: kyle,
+      avis: { numero: "14", emisLe: "2026-09-10T15:00:00.000Z" },
+    };
+    const gardee = { contenu: { alertes: [kyleHwr] }, luLe: "2026-09-10T14:00:00.000Z" };
+    const enPanne = async () => {
+      throw new Error("HTTP 503");
+    };
+
+    it("garde l'heure de l'échec quand le flux affiché est lui-même la dernière donnée connue", async () => {
+      const etat = await chargerAlertesNhc({ ...FLUX, echecLe: "2026-09-10T16:00:00.000Z" }, emprise("dominique"), lireFixtures);
+
+      expect(etat).toMatchObject({ etat: "ok", luLe: LU_LE, echecLe: "2026-09-10T16:00:00.000Z" });
+    });
+
+    it("rend les dernières alertes connues de l'île quand une couche échoue", async () => {
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      const secours = vi.fn(async () => gardee);
+
+      expect(await chargerAlertesNhc(FLUX, emprise("dominique"), enPanne, { secours, maintenant })).toEqual({
+        etat: "ok",
+        alertes: [kyleHwr],
+        luLe: "2026-09-10T14:00:00.000Z",
+        echecLe: "2026-09-10T16:00:00.000Z",
+      });
+    });
+
+    it("les rend aussi quand le flux CurrentStorms est indisponible", async () => {
+      const secours = vi.fn(async () => gardee);
+
+      const etat = await chargerAlertesNhc({ etat: "indisponible", luLe: LU_LE }, emprise("dominique"), lireFixtures, {
+        secours,
+        maintenant,
+      });
+
+      expect(etat).toMatchObject({ etat: "ok", alertes: [kyleHwr], echecLe: "2026-09-10T16:00:00.000Z" });
+      expect(lireFixtures).not.toHaveBeenCalled();
+    });
+
+    it("ne les lit pas quand les couches répondent", async () => {
+      const secours = vi.fn(async () => gardee);
+
+      await chargerAlertesNhc(FLUX, emprise("dominique"), lireFixtures, { secours, maintenant });
+
+      expect(secours).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["aucune lecture n'a jamais réussi", async () => null],
+      ["la base ne répond pas non plus", () => Promise.reject(new Error("ECONNREFUSED"))],
+      ["un code gardé est inconnu", async () => ({ ...gardee, contenu: { alertes: [{ ...kyleHwr, code: "XXX" }] } })],
+      ["le contenu gardé n'est pas une liste", async () => ({ ...gardee, contenu: { alertes: "HWR" } })],
+    ])("indique des données indisponibles quand %s", async (_cas, secours) => {
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      expect(await chargerAlertesNhc(FLUX, emprise("dominique"), enPanne, { secours, maintenant })).toEqual({
+        etat: "indisponible",
+        luLe: LU_LE,
+      });
+    });
   });
 });

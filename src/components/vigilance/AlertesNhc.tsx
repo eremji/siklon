@@ -41,6 +41,16 @@ function Source({ luLe, langue }: { luLe?: string; langue: Langue }) {
   );
 }
 
+/** US-11 : une source NHC ne répond plus, les alertes affichées sont les dernières connues. */
+function Echec({ etat, langue }: { etat: EtatAlertesNhc; langue: Langue }) {
+  if (etat.etat !== "ok" || !etat.echecLe) return null;
+  return (
+    <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
+      {ALERTE[langue].nhc.echec(formaterHeureAntilles(etat.luLe, langue), ALERTE[langue].vigilance.fuseau)}
+    </p>
+  );
+}
+
 /** Watches/warnings NHC d'une île sans vigilance Météo-France (US-06b). */
 export function AlertesNhc({ nomIle, etat, langue }: { nomIle: string; etat: EtatAlertesNhc; langue: Langue }) {
   const textes = ALERTE[langue].nhc;
@@ -62,6 +72,7 @@ export function AlertesNhc({ nomIle, etat, langue }: { nomIle: string; etat: Eta
         <EnTeteIle nomIle={nomIle}>
           <p className="text-3xl font-bold">{textes.aucune}</p>
         </EnTeteIle>
+        <Echec etat={etat} langue={langue} />
         <p className="text-base">{textes.aucunePour(nomIle)}</p>
         <Source luLe={etat.luLe} langue={langue} />
       </>
@@ -76,6 +87,7 @@ export function AlertesNhc({ nomIle, etat, langue }: { nomIle: string; etat: Eta
         {type.origine && <p className="text-xl font-bold">{type.origine}</p>}
         <p className="text-base">{textes.definitions[plusGrave.code]}</p>
       </EnTeteIle>
+      <Echec etat={etat} langue={langue} />
       <ul aria-label={textes.liste} className="flex flex-col gap-3">
         {etat.alertes.map(({ code, systeme, avis }) => (
           <li key={`${code} ${systeme.id}`} className="flex flex-col gap-1 rounded-2xl bg-surface p-4">

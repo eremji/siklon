@@ -29,14 +29,21 @@ export async function fluxNhcEnDirect(
   return chargerSystemesActifs({ lire: fluxEnCache, maintenant });
 }
 
-/** Watches/warnings NHC en cours dans l'emprise d'une île (US-06b), par la même voie que le flux. */
+/**
+ * Watches/warnings NHC en cours pour une île (US-06b), par la même voie que le flux. Quand une source
+ * ne répond pas, les dernières alertes connues de l'île, gardées en base (US-11).
+ */
 export async function alertesNhc(
   fixture: NomFixture | null,
-  emprise: Emprise,
+  { slug, emprise }: { slug: string; emprise: Emprise },
   maintenant: () => Date = () => new Date(),
 ): Promise<EtatAlertesNhc> {
   const flux = await fluxNhc(fixture, maintenant);
-  return chargerAlertesNhc(flux, emprise, fixture ? watchesFixture(fixture) : watchesEnCache);
+  if (fixture) return chargerAlertesNhc(flux, emprise, watchesFixture(fixture));
+  return chargerAlertesNhc(flux, emprise, watchesEnCache, {
+    secours: () => lireDerniereLecture(connexion(), `alertes-nhc:${slug}`),
+    maintenant,
+  });
 }
 
 /** Positions prévues des systèmes actifs (US-03), par identifiant de système, par la même voie que le flux. */
