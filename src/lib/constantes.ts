@@ -24,3 +24,9 @@ export const ANNEE_DEBUT_SAISON_RISQUE = 1966;
 
 /** Part des passages que la phrase de « Saison à risque » regroupe dans la plus courte suite de mois (US-17). */
 export const PART_SAISON_RISQUE = 0.75;
+
+/** Écart maximal entre deux lectures du flux NHC (US-11) ; au-delà, une source sans lecture réussie est signalée au journal. */
+export const INTERVALLE_MAX_LECTURE_NHC_MIN = 15;
+
+/** Le fichier de contrôle de la vigilance Météo-France est relu chaque minute (US-11). */
+export const INTERVALLE_CONTROLE_VIGILANCE_S = 60;

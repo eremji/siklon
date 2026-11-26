@@ -2,16 +2,23 @@
 // pour rester sous le quota de l'API (60 requêtes par minute). La clé ne quitte pas le serveur.
 import "server-only";
 import { cacheLife } from "next/cache";
+import { INTERVALLE_CONTROLE_VIGILANCE_S } from "@/lib/constantes";
 import { lireDerniereLecture } from "@/lib/db/dernieresLectures";
 import { connexion } from "@/lib/db/pool";
 import type { FichierVigilance } from "@/lib/iles";
 import { telechargerArchive, telechargerControle } from "./client";
 import { chargerVigilance, type EtatVigilance, lireBulletins, type Sources } from "./vigilance";
 
-// SPEC.md : le fichier de contrôle est relu chaque minute.
+// SPEC.md : le fichier de contrôle est relu chaque minute (US-11).
+export const DUREE_CACHE_CONTROLE = {
+  stale: INTERVALLE_CONTROLE_VIGILANCE_S,
+  revalidate: INTERVALLE_CONTROLE_VIGILANCE_S,
+  expire: 5 * INTERVALLE_CONTROLE_VIGILANCE_S,
+};
+
 async function controleEnCache() {
   "use cache: remote";
-  cacheLife({ stale: 60, revalidate: 60, expire: 300 });
+  cacheLife(DUREE_CACHE_CONTROLE);
   return telechargerControle(process.env.METEOFRANCE_API_KEY);
 }
 

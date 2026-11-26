@@ -4,7 +4,8 @@
 // vigilance, les alertes NHC et les positions prévues lus en direct (US-11).
 // Deux vérifications simultanées ne préviennent qu'une fois : le niveau est enregistré par
 // compare-and-set, chaque envoi réservé par canal.
-import { enregistrerLecture } from "../db/dernieresLectures";
+import { INTERVALLE_MAX_LECTURE_NHC_MIN } from "../constantes";
+import { enregistrerLecture, lireDerniereLecture, type SourceLue } from "../db/dernieresLectures";
 import type { Executeur } from "../db/historique";
 import { destinataires, enregistrerNiveau, lireNiveauxIles } from "../db/notifications";
 import { type Emprise, type FichierVigilance, ILES, type Ile } from "../iles";
@@ -101,13 +102,17 @@ async function memoriserFlux(db: Executeur, flux: EtatFlux): Promise<void> {
 }
 
 /** Mémorise le niveau lu en direct de chaque fichier de vigilance (US-11), jamais un niveau de secours. */
-async function memoriserVigilances(db: Executeur, vigilances: Map<FichierVigilance, Promise<EtatVigilance>>) {
+async function memoriserVigilances(
+  db: Executeur,
+  vigilances: Map<FichierVigilance, Promise<EtatVigilance>>,
+  maintenant: Date,
+) {
   for (const [fichier, lecture] of vigilances) {
     const etat = await lecture.catch((): EtatVigilance => ({ etat: "indisponible" }));
     if (etat.etat !== "ok" || etat.echecLe) continue;
     try {
       const { niveau, misAJour } = etat;
-      await enregistrerLecture(db, `vigilance:${fichier}`, { niveau, misAJour }, new Date().toISOString());
+      await enregistrerLecture(db, `vigilance:${fichier}`, { niveau, misAJour }, maintenant.toISOString());
     } catch (erreur) {
       console.error(`[alertes] dernier niveau de ${fichier} non mémorisé (${typeErreur(erreur)})`);
     }
@@ -127,11 +132,11 @@ async function memoriserAlertesNhc(db: Executeur, alertesNhcLues: Map<string, Et
 }
 
 /** Mémorise les positions prévues lues en direct de chaque système (US-11), jamais des positions de secours. */
-async function memoriserPositions(db: Executeur, positions: Record<string, PositionsPrevues>) {
+async function memoriserPositions(db: Executeur, positions: Record<string, PositionsPrevues>, maintenant: Date) {
   for (const [id, lues] of Object.entries(positions)) {
     if (lues.echecLe) continue;
     try {
-      await enregistrerLecture(db, `positions:${id}`, lues, new Date().toISOString());
+      await enregistrerLecture(db, `positions:${id}`, lues, maintenant.toISOString());
     } catch (erreur) {
       console.error(`[alertes] dernières positions de ${id} non mémorisées (${typeErreur(erreur)})`);
     }
@@ -154,10 +159,33 @@ async function evenementNiveau(
   return ecrit ? changementNiveau(ile, precedent, observation) : null;
 }
 
+/** Sources surveillées : le flux NHC et chaque fichier de vigilance Météo-France. */
+const SOURCES_SURVEILLEES: SourceLue[] = [
+  "nhc-systemes",
+  ...new Set(ILES.flatMap((ile) => (ile.alerte.source === "meteo-france" ? [ile.alerte.fichier] : []))),
+].map((source) => (source === "nhc-systemes" ? source : (`vigilance:${source}` as SourceLue)));
+
+/**
+ * Signale au journal chaque source sans lecture réussie depuis plus de INTERVALLE_MAX_LECTURE_NHC_MIN
+ * (US-11) : les pages montrent alors une donnée ancienne, et les alertes de cette source ne partent plus.
+ */
+async function surveillerLectures(db: Executeur, maintenant: Date) {
+  const limite = maintenant.getTime() - INTERVALLE_MAX_LECTURE_NHC_MIN * 60_000;
+  for (const source of SOURCES_SURVEILLEES) {
+    try {
+      const lecture = await lireDerniereLecture(db, source);
+      if (lecture && Date.parse(lecture.luLe) >= limite) continue;
+      console.error(`[alertes] aucune lecture réussie de ${source} depuis plus de ${INTERVALLE_MAX_LECTURE_NHC_MIN} min`);
+    } catch (erreur) {
+      console.error(`[alertes] dernière lecture de ${source} illisible (${typeErreur(erreur)})`);
+    }
+  }
+}
+
 export async function verifierAlertes(
   db: Executeur,
   sources: SourcesAlertes,
-  { canaux, base }: { canaux: Canal[]; base: string },
+  { canaux, base, maintenant = () => new Date() }: { canaux: Canal[]; base: string; maintenant?: () => Date },
 ): Promise<BilanVerification> {
   const bilan: BilanVerification = { evenements: 0, envoyes: 0, echecs: 0 };
   const flux = await lireFlux(sources);
@@ -198,8 +226,10 @@ export async function verifierAlertes(
       }
     }
   }
-  await memoriserVigilances(db, vigilances);
+  const fin = maintenant();
+  await memoriserVigilances(db, vigilances, fin);
   await memoriserAlertesNhc(db, alertesNhcLues);
-  await memoriserPositions(db, positions);
+  await memoriserPositions(db, positions, fin);
+  await surveillerLectures(db, fin);
   return bilan;
 }
