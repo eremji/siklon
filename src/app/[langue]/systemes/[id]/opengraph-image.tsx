@@ -8,6 +8,7 @@ import { fluxNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
 import { apercuSysteme } from "@/lib/partage/apercu";
 import { CACHE_APERCU, DessinApercu, TAILLE_APERCU } from "@/lib/partage/DessinApercu";
+import { POLICES_APERCU } from "@/lib/partage/polices";
 import { PARTAGE } from "@/lib/textes/partage";
 
 type Parametres = { langue: string; id: string };
@@ -27,6 +28,7 @@ export default async function Image({ params }: { params: Promise<Parametres> })
   if (!systeme) return new Response(null, { status: 404 });
   return new ImageResponse(<DessinApercu apercu={apercuSysteme(systeme, langue, new Date())} />, {
     ...TAILLE_APERCU,
+    fonts: POLICES_APERCU,
     headers: { "cache-control": CACHE_APERCU },
   });
 }
