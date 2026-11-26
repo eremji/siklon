@@ -118,3 +118,44 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+// Livraison 3a : îles sans vigilance Météo-France, watches/warnings NHC tirés de la dernière donnée connue.
+const AVERTISSEMENT_ALERTES_NHC =
+  /La mise à jour des veilles et avertissements du NHC a échoué\. Dernière donnée connue, lue le .+ \(heure des Antilles françaises\)\./;
+
+test("la page Alerte d'une île NHC garde les dernières alertes connues et avertit que la mise à jour a échoué", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await fixtureNhc(context, baseURL, "ancien");
+  await page.goto("/iles/dominique/alerte");
+
+  await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_ALERTES_NHC })).toBeVisible();
+  const entete = page.locator("header", { has: page.getByRole("heading", { level: 1, name: "Dominique" }) });
+  await expect(entete.getByText("Avertissement d'ouragan", { exact: true })).toBeVisible();
+
+  await page.goto("/en/iles/dominique/alerte");
+  await expect(
+    page.getByRole("alert").filter({ hasText: /The NHC watches and warnings update failed\. Last known data, read .+\./ }),
+  ).toBeVisible();
+});
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`l'avertissement des alertes NHC respecte WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureNhc(context, baseURL, "ancien");
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/iles/dominique/alerte");
+    await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_ALERTES_NHC })).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page })
+      .include("[role=alert]")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(violations).toEqual([]);
+  });
+}

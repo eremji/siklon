@@ -52,7 +52,7 @@ async function VigilanceIle({ ile, fichier, langue }: { ile: Ile; fichier: Fichi
 async function AlertesNhcIle({ ile, emprise, langue }: { ile: Ile; emprise: Emprise; langue: Langue }) {
   await connection();
   const fixture = fixtureNhcDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE_NHC)?.value);
-  const etat = await alertesNhc(fixture, emprise);
+  const etat = await alertesNhc(fixture, { slug: ile.slug, emprise });
   return (
     <>
       <AlertesNhc langue={langue} nomIle={nomIle(ile, langue)} etat={etat} />

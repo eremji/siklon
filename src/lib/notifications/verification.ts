@@ -1,7 +1,7 @@
 // Vérification planifiée des alertes (US-07) : lit les sources, détecte les événements de chaque île
 // (entrée d'un système dans le rayon, changement de niveau d'alerte) et prévient ceux qui la suivent.
-// Appelée chaque minute (route /api/alertes/verifier) ; mémorise aussi le flux NHC et les niveaux de
-// vigilance lus en direct (US-11).
+// Appelée chaque minute (route /api/alertes/verifier) ; mémorise aussi le flux NHC, les niveaux de
+// vigilance et les alertes NHC lus en direct (US-11).
 // Deux vérifications simultanées ne préviennent qu'une fois : le niveau est enregistré par
 // compare-and-set, chaque envoi réservé par canal.
 import { enregistrerLecture } from "../db/dernieresLectures";
@@ -69,9 +69,14 @@ async function observerNiveau(
   flux: EtatFlux,
   sources: SourcesAlertes,
   vigilances: Map<FichierVigilance, Promise<EtatVigilance>>,
+  alertesNhcLues: Map<string, EtatAlertesNhc>,
 ): Promise<ObservationNiveau | null> {
   try {
-    if (ile.alerte.source === "nhc") return niveauNhc(await sources.alertesNhc(ile, ile.alerte.emprise, flux));
+    if (ile.alerte.source === "nhc") {
+      const etat = await sources.alertesNhc(ile, ile.alerte.emprise, flux);
+      alertesNhcLues.set(ile.slug, etat);
+      return niveauNhc(etat);
+    }
     const { fichier } = ile.alerte;
     // Saint-Martin et Saint-Barthélemy partagent un fichier : une seule lecture.
     if (!vigilances.has(fichier)) vigilances.set(fichier, sources.vigilance(fichier));
@@ -109,6 +114,18 @@ async function memoriserVigilances(db: Executeur, vigilances: Map<FichierVigilan
   }
 }
 
+/** Mémorise les alertes NHC lues en direct de chaque île sans vigilance (US-11), jamais des alertes de secours. */
+async function memoriserAlertesNhc(db: Executeur, alertesNhcLues: Map<string, EtatAlertesNhc>) {
+  for (const [slug, etat] of alertesNhcLues) {
+    if (etat.etat !== "ok" || etat.echecLe) continue;
+    try {
+      await enregistrerLecture(db, `alertes-nhc:${slug}`, { alertes: etat.alertes }, etat.luLe);
+    } catch (erreur) {
+      console.error(`[alertes] dernières alertes NHC de ${slug} non mémorisées (${typeErreur(erreur)})`);
+    }
+  }
+}
+
 /**
  * Enregistre le niveau observé s'il diffère du dernier connu, et rend l'événement à notifier.
  * Le premier niveau connu d'une île est enregistré ; il n'est notifié que s'il y a une alerte.
@@ -137,10 +154,11 @@ export async function verifierAlertes(
   const positions = systemes.length > 0 ? await sources.positions(systemes) : {};
   const niveaux = await lireNiveauxIles(db);
   const vigilances = new Map<FichierVigilance, Promise<EtatVigilance>>();
+  const alertesNhcLues = new Map<string, EtatAlertesNhc>();
 
   for (const ile of ILES) {
     const evenements: Evenement[] = entreesRayon(ile, evaluerMenaces(ile, systemes, positions).menaces);
-    const observation = await observerNiveau(ile, flux, sources, vigilances);
+    const observation = await observerNiveau(ile, flux, sources, vigilances, alertesNhcLues);
     const niveau = await evenementNiveau(db, ile, niveaux.get(ile.slug), observation);
     if (niveau) evenements.push(niveau);
     if (evenements.length === 0) continue;
@@ -169,5 +187,6 @@ export async function verifierAlertes(
     }
   }
   await memoriserVigilances(db, vigilances);
+  await memoriserAlertesNhc(db, alertesNhcLues);
   return bilan;
 }

@@ -4,8 +4,11 @@
 import type { FichierVigilance } from "../iles";
 import type { Executeur } from "./historique";
 
-/** Source lue : le flux CurrentStorms.json du NHC, ou le bulletin de vigilance Météo-France d'un fichier. */
-export type SourceLue = "nhc-systemes" | `vigilance:${FichierVigilance}`;
+/**
+ * Source lue : le flux CurrentStorms.json du NHC, le bulletin de vigilance Météo-France d'un fichier,
+ * ou les watches/warnings NHC d'une île (identifiant d'URL).
+ */
+export type SourceLue = "nhc-systemes" | `vigilance:${FichierVigilance}` | `alertes-nhc:${string}`;
 
 export interface Lecture {
   /** Réponse brute de la source, à relire avec le même lecteur que la réponse en direct. */

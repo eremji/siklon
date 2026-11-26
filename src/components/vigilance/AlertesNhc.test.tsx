@@ -154,3 +154,43 @@ describe("AlertesNhc en anglais (US-10)", () => {
     expect(screen.getByText("Source: NHC.")).toBeInTheDocument();
   });
 });
+
+describe("AlertesNhc quand une source NHC ne répond plus (US-11)", () => {
+  const ancien = (...alertes: AlerteNhc[]): EtatAlertesNhc => ({
+    etat: "ok",
+    alertes,
+    luLe: LU_LE,
+    echecLe: "2026-09-10T17:00:00.000Z",
+  });
+
+  it("garde les dernières alertes connues et avertit que la mise à jour a échoué, avec leur heure", () => {
+    render(<AlertesNhc langue="fr" nomIle="Dominique" etat={ancien({ code: "HWR", systeme: KYLE, avis: AVIS_14 })} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "La mise à jour des veilles et avertissements du NHC a échoué. Dernière donnée connue, lue le 10 septembre " +
+        "à 11 h 10 (heure des Antilles françaises).",
+    );
+    expect(within(entete()).getByText("Avertissement d'ouragan")).toBeInTheDocument();
+  });
+
+  it("avertit aussi quand la dernière donnée connue ne contenait aucune alerte", () => {
+    render(<AlertesNhc langue="fr" nomIle="Dominique" etat={ancien()} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("La mise à jour des veilles et avertissements du NHC a échoué.");
+  });
+
+  it("existe en anglais", () => {
+    render(<AlertesNhc langue="en" nomIle="Dominica" etat={ancien()} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The NHC watches and warnings update failed. Last known data, read 10 September at 11:10 am " +
+        "(Atlantic Standard Time, UTC−4).",
+    );
+  });
+
+  it("n'avertit pas quand les alertes sont à jour", () => {
+    render(<AlertesNhc langue="fr" nomIle="Dominique" etat={ok()} />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});

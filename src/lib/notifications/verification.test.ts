@@ -322,3 +322,34 @@ describe("dernier niveau de vigilance lu (US-11, livraison 2)", () => {
     expect(await lireDerniereLecture(db, "vigilance:CDPV85TFFR")).toBeNull();
   });
 });
+
+describe("dernières alertes NHC des îles sans vigilance (US-11, livraison 3)", () => {
+  const HWR = {
+    code: "HWR",
+    systeme: { id: "al112026", nom: "Kyle", classification: "HU", ventKt: 120 },
+    avis: { numero: "14", emisLe: "2026-09-10T15:00:00.000Z" },
+  } as const;
+
+  it("mémorise les alertes lues en direct de chaque île NHC, pour les pages si une source ne répond plus", async () => {
+    await verifier({ nhc: { dominique: { etat: "ok", alertes: [HWR], luLe: LU_LE } } }, servicePush().envoyer);
+
+    expect(await lireDerniereLecture(db, "alertes-nhc:dominique")).toEqual({ contenu: { alertes: [HWR] }, luLe: LU_LE });
+    expect(await lireDerniereLecture(db, "alertes-nhc:barbade")).toEqual({ contenu: { alertes: [] }, luLe: LU_LE });
+    expect(await lireDerniereLecture(db, "alertes-nhc:guadeloupe")).toBeNull();
+  });
+
+  it("ne mémorise ni des alertes indisponibles ni des alertes de secours", async () => {
+    await verifier(
+      {
+        nhc: {
+          dominique: { etat: "indisponible", luLe: LU_LE },
+          barbade: { etat: "ok", alertes: [HWR], luLe: LU_LE, echecLe: "2026-09-10T16:00:00.000Z" },
+        },
+      },
+      servicePush().envoyer,
+    );
+
+    expect(await lireDerniereLecture(db, "alertes-nhc:dominique")).toBeNull();
+    expect(await lireDerniereLecture(db, "alertes-nhc:barbade")).toBeNull();
+  });
+});
