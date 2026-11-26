@@ -60,6 +60,13 @@ describe("positionsFixture", () => {
     expect(positionsFixture("vide")).toEqual({});
     expect(positionsFixture("indisponible")).toEqual({});
   });
+
+  it("avec « ancien », fournit les positions de Kyle comme dernière donnée connue (US-11)", () => {
+    const ancien = positionsFixture("ancien");
+    expect(ancien.al112026.positions).toEqual(positionsFixture("actifs").al112026.positions);
+    expect(ancien.al112026.echecLe).toEqual(expect.any(String));
+    expect(positionsFixture("actifs").al112026.echecLe).toBeUndefined();
+  });
 });
 
 describe("watchesFixture", () => {

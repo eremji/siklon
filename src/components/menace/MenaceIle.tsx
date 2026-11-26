@@ -67,6 +67,26 @@ function Incompletude({
   );
 }
 
+/** US-11 : la lecture des positions prévues de ces systèmes a échoué, leur estimation repose sur les dernières connues. */
+function PositionsAnciennes({
+  systemes,
+  positions,
+  langue,
+}: {
+  systemes: SystemeActif[];
+  positions: Record<string, PositionsPrevues>;
+  langue: Langue;
+}) {
+  const anciens = systemes.filter((systeme) => positions[systeme.id]?.echecLe);
+  if (anciens.length === 0) return null;
+  const noms = new Intl.ListFormat(langue, { type: "conjunction" }).format(anciens.map(({ nom }) => nom));
+  return (
+    <p role="alert" className="rounded-2xl bg-danger-soft p-4 text-base">
+      {ILES_TEXTES[langue].menace.positionsAnciennes(noms, anciens.length)}
+    </p>
+  );
+}
+
 export function MenaceIle({
   ile,
   flux,
@@ -94,6 +114,7 @@ export function MenaceIle({
   return (
     <div className="flex flex-col gap-3">
       <EchecMiseAJourNhc langue={langue} flux={flux} />
+      <PositionsAnciennes systemes={flux.systemes} positions={positions} langue={langue} />
       <p className="text-base">{textes.rayon(RADIUS_WATCH_KM, nomVille(ile, langue), JOURS_PREVUS)}</p>
       <Incompletude sansPrevision={sansPrevision} rejetes={flux.rejetes} langue={langue} />
       {menaces.length > 0 ? (
