@@ -1,6 +1,7 @@
 // Positions prévues des systèmes actifs (couche « Forecast Points » du NHC),
 // lues sur le service cartographique officiel de la NOAA.
 // Donnée externe non fiable : dates, échéances, coordonnées et volume sont validés.
+import type { Lecture } from "@/lib/db/dernieresLectures";
 import { DELAI_MAX_MS } from "./client";
 import { raisonEchec } from "./journal";
 import { URL_SERVICE_PREVISIONS } from "./previsions";
@@ -17,6 +18,8 @@ export interface PositionPrevue {
 export interface PositionsPrevues {
   avis: { numero: string; emisLe: string };
   positions: PositionPrevue[];
+  /** Heure de la mise à jour qui a échoué, quand ce sont les dernières positions connues (US-11). */
+  echecLe?: string;
 }
 
 export class PositionsInvalidesError extends Error {
@@ -52,6 +55,8 @@ const MS_PAR_HEURE = 3_600_000;
 function estObjet(valeur: unknown): valeur is Record<string, unknown> {
   return typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
 }
+
+const valide = (v: unknown, borne: number): v is number => typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= borne;
 
 function lireDateAvis(brut: unknown): Date {
   const parties = typeof brut === "string" ? DATE_AVIS.exec(brut) : null;
@@ -89,7 +94,6 @@ function coordonnees(geometrie: Record<string, unknown>): { lat: number; lon: nu
     throw new PositionsInvalidesError("type de géométrie");
   }
   const [lon, lat] = geometrie.coordinates;
-  const valide = (v: unknown, borne: number) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= borne;
   if (!valide(lon, 180) || !valide(lat, 90)) throw new PositionsInvalidesError("coordonnée hors bornes");
   return { lat, lon };
 }
@@ -151,26 +155,91 @@ export async function lirePositions(emplacement: string): Promise<PositionsPrevu
 /** Source des positions prévues : le cache partagé en production, la lecture directe par défaut. */
 export type SourcePositions = (emplacement: string) => Promise<PositionsPrevues | null>;
 
-export async function chargerPositionsPrevues(
-  emplacement: string,
-  lire: SourcePositions = lirePositions,
-): Promise<PositionsPrevues | null> {
+const ECHEC = Symbol("échec");
+
+/** Positions d'un emplacement ; ECHEC si la lecture a échoué (à distinguer de positions non publiées). */
+async function lireOuEchec(emplacement: string, lire: SourcePositions): Promise<PositionsPrevues | null | typeof ECHEC> {
   // Seuls AT1 à AT5 sont interrogés : le cache n'a jamais d'autre clé.
   if (couchePositions(emplacement) === null) return null;
   try {
     return await lire(emplacement);
   } catch (erreur) {
     console.warn("[nhc] positions prévues indisponibles", { emplacement, raison: raisonEchec(erreur) });
+    return ECHEC;
+  }
+}
+
+export async function chargerPositionsPrevues(
+  emplacement: string,
+  lire: SourcePositions = lirePositions,
+): Promise<PositionsPrevues | null> {
+  const lues = await lireOuEchec(emplacement, lire);
+  return lues === ECHEC ? null : lues;
+}
+
+const estHeure = (valeur: unknown): valeur is string => typeof valeur === "string" && !Number.isNaN(Date.parse(valeur));
+
+/** Positions gardées en base, revalidées : un contenu inattendu les rend illisibles. */
+function lirePositionsGardees(contenu: unknown): PositionsPrevues {
+  if (!estObjet(contenu) || !estObjet(contenu.avis) || !Array.isArray(contenu.positions)) {
+    throw new PositionsInvalidesError("positions gardées");
+  }
+  const { numero, emisLe } = contenu.avis;
+  if (typeof numero !== "string" || !NUMERO_AVIS.test(numero) || !estHeure(emisLe)) {
+    throw new PositionsInvalidesError("avis gardé");
+  }
+  if (contenu.positions.length > MAX_POSITIONS) throw new PositionsInvalidesError("trop de positions gardées");
+  const positions = contenu.positions.map((position): PositionPrevue => {
+    if (!estObjet(position)) throw new PositionsInvalidesError("position gardée");
+    const { echeanceH, valideLe, lat, lon } = position;
+    if (
+      typeof echeanceH !== "number" ||
+      echeanceH < 0 ||
+      echeanceH > ECHEANCE_MAX_H ||
+      !estHeure(valideLe) ||
+      !valide(lon, 180) ||
+      !valide(lat, 90)
+    ) {
+      throw new PositionsInvalidesError("position gardée");
+    }
+    return { echeanceH, valideLe, lat, lon };
+  });
+  return { avis: { numero, emisLe }, positions };
+}
+
+interface OptionsPositions {
+  /** Dernières positions connues d'un système, relues quand leur lecture échoue (US-11). */
+  secours?: (systemeId: string) => Promise<Lecture | null>;
+  maintenant?: () => Date;
+}
+
+async function dernieresPositions(
+  systemeId: string,
+  { secours, maintenant = () => new Date() }: OptionsPositions,
+): Promise<PositionsPrevues | null> {
+  if (!secours) return null;
+  try {
+    const lecture = await secours(systemeId);
+    return lecture ? { ...lirePositionsGardees(lecture.contenu), echecLe: maintenant().toISOString() } : null;
+  } catch (erreur) {
+    console.warn("[nhc] dernières positions prévues illisibles", { systemeId, raison: raisonEchec(erreur) });
     return null;
   }
 }
 
-// Positions prévues disponibles des systèmes actifs, par identifiant de système.
+// Positions prévues disponibles des systèmes actifs, par identifiant de système. Quand la lecture d'un
+// système échoue, ses dernières positions connues, si le secours en fournit (US-11).
 export async function chargerToutesPositions(
   systemes: { id: string; emplacement: string }[],
   lire: SourcePositions = lirePositions,
+  options: OptionsPositions = {},
 ): Promise<Record<string, PositionsPrevues>> {
-  const lues = await Promise.all(systemes.map((systeme) => chargerPositionsPrevues(systeme.emplacement, lire)));
+  const lues = await Promise.all(
+    systemes.map(async (systeme) => {
+      const positions = await lireOuEchec(systeme.emplacement, lire);
+      return positions === ECHEC ? dernieresPositions(systeme.id, options) : positions;
+    }),
+  );
   return Object.fromEntries(
     systemes.flatMap((systeme, index) => {
       const positions = lues[index];

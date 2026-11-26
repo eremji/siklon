@@ -353,3 +353,24 @@ describe("dernières alertes NHC des îles sans vigilance (US-11, livraison 3)",
     expect(await lireDerniereLecture(db, "alertes-nhc:barbade")).toBeNull();
   });
 });
+
+describe("dernières positions prévues lues (US-11, livraison 3b)", () => {
+  const ACTIFS = { ...etatFixture("actifs", LU_LE), brut: { activeStorms: [] } };
+
+  it("mémorise les positions lues en direct de chaque système, pour les pages si leur lecture échoue", async () => {
+    const kyle = positionsFixture("actifs").al112026;
+
+    await verifier({ flux: ACTIFS, positions: { al112026: kyle } }, servicePush().envoyer);
+
+    expect((await lireDerniereLecture(db, "positions:al112026"))?.contenu).toEqual(kyle);
+    expect(await lireDerniereLecture(db, "positions:al122026")).toBeNull();
+  });
+
+  it("ne mémorise jamais des positions de secours", async () => {
+    const kyle = { ...positionsFixture("actifs").al112026, echecLe: "2026-09-10T17:00:00.000Z" };
+
+    await verifier({ flux: ACTIFS, positions: { al112026: kyle } }, servicePush().envoyer);
+
+    expect(await lireDerniereLecture(db, "positions:al112026")).toBeNull();
+  });
+});

@@ -46,8 +46,24 @@ export async function alertesNhc(
   });
 }
 
-/** Positions prévues des systèmes actifs (US-03), par identifiant de système, par la même voie que le flux. */
+/**
+ * Positions prévues des systèmes actifs (US-03), par identifiant de système, par la même voie que le flux.
+ * Quand la lecture d'un système échoue, ses dernières positions connues, gardées en base (US-11).
+ */
 export async function positionsNhc(
+  fixture: NomFixture | null,
+  systemes: { id: string; emplacement: string }[],
+  maintenant: () => Date = () => new Date(),
+): Promise<Record<string, PositionsPrevues>> {
+  if (fixture) return positionsFixture(fixture);
+  return chargerToutesPositions(systemes, positionsEnCache, {
+    secours: (id) => lireDerniereLecture(connexion(), `positions:${id}`),
+    maintenant,
+  });
+}
+
+/** Positions prévues telles que le NHC les publie en ce moment, sans secours : pour la vérification des alertes. */
+export async function positionsNhcEnDirect(
   fixture: NomFixture | null,
   systemes: { id: string; emplacement: string }[],
 ): Promise<Record<string, PositionsPrevues>> {
