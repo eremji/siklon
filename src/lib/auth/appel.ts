@@ -1,6 +1,8 @@
 // Passerelle entre les server actions et le routeur HTTP de Better Auth. On passe par le routeur
 // (et non par auth.api) parce que c'est lui qui applique la limitation des tentatives.
 import { parseSetCookieHeader, toCookieOptions } from "better-auth/cookies";
+import type { Langue } from "../langues";
+import { COMPTE } from "../textes/compte";
 import { DUREE_REAUTHENTIFICATION_MINUTES, LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "./options";
 
 export const CHEMIN_API_AUTH = "/api/auth";
@@ -37,31 +39,33 @@ export function cookiesDeLaReponse(entetes: Headers): CookieAEcrire[] {
   );
 }
 
-const MESSAGES: Record<string, string> = {
-  PASSWORD_TOO_SHORT: `Le mot de passe doit faire au moins ${LONGUEUR_MIN_MOT_DE_PASSE} caractères.`,
-  PASSWORD_TOO_LONG: `Le mot de passe doit faire au plus ${LONGUEUR_MAX_MOT_DE_PASSE} caractères.`,
-  INVALID_EMAIL: "Cette adresse email n'est pas valide.",
-  USER_ALREADY_EXISTS: "Un compte existe déjà avec cette adresse email.",
-  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Un compte existe déjà avec cette adresse email.",
-  INVALID_EMAIL_OR_PASSWORD: "Email ou mot de passe incorrect.",
-  INVALID_PASSWORD: "Mot de passe incorrect.",
-  PASSWORD_REQUIRED: "Saisissez votre mot de passe pour confirmer.",
-  INVALID_TOKEN: "Ce lien n'est pas valable ou a déjà servi. Demandez-en un nouveau.",
-  TOKEN_EXPIRED: "Ce lien a expiré. Demandez-en un nouveau.",
-  USER_NOT_FOUND: "Ce compte n'existe plus.",
-  EMAIL_ALREADY_VERIFIED: "Votre adresse est déjà confirmée.",
-  RECENT_SIGN_IN_REQUIRED: `Pour confirmer, reconnectez-vous avec Google, puis supprimez votre compte dans les ${DUREE_REAUTHENTIFICATION_MINUTES} minutes.`,
-};
+// Codes d'erreur de Better Auth traduits ; USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL dit la même chose.
+function messageDuCode(code: string, langue: Langue): string | undefined {
+  const { codes } = COMPTE[langue].auth;
+  switch (code) {
+    case "PASSWORD_TOO_SHORT":
+      return codes.PASSWORD_TOO_SHORT(LONGUEUR_MIN_MOT_DE_PASSE);
+    case "PASSWORD_TOO_LONG":
+      return codes.PASSWORD_TOO_LONG(LONGUEUR_MAX_MOT_DE_PASSE);
+    case "RECENT_SIGN_IN_REQUIRED":
+      return codes.RECENT_SIGN_IN_REQUIRED(DUREE_REAUTHENTIFICATION_MINUTES);
+    case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
+      return codes.USER_ALREADY_EXISTS;
+    default: {
+      const message = Object.hasOwn(codes, code) ? codes[code as keyof typeof codes] : undefined;
+      return typeof message === "string" ? message : undefined;
+    }
+  }
+}
 
 export { messageErreurGoogle } from "./messagesGoogle";
 
-/** Message d'erreur en français ; jamais le détail technique renvoyé par le serveur. */
-export function messageErreur(statut: number, corps: unknown, entetes: Headers): string {
+/** Message d'erreur dans la langue de la page ; jamais le détail technique renvoyé par le serveur. */
+export function messageErreur(statut: number, corps: unknown, entetes: Headers, langue: Langue): string {
+  const textes = COMPTE[langue].auth;
   if (statut === 429) {
-    const minutes = Math.max(1, Math.ceil(Number(entetes.get("x-retry-after") ?? 60) / 60));
-    return `Trop de tentatives. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.`;
+    return textes.tropDeTentatives(Math.max(1, Math.ceil(Number(entetes.get("x-retry-after") ?? 60) / 60)));
   }
   const code = typeof corps === "object" && corps !== null && "code" in corps ? corps.code : undefined;
-  const message = typeof code === "string" ? MESSAGES[code] : undefined;
-  return message ?? "Une erreur est survenue. Réessayez dans quelques instants.";
+  return (typeof code === "string" ? messageDuCode(code, langue) : undefined) ?? textes.generique;
 }

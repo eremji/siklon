@@ -1,13 +1,17 @@
 "use client";
 // Formulaires d'inscription et de connexion (US-05). L'action est une server action passée par la
 // page : sans JavaScript, le formulaire est envoyé normalement ; avec, l'erreur s'affiche sur place.
-import { ChampLangueInterface } from "@/components/langue/ContexteLangue";
+import { ChampLangueInterface, useLangue } from "@/components/langue/ContexteLangue";
 import { Lien } from "@/components/langue/Lien";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { messageErreurGoogle } from "@/lib/auth/messagesGoogle";
 import { DUREE_REAUTHENTIFICATION_MINUTES, LONGUEUR_MAX_MOT_DE_PASSE, LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/options";
-import { ILES } from "@/lib/iles";
+import { ILES, nomIle } from "@/lib/iles";
+import { COMPTE } from "@/lib/textes/compte";
+
+/** Textes des formulaires dans la langue de la page. */
+const useTextes = () => COMPTE[useLangue()].formulaires;
 
 export interface EtatFormulaire {
   message?: string;
@@ -42,10 +46,11 @@ const BOUTON = "min-h-12 rounded-full bg-accent px-6 text-base font-bold text-on
 // précédente cachée dans le DOM, et useId y redonnerait les mêmes identifiants.
 function ChampEmail({ formulaire, defaut }: { formulaire: string; defaut?: string }) {
   const id = `${formulaire}-email`;
+  const textes = useTextes();
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-base font-bold">
-        Adresse email
+        {textes.email}
       </label>
       {/* key : React vide le formulaire après l'envoi ; on remet l'email renvoyé par le serveur. */}
       <input key={defaut} id={id} name="email" type="email" autoComplete="email" required defaultValue={defaut} className={CHAMP} />
@@ -56,17 +61,18 @@ function ChampEmail({ formulaire, defaut }: { formulaire: string; defaut?: strin
 function ChampMotDePasse({
   formulaire,
   nouveau,
-  libelle = "Mot de passe",
+  libelle,
 }: {
   formulaire: string;
   nouveau: boolean;
   libelle?: string;
 }) {
   const id = `${formulaire}-mot-de-passe`;
+  const textes = useTextes();
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-base font-bold">
-        {libelle}
+        {libelle ?? textes.motDePasse}
       </label>
       <input
         id={id}
@@ -81,7 +87,7 @@ function ChampMotDePasse({
       />
       {nouveau && (
         <p id={`${id}-aide`} className="text-sm text-muted">
-          Au moins {LONGUEUR_MIN_MOT_DE_PASSE} caractères.
+          {textes.longueurMin(LONGUEUR_MIN_MOT_DE_PASSE)}
         </p>
       )}
     </div>
@@ -121,10 +127,11 @@ function LogoGoogle() {
 }
 
 function Separateur() {
+  const textes = useTextes();
   return (
     <p className="flex items-center gap-3 text-sm text-muted" aria-hidden="true">
       <span className="h-px flex-1 bg-field" />
-      ou
+      {textes.ou}
       <span className="h-px flex-1 bg-field" />
     </p>
   );
@@ -133,26 +140,28 @@ function Separateur() {
 /** Erreur reçue dans l'adresse au retour de Google (?error=…), à afficher sous Suspense. */
 export function AlerteGoogle() {
   const code = useSearchParams().get("error");
-  return code ? <Erreur message={messageErreurGoogle(code)} /> : null;
+  const langue = useLangue();
+  return code ? <Erreur message={messageErreurGoogle(code, langue)} /> : null;
 }
 
 /** Bouton « Continuer avec Google » ; `origine` : page où revenir si la connexion échoue. */
 export function FormulaireGoogle({
   action,
   origine,
-  libelle = "Continuer avec Google",
+  libelle,
 }: {
   action: ActionGoogle;
   origine: string;
   libelle?: string;
 }) {
+  const textes = useTextes();
   return (
     <form action={action}>
       <input type="hidden" name="origine" value={origine} />
       <ChampLangueInterface />
       <button type="submit" className={`${BOUTON_GOOGLE} w-full`}>
         <LogoGoogle />
-        {libelle}
+        {libelle ?? textes.google}
       </button>
     </form>
   );
@@ -160,6 +169,9 @@ export function FormulaireGoogle({
 
 export function FormulaireInscription({ action, google }: { action: Action; google?: ActionGoogle }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  // Langue des messages cochée sur celle de la page (US-10).
+  const langue = useLangue();
+  const textes = COMPTE[langue].formulaires;
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
       <ChampLangueInterface />
@@ -167,19 +179,19 @@ export function FormulaireInscription({ action, google }: { action: Action; goog
       <ChampEmail formulaire="inscription" defaut={etat.email} />
       <ChampMotDePasse formulaire="inscription" nouveau />
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-base font-bold">Langue des messages</legend>
+        <legend className="mb-1 text-base font-bold">{textes.inscription.langue}</legend>
         {[
           ["fr", "Français", "fr"],
           ["en", "English", "en"],
         ].map(([valeur, libelle, lang]) => (
           <label key={valeur} lang={lang} className="flex min-h-11 items-center gap-3 text-base">
-            <input type="radio" name="langue" value={valeur} defaultChecked={valeur === "fr"} className="size-5 accent-accent" />
+            <input type="radio" name="langue" value={valeur} defaultChecked={valeur === langue} className="size-5 accent-accent" />
             {libelle}
           </label>
         ))}
       </fieldset>
       <button type="submit" disabled={enCours} className={BOUTON}>
-        {enCours ? "Création en cours…" : "Créer mon compte"}
+        {enCours ? textes.inscription.enCours : textes.inscription.creer}
       </button>
       {google && (
         <>
@@ -188,7 +200,7 @@ export function FormulaireInscription({ action, google }: { action: Action; goog
           <input type="hidden" name="origine" value="/compte/inscription" />
           <button type="submit" formAction={google} formNoValidate className={BOUTON_GOOGLE}>
             <LogoGoogle />
-            S&apos;inscrire avec Google
+            {textes.inscription.google}
           </button>
         </>
       )}
@@ -198,6 +210,7 @@ export function FormulaireInscription({ action, google }: { action: Action; goog
 
 export function FormulaireConnexion({ action }: { action: Action }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  const textes = useTextes();
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
       <ChampLangueInterface />
@@ -205,7 +218,7 @@ export function FormulaireConnexion({ action }: { action: Action }) {
       <ChampEmail formulaire="connexion" defaut={etat.email} />
       <ChampMotDePasse formulaire="connexion" nouveau={false} />
       <button type="submit" disabled={enCours} className={BOUTON}>
-        {enCours ? "Connexion en cours…" : "Se connecter"}
+        {enCours ? textes.connexion.enCours : textes.connexion.bouton}
       </button>
     </form>
   );
@@ -222,22 +235,18 @@ export function FormulaireSuppression({
   google?: ActionGoogle;
 }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  const champs = useTextes();
+  const textes = champs.suppression;
   return (
     <section aria-labelledby="suppression-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
       <h2 id="suppression-titre" className="text-xl font-bold">
-        Supprimer mon compte
+        {textes.titre}
       </h2>
-      <p className="text-base">
-        Le compte et toutes ses données (adresse email, langue, îles suivies, appareils abonnés aux alertes, mot de
-        passe, sessions) sont effacés immédiatement. La suppression est définitive.
-      </p>
+      <p className="text-base">{textes.texte}</p>
       {!motDePasse && (
         <>
-          <p className="text-base">
-            Votre compte n&apos;a pas de mot de passe : pour confirmer, reconnectez-vous avec Google, puis supprimez votre
-            compte dans les {DUREE_REAUTHENTIFICATION_MINUTES} minutes.
-          </p>
-          {google && <FormulaireGoogle action={google} origine="/compte" libelle="Me reconnecter avec Google" />}
+          <p className="text-base">{textes.sansMotDePasse(DUREE_REAUTHENTIFICATION_MINUTES)}</p>
+          {google && <FormulaireGoogle action={google} origine="/compte" libelle={textes.reconnexion} />}
         </>
       )}
       <form action={envoyer} className="flex flex-col gap-3">
@@ -246,7 +255,7 @@ export function FormulaireSuppression({
         {motDePasse && (
           <div className="flex flex-col gap-1">
             <label htmlFor="suppression-mot-de-passe" className="text-base font-bold">
-              Mot de passe actuel
+              {champs.motDePasseActuel}
             </label>
             <input
               id="suppression-mot-de-passe"
@@ -264,7 +273,7 @@ export function FormulaireSuppression({
           disabled={enCours}
           className="min-h-12 rounded-full border-2 border-danger-text px-6 text-base font-bold text-danger-text disabled:opacity-70"
         >
-          {enCours ? "Suppression en cours…" : "Supprimer définitivement mon compte"}
+          {enCours ? textes.enCours : textes.bouton}
         </button>
       </form>
     </section>
@@ -275,17 +284,20 @@ export function FormulaireSuppression({
 export function FormulaireIles({ action, suivies }: { action: ActionIles; suivies: readonly string[] }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
   const cochees = etat.iles ?? suivies;
+  const langue = useLangue();
+  const textes = COMPTE[langue].formulaires;
   return (
     <section aria-labelledby="iles-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
       <h2 id="iles-titre" className="text-xl font-bold">
-        Mes îles
+        {textes.iles.titre}
       </h2>
-      <p className="text-base">Cochez les îles que vous suivez, décochez celles que vous ne suivez plus.</p>
+      <p className="text-base">{textes.iles.texte}</p>
       <form action={envoyer} className="flex flex-col gap-3">
+        <ChampLangueInterface />
         <Erreur message={etat.message} />
         {/* key : React vide le formulaire après l'envoi ; on recoche les îles enregistrées. */}
         <fieldset key={cochees.join(" ")} className="flex flex-col">
-          <legend className="mb-1 text-base font-bold">Îles suivies</legend>
+          <legend className="mb-1 text-base font-bold">{textes.iles.liste}</legend>
           {ILES.map((ile) => (
             <label key={ile.slug} className="flex min-h-11 items-center gap-3 text-base">
               <input
@@ -295,7 +307,7 @@ export function FormulaireIles({ action, suivies }: { action: ActionIles; suivie
                 defaultChecked={cochees.includes(ile.slug)}
                 className="size-5 accent-accent"
               />
-              {ile.nom}
+              {nomIle(ile, langue)}
             </label>
           ))}
         </fieldset>
@@ -303,7 +315,7 @@ export function FormulaireIles({ action, suivies }: { action: ActionIles; suivie
           {etat.confirmation}
         </p>
         <button type="submit" disabled={enCours} className={BOUTON}>
-          {enCours ? "Enregistrement en cours…" : "Enregistrer mes îles"}
+          {enCours ? textes.enregistrement : textes.iles.bouton}
         </button>
       </form>
     </section>
@@ -322,27 +334,28 @@ export function FormulaireAlertesEmail({
 }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
   const coche = etat.accord ?? accord;
+  const textes = useTextes();
   return (
     <section aria-labelledby="alertes-email-titre" className="flex flex-col gap-3 rounded-2xl bg-surface p-4">
       <h2 id="alertes-email-titre" className="text-xl font-bold">
-        Alertes par e-mail
+        {textes.alertesEmail.titre}
       </h2>
       <p className="text-base">
-        En plus des alertes sur vos appareils, Siklon peut les envoyer à <span className="font-bold break-all">{email}</span>.
-        Vous pouvez changer d&apos;avis à tout moment.
+        {textes.alertesEmail.avant} <span className="font-bold break-all">{email}</span>. {textes.alertesEmail.apres}
       </p>
       <form action={envoyer} className="flex flex-col gap-3">
+        <ChampLangueInterface />
         <Erreur message={etat.message} />
         {/* key : React vide le formulaire après l'envoi ; on remet la case dans l'état enregistré. */}
         <label key={String(coche)} className="flex min-h-11 items-center gap-3 text-base">
           <input type="checkbox" name="email" value="oui" defaultChecked={coche} className="size-5 accent-accent" />
-          Recevoir les alertes par e-mail
+          {textes.alertesEmail.case}
         </label>
         <p role="status" className="text-base font-bold empty:hidden">
           {etat.confirmation}
         </p>
         <button type="submit" disabled={enCours} className={BOUTON}>
-          {enCours ? "Enregistrement en cours…" : "Enregistrer"}
+          {enCours ? textes.enregistrement : textes.alertesEmail.bouton}
         </button>
       </form>
     </section>
@@ -352,22 +365,24 @@ export function FormulaireAlertesEmail({
 /** Page ouverte depuis le lien de confirmation : un clic confirme l'adresse (US-05). */
 export function FormulaireConfirmationAdresse({ action, jeton }: { action: Action; jeton: string }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  const textes = useTextes();
   if (etat.confirmation) {
     return (
       <div className="flex flex-col gap-4">
         <Confirmation message={etat.confirmation} />
         <Lien href="/compte" className={LIEN}>
-          Aller à mon compte
+          {textes.confirmation.compte}
         </Lien>
       </div>
     );
   }
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <ChampLangueInterface />
       <Erreur message={etat.message} />
       <input type="hidden" name="jeton" value={jeton} />
       <button type="submit" disabled={enCours} className={BOUTON}>
-        {enCours ? "Confirmation en cours…" : "Confirmer mon adresse"}
+        {enCours ? textes.confirmation.enCours : textes.confirmation.bouton}
       </button>
     </form>
   );
@@ -376,8 +391,10 @@ export function FormulaireConfirmationAdresse({ action, jeton }: { action: Actio
 /** Page Compte, adresse non confirmée : renvoie le lien (le premier a pu expirer ou se perdre). */
 export function FormulaireRenvoiConfirmation({ action }: { action: Action }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  const textes = useTextes();
   return (
     <form action={envoyer} className="flex flex-col gap-3">
+      <ChampLangueInterface />
       <Erreur message={etat.message} />
       <Confirmation message={etat.confirmation} />
       <button
@@ -385,7 +402,7 @@ export function FormulaireRenvoiConfirmation({ action }: { action: Action }) {
         disabled={enCours}
         className="min-h-12 rounded-full border border-accent px-6 text-base font-bold text-accent disabled:opacity-70"
       >
-        {enCours ? "Envoi en cours…" : "Renvoyer le lien de confirmation"}
+        {enCours ? textes.envoi : textes.renvoi}
       </button>
     </form>
   );
@@ -393,13 +410,15 @@ export function FormulaireRenvoiConfirmation({ action }: { action: Action }) {
 
 export function FormulaireMotDePasseOublie({ action }: { action: Action }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  const textes = useTextes();
   if (etat.confirmation) return <Confirmation message={etat.confirmation} />;
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <ChampLangueInterface />
       <Erreur message={etat.message} />
       <ChampEmail formulaire="oubli" defaut={etat.email} />
       <button type="submit" disabled={enCours} className={BOUTON}>
-        {enCours ? "Envoi en cours…" : "Recevoir un lien"}
+        {enCours ? textes.envoi : textes.oubli}
       </button>
     </form>
   );
@@ -408,28 +427,30 @@ export function FormulaireMotDePasseOublie({ action }: { action: Action }) {
 /** Page ouverte depuis le lien de réinitialisation : choix du nouveau mot de passe. */
 export function FormulaireNouveauMotDePasse({ action, jeton }: { action: Action; jeton: string }) {
   const [etat, envoyer, enCours] = useActionState(action, {});
+  const textes = useTextes();
   if (etat.confirmation) {
     return (
       <div className="flex flex-col gap-4">
         <Confirmation message={etat.confirmation} />
         <Lien href="/compte/connexion" className={LIEN}>
-          Se connecter
+          {textes.nouveau.seConnecter}
         </Lien>
       </div>
     );
   }
   return (
     <form action={envoyer} className="flex flex-col gap-4 rounded-2xl bg-surface p-4">
+      <ChampLangueInterface />
       <Erreur message={etat.message} />
       {etat.message && (
         <Lien href="/compte/mot-de-passe-oublie" className={LIEN}>
-          Demander un nouveau lien
+          {textes.nouveau.nouveauLien}
         </Lien>
       )}
       <input type="hidden" name="jeton" value={jeton} />
-      <ChampMotDePasse formulaire="nouveau" nouveau libelle="Nouveau mot de passe" />
+      <ChampMotDePasse formulaire="nouveau" nouveau libelle={textes.nouveauMotDePasse} />
       <button type="submit" disabled={enCours} className={BOUTON}>
-        {enCours ? "Enregistrement en cours…" : "Changer mon mot de passe"}
+        {enCours ? textes.enregistrement : textes.nouveau.bouton}
       </button>
     </form>
   );

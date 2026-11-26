@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
 import { Lien } from "@/components/langue/Lien";
 import { MentionOfficielle } from "@/components/MentionOfficielle";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import { COMPTE } from "@/lib/textes/compte";
 
-export const metadata: Metadata = {
-  title: "Compte supprimé · Siklon",
-  description: "Votre compte Siklon a été supprimé.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { titre, description } = COMPTE[await langueDeLaPage()].pages.supprime;
+  return { title: `${titre} · Siklon`, description };
+}
 
-export default function Page() {
+export default async function Page() {
+  const textes = COMPTE[await langueDeLaPage()].pages.supprime;
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <h1 className="text-3xl font-bold">Compte supprimé</h1>
+      <h1 className="text-3xl font-bold">{textes.titre}</h1>
       <p role="status" className="text-base">
-        Votre compte et toutes ses données ont été effacés. Vous pouvez continuer à suivre les cyclones sans compte.
+        {textes.efface}
       </p>
       <Lien
         href="/"
         className="flex min-h-12 items-center justify-center rounded-full bg-accent px-6 text-base font-bold text-on-accent"
       >
-        Revenir à la carte
+        {textes.carte}
       </Lien>
       <MentionOfficielle />
     </main>

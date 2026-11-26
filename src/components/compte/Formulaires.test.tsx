@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -353,3 +354,99 @@ describe("Langue de la page transmise aux actions qui redirigent", () => {
     for (const element of formulaires) expect(champLangue(element)).toBe("en");
   });
 });
+
+describe("Formulaires en anglais (US-10)", () => {
+  const enAnglais = (element: ReactNode) => render(<FournisseurLangue langue="en">{element}</FournisseurLangue>);
+  const champLangue = (formulaire: HTMLElement) =>
+    formulaire.querySelector<HTMLInputElement>('input[type="hidden"][name="langueInterface"]')?.value;
+
+  it("inscription : libellés en anglais, langue des messages cochée sur l'anglais", () => {
+    enAnglais(<FormulaireInscription action={vi.fn()} google={vi.fn()} />);
+    expect(screen.getByLabelText("Email address")).toBeRequired();
+    expect(screen.getByLabelText("Password")).toHaveAccessibleDescription("At least 12 characters.");
+    expect(screen.getByRole("group", { name: "Message language" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Français" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Create my account" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign up with Google" })).toBeInTheDocument();
+  });
+
+  it("inscription en français : langue des messages cochée sur le français", () => {
+    render(<FormulaireInscription action={vi.fn()} />);
+    expect(screen.getByRole("radio", { name: "Français" })).toBeChecked();
+  });
+
+  it("connexion, Google et mot de passe oublié", () => {
+    enAnglais(
+      <>
+        <FormulaireConnexion action={vi.fn()} />
+        <FormulaireGoogle action={vi.fn()} origine="/compte/connexion" />
+        <FormulaireMotDePasseOublie action={vi.fn()} />
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Get a link" })).toBeInTheDocument();
+  });
+
+  it("suppression d'un compte avec mot de passe", () => {
+    enAnglais(<FormulaireSuppression action={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Delete my account" })).toBeInTheDocument();
+    expect(screen.getByText(/are erased immediately\. Deletion is permanent\.$/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Current password")).toBeRequired();
+    expect(screen.getByRole("button", { name: "Permanently delete my account" })).toBeInTheDocument();
+  });
+
+  it("suppression d'un compte Google sans mot de passe", () => {
+    enAnglais(<FormulaireSuppression action={vi.fn()} motDePasse={false} google={vi.fn()} />);
+    expect(screen.getByText(/^Your account has no password: to confirm, sign in again with Google/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in again with Google" })).toBeInTheDocument();
+  });
+
+  it("îles suivies : noms anglais, et la langue de la page part avec le formulaire", () => {
+    const { container } = enAnglais(<FormulaireIles action={vi.fn()} suivies={["dominique"]} />);
+    expect(screen.getByRole("heading", { name: "My islands" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Islands followed" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Dominica" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Save my islands" })).toBeInTheDocument();
+    expect(champLangue(container.querySelector("form")!)).toBe("en");
+  });
+
+  it("alertes par e-mail", () => {
+    const { container } = enAnglais(<FormulaireAlertesEmail action={vi.fn()} accord={false} email="a@b.fr" />);
+    expect(screen.getByRole("heading", { name: "Email alerts" })).toBeInTheDocument();
+    expect(screen.getByText(/^As well as alerts on your devices, Siklon can send them to/)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Receive alerts by email" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(champLangue(container.querySelector("form")!)).toBe("en");
+  });
+
+  it("confirmation d'adresse, renvoi du lien et nouveau mot de passe", () => {
+    const { container } = enAnglais(
+      <>
+        <FormulaireConfirmationAdresse action={vi.fn()} jeton="jeton" />
+        <FormulaireRenvoiConfirmation action={vi.fn()} />
+        <FormulaireNouveauMotDePasse action={vi.fn()} jeton="jeton" />
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Confirm my address" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resend the confirmation link" })).toBeInTheDocument();
+    expect(screen.getByLabelText("New password")).toHaveAttribute("autocomplete", "new-password");
+    expect(screen.getByRole("button", { name: "Change my password" })).toBeInTheDocument();
+    for (const formulaire of container.querySelectorAll("form")) expect(champLangue(formulaire)).toBe("en");
+  });
+
+  it("après confirmation, mène au compte en anglais", async () => {
+    enAnglais(<FormulaireConfirmationAdresse action={actionQuiRepond({ confirmation: "Your address is confirmed." })} jeton="jeton" />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirm my address" }));
+    expect(await screen.findByRole("link", { name: "Go to my account" })).toHaveAttribute("href", "/en/compte");
+  });
+
+  it("erreur au retour de Google, en anglais", () => {
+    parametres.valeur = new URLSearchParams("error=access_denied");
+    enAnglais(<AlerteGoogle />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Google sign-in cancelled.");
+    parametres.valeur = new URLSearchParams();
+  });
+});
+

@@ -1,9 +1,17 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// Langue du compte (US-10) : la session est lue côté serveur, simulée ici.
+const changerLangueCompte = vi.hoisted(() => vi.fn(async () => true));
+vi.mock("@/lib/auth/serveur", () => ({ changerLangueCompte }));
+
 import { GET } from "./route";
 
 const SITE = "https://siklon.example";
-const basculer = (parametres: string) => GET(new NextRequest(`${SITE}/api/langue?${parametres}`));
+const basculer = (parametres: string, entetes: Record<string, string> = {}) =>
+  GET(new NextRequest(`${SITE}/api/langue?${parametres}`, { headers: entetes }));
+
+beforeEach(() => changerLangueCompte.mockClear());
 
 describe("GET /api/langue (bascule de langue)", () => {
   it("garde la langue choisie dans un cookie d'un an, puis ouvre la même page dans cette langue", async () => {
@@ -45,3 +53,38 @@ describe("GET /api/langue (bascule de langue)", () => {
     expect((await basculer("vers=en")).headers.get("cache-control")).toMatch(/no-store/);
   });
 });
+
+describe("GET /api/langue et langue du compte (US-10)", () => {
+  it("clic depuis Siklon : la langue du compte connecté suit la bascule", async () => {
+    const reponse = await basculer("vers=en&page=%2Fcompte", { "sec-fetch-site": "same-origin" });
+    expect(reponse.status).toBe(303);
+    expect(changerLangueCompte).toHaveBeenCalledWith("en");
+  });
+
+  it.each([["cross-site"], ["same-site"], ["none"]])(
+    "demande venue d'ailleurs (Sec-Fetch-Site: %s) : la page change, jamais la langue du compte",
+    async (provenance) => {
+      const reponse = await basculer("vers=en&page=%2Fcompte", { "sec-fetch-site": provenance });
+      expect(reponse.headers.get("location")).toBe(`${SITE}/en/compte`);
+      expect(changerLangueCompte).not.toHaveBeenCalled();
+    },
+  );
+
+  it("sans en-tête de provenance : ne touche pas au compte", async () => {
+    await basculer("vers=en&page=%2Fcompte");
+    expect(changerLangueCompte).not.toHaveBeenCalled();
+  });
+
+  it("langue inconnue : ne touche pas au compte", async () => {
+    await basculer("vers=es", { "sec-fetch-site": "same-origin" });
+    expect(changerLangueCompte).not.toHaveBeenCalled();
+  });
+
+  it("si la mise à jour du compte échoue, la bascule de la page aboutit quand même", async () => {
+    changerLangueCompte.mockRejectedValueOnce(new Error("base indisponible"));
+    const reponse = await basculer("vers=en&page=%2Fcompte", { "sec-fetch-site": "same-origin" });
+    expect(reponse.status).toBe(303);
+    expect(reponse.headers.get("set-cookie")).toMatch(/^siklon-langue=en;/);
+  });
+});
+

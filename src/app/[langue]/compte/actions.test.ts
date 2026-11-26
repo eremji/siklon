@@ -78,7 +78,7 @@ describe("inscrire", () => {
       password: "un mot de passe solide",
       name: "",
       langue: "en",
-    });
+    }, "fr");
   });
 
   it("refuse une langue inconnue sans appeler le serveur d'authentification", async () => {
@@ -100,7 +100,7 @@ describe("connecter", () => {
     await expect(
       connecter({}, formulaire({ email: "a@b.fr", motDePasse: "un mot de passe solide", langueInterface: "en" })),
     ).rejects.toThrow(/^redirection vers \/en\/compte$/);
-    expect(appelerAuth).toHaveBeenCalledWith("/sign-in/email", { email: "a@b.fr", password: "un mot de passe solide" });
+    expect(appelerAuth).toHaveBeenCalledWith("/sign-in/email", { email: "a@b.fr", password: "un mot de passe solide" }, "en");
   });
 
   it("renvoie le message d'erreur", async () => {
@@ -116,7 +116,7 @@ describe("deconnecter", () => {
   it("ferme la session puis revient à la page Compte dans la langue de la page", async () => {
     appelerAuth.mockResolvedValue({ ok: true });
     await expect(deconnecter(formulaire({ langueInterface: "en" }))).rejects.toThrow(/^redirection vers \/en\/compte$/);
-    expect(appelerAuth).toHaveBeenCalledWith("/sign-out", {});
+    expect(appelerAuth).toHaveBeenCalledWith("/sign-out", {}, "en");
   });
 });
 
@@ -126,14 +126,14 @@ describe("supprimerCompte", () => {
     await expect(
       supprimerCompte({}, formulaire({ motDePasse: "un mot de passe solide", langueInterface: "en" })),
     ).rejects.toThrow(/^redirection vers \/en\/compte\/supprime$/);
-    expect(appelerAuth).toHaveBeenCalledWith("/delete-user", { password: "un mot de passe solide" });
+    expect(appelerAuth).toHaveBeenCalledWith("/delete-user", { password: "un mot de passe solide" }, "en");
   });
 
   it("sans champ mot de passe (compte Google seul), demande la suppression sans mot de passe", async () => {
     appelerAuth.mockResolvedValue({ ok: true });
     // Sans langue reçue (ancien formulaire, champ retiré…) : le français.
     await expect(supprimerCompte({}, formulaire({}))).rejects.toThrow(/^redirection vers \/fr\/compte\/supprime$/);
-    expect(appelerAuth).toHaveBeenCalledWith("/delete-user", {});
+    expect(appelerAuth).toHaveBeenCalledWith("/delete-user", {}, "fr");
   });
 
   it("renvoie le message d'erreur sans rien supprimer", async () => {
@@ -235,7 +235,7 @@ describe("confirmerAdresse", () => {
     expect(await confirmerAdresse({}, formulaire({ jeton: "jeton-1" }))).toEqual({
       confirmation: "Votre adresse est confirmée.",
     });
-    expect(confirmerEmail).toHaveBeenCalledWith("jeton-1");
+    expect(confirmerEmail).toHaveBeenCalledWith("jeton-1", "fr");
   });
 
   it("renvoie le message d'erreur d'un lien expiré", async () => {
@@ -260,7 +260,7 @@ describe("renvoyerConfirmation", () => {
     expect(await renvoyerConfirmation()).toEqual({
       confirmation: "Un nouveau lien vient d'être envoyé à a@b.fr.",
     });
-    expect(appelerAuth).toHaveBeenCalledWith("/send-verification-email", { email: "a@b.fr" });
+    expect(appelerAuth).toHaveBeenCalledWith("/send-verification-email", { email: "a@b.fr" }, "fr");
   });
 
   it("sans session, n'envoie rien", async () => {
@@ -279,7 +279,7 @@ describe("demanderReinitialisation", () => {
       confirmation:
         "Si un compte existe avec cette adresse, un lien pour choisir un nouveau mot de passe vient de lui être envoyé. Il reste valable 1 heure.",
     });
-    expect(appelerAuth).toHaveBeenCalledWith("/request-password-reset", { email: "a@b.fr" });
+    expect(appelerAuth).toHaveBeenCalledWith("/request-password-reset", { email: "a@b.fr" }, "fr");
   });
 
   it("renvoie le message d'erreur et l'email saisi", async () => {
@@ -300,7 +300,7 @@ describe("reinitialiserMotDePasse", () => {
     expect(appelerAuth).toHaveBeenCalledWith("/reset-password", {
       token: "jeton-1",
       newPassword: "un tout nouveau mot de passe",
-    });
+    }, "fr");
   });
 
   it("renvoie le message d'erreur d'un lien qui a déjà servi", async () => {
@@ -391,7 +391,7 @@ describe("connecterAvecGoogle", () => {
       callbackURL: "/fr/compte",
       errorCallbackURL: "/fr/compte/inscription",
       additionalData: { langue: "en" },
-    });
+    }, "fr");
   });
 
   it("en cas d'échec au retour, revient sur la page de départ ; une page inconnue devient la page de connexion", async () => {
@@ -400,6 +400,7 @@ describe("connecterAvecGoogle", () => {
     expect(appelerAuth).toHaveBeenCalledWith(
       "/sign-in/social",
       expect.objectContaining({ errorCallbackURL: "/fr/compte/connexion", additionalData: { langue: "fr" } }),
+      "fr",
     );
   });
 
@@ -414,6 +415,113 @@ describe("connecterAvecGoogle", () => {
     appelerAuth.mockResolvedValue({ ok: true, corps: { url: "https://pirate.example/connexion" } });
     await expect(connecterAvecGoogle(formulaire({ origine: "/compte/connexion" }))).rejects.toThrow(
       "redirection vers /fr/compte/connexion?error=depart_impossible",
+    );
+  });
+});
+
+describe("messages des actions en anglais (US-10)", () => {
+  const anglais = (champs: Record<string, string> = {}) => formulaire({ ...champs, langueInterface: "en" });
+  const connecte = { id: "id-1", email: "a@b.fr", emailVerifie: true, langue: "en" };
+
+  it("inscription : demande la langue en anglais, et transmet la langue de la page à Better Auth", async () => {
+    expect(await inscrire({}, anglais({ email: "a@b.fr", langue: "es" }))).toEqual({
+      message: "Choose French or English.",
+      email: "a@b.fr",
+    });
+    appelerAuth.mockResolvedValue({ ok: false, message: "An account already exists with this email address." });
+    await inscrire({}, anglais({ email: "a@b.fr", motDePasse: "un mot de passe solide", langue: "en" }));
+    expect(appelerAuth).toHaveBeenCalledWith("/sign-up/email", expect.objectContaining({ langue: "en" }), "en");
+  });
+
+  it("îles : session expirée, île inconnue et confirmation", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await enregistrerIles({}, anglais())).toEqual({
+      message: "Your session has expired. Sign in again to save your islands.",
+    });
+    utilisateurCourant.mockResolvedValue(connecte);
+    ilesSuivies.enregistrer.mockRejectedValueOnce(new IleInconnueError("atlantide"));
+    expect(await enregistrerIles({}, anglais({ ile: "atlantide" }))).toEqual({
+      message: "This island is not on the list.",
+      iles: undefined,
+    });
+    ilesSuivies.lire.mockResolvedValue(["haiti"]);
+    expect(await enregistrerIles({}, anglais({ ile: "haiti" }))).toEqual({ confirmation: "Your islands are saved.", iles: ["haiti"] });
+  });
+
+  it("alertes par e-mail : adresse à confirmer, accord et retrait", async () => {
+    utilisateurCourant.mockResolvedValue({ ...connecte, emailVerifie: false });
+    expect(await enregistrerAlertesEmail({}, anglais({ email: "oui" }))).toEqual({
+      message: "Confirm your email address first to receive alerts.",
+      accord: undefined,
+    });
+    utilisateurCourant.mockResolvedValue(connecte);
+    expect(await enregistrerAlertesEmail({}, anglais({ email: "oui" }))).toEqual({
+      confirmation: "You will receive alerts by email.",
+      accord: true,
+    });
+    expect(await enregistrerAlertesEmail({}, anglais())).toEqual({
+      confirmation: "You will no longer receive alerts by email.",
+      accord: false,
+    });
+  });
+
+  it("confirmation d'adresse et renvoi du lien", async () => {
+    expect(await confirmerAdresse({}, anglais())).toEqual({
+      message: "This link is not valid or has already been used. Request a new one.",
+    });
+    confirmerEmail.mockResolvedValue({ ok: true });
+    expect(await confirmerAdresse({}, anglais({ jeton: "jeton" }))).toEqual({ confirmation: "Your address is confirmed." });
+    expect(confirmerEmail).toHaveBeenCalledWith("jeton", "en");
+
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await renvoyerConfirmation({}, anglais())).toEqual({
+      message: "Your session has expired. Sign in again to get a new link.",
+    });
+    utilisateurCourant.mockResolvedValue(connecte);
+    appelerAuth.mockResolvedValue({ ok: true });
+    expect(await renvoyerConfirmation({}, anglais())).toEqual({ confirmation: "A new link has just been sent to a@b.fr." });
+  });
+
+  it("mot de passe oublié et nouveau mot de passe", async () => {
+    appelerAuth.mockResolvedValue({ ok: true });
+    expect(await demanderReinitialisation({}, anglais({ email: "a@b.fr" }))).toEqual({
+      confirmation:
+        "If an account exists with this address, a link to choose a new password has just been sent to it. It is valid for 1 hour.",
+    });
+    expect(await reinitialiserMotDePasse({}, anglais({ jeton: "j", motDePasse: "un mot de passe solide" }))).toEqual({
+      confirmation: "Your password has been changed. Sign in with the new one.",
+    });
+  });
+
+  it("abonnement de l'appareil : messages dans la langue de la page", async () => {
+    utilisateurCourant.mockResolvedValue(null);
+    expect(await abonnerAppareil({}, "en")).toEqual({
+      ok: false,
+      message: "Your session has expired. Sign in again to receive alerts.",
+    });
+    expect(await desabonnerAppareil("https://push.example/x", "en")).toEqual({
+      ok: false,
+      message: "Your session has expired. Sign in again to manage your alerts.",
+    });
+    utilisateurCourant.mockResolvedValue({ ...connecte, emailVerifie: false });
+    expect(await abonnerAppareil({}, "en")).toEqual({
+      ok: false,
+      message: "Confirm your email address first to receive alerts.",
+    });
+    utilisateurCourant.mockResolvedValue(connecte);
+    expect(await abonnerAppareil({ endpoint: "pas une adresse" }, "en")).toEqual({
+      ok: false,
+      message: "This device could not be subscribed. Please try again later.",
+    });
+  });
+
+  it("Google : sans langue cochée, le compte prend la langue de la page", async () => {
+    appelerAuth.mockResolvedValue({ ok: true, corps: { url: "https://accounts.google.com/x" } });
+    await expect(connecterAvecGoogle(anglais({ origine: "/compte/connexion" }))).rejects.toThrow();
+    expect(appelerAuth).toHaveBeenCalledWith(
+      "/sign-in/social",
+      expect.objectContaining({ additionalData: { langue: "en" } }),
+      "en",
     );
   });
 });

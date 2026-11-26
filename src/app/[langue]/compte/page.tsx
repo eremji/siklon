@@ -8,6 +8,8 @@ import { utilisateurCourant } from "@/lib/auth/serveur";
 import { lireIlesSuivies } from "@/lib/db/ilesSuivies";
 import { lireAccordEmail } from "@/lib/db/notifications";
 import { connexionComptes } from "@/lib/db/pool";
+import { langueDeLaPage } from "@/lib/langueDeLaPage";
+import { COMPTE } from "@/lib/textes/compte";
 import {
   abonnerAppareil,
   connecterAvecGoogle,
@@ -19,13 +21,14 @@ import {
   supprimerCompte,
 } from "./actions";
 
-export const metadata: Metadata = {
-  title: "Compte · Siklon",
-  description: "Connectez-vous ou créez un compte Siklon pour suivre vos îles.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { titre, description } = COMPTE[await langueDeLaPage()].pages.compte;
+  return { title: `${titre} · Siklon`, description };
+}
 
 // Lit la session : rendu à la requête, sous la frontière <Suspense> (Cache Components).
 async function Contenu() {
+  const langue = await langueDeLaPage();
   const utilisateur = await utilisateurCourant();
   const [ilesSuivies, accordEmail] = utilisateur
     ? await Promise.all([lireIlesSuivies(connexionComptes(), utilisateur.id), lireAccordEmail(connexionComptes(), utilisateur.id)])
@@ -45,19 +48,21 @@ async function Contenu() {
       // Lue à la requête (pas de NEXT_PUBLIC_) : la clé peut changer sans reconstruire le site.
       clePubliqueVapid={process.env.VAPID_PUBLIC_KEY || null}
       google={connexionGoogleActive(process.env) ? connecterAvecGoogle : undefined}
+      langue={langue}
     />
   );
 }
 
-export default function Page() {
+export default async function Page() {
+  const textes = COMPTE[await langueDeLaPage()].pages.compte;
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <h1 className="text-3xl font-bold">Compte</h1>
+      <h1 className="text-3xl font-bold">{textes.titre}</h1>
       {/* Retour de Google en échec, par exemple en se reconnectant avant de supprimer son compte. */}
       <Suspense fallback={null}>
         <AlerteGoogle />
       </Suspense>
-      <Suspense fallback={<p className="text-base text-muted">Chargement du compte…</p>}>
+      <Suspense fallback={<p className="text-base text-muted">{textes.chargement}</p>}>
         <Contenu />
       </Suspense>
       <MentionOfficielle />

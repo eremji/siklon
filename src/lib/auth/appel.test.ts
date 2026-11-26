@@ -72,20 +72,20 @@ describe("messageErreur", () => {
       "Pour confirmer, reconnectez-vous avec Google, puis supprimez votre compte dans les 10 minutes.",
     ],
   ])("statut %i, %o → %s", (statut, corps, attendu) => {
-    expect(messageErreur(statut, corps, new Headers())).toBe(attendu);
+    expect(messageErreur(statut, corps, new Headers(), "fr")).toBe(attendu);
   });
 
   it("indique le délai à attendre après trop de tentatives, en minutes arrondies au-dessus", () => {
-    expect(messageErreur(429, {}, new Headers({ "x-retry-after": "61" }))).toBe(
+    expect(messageErreur(429, {}, new Headers({ "x-retry-after": "61" }), "fr")).toBe(
       "Trop de tentatives. Réessayez dans 2 minutes.",
     );
-    expect(messageErreur(429, {}, new Headers({ "x-retry-after": "5" }))).toBe(
+    expect(messageErreur(429, {}, new Headers({ "x-retry-after": "5" }), "fr")).toBe(
       "Trop de tentatives. Réessayez dans 1 minute.",
     );
   });
 
   it("donne un message générique pour toute autre erreur, sans détail technique", () => {
-    expect(messageErreur(500, { message: "relation utilisateurs does not exist" }, new Headers())).toBe(
+    expect(messageErreur(500, { message: "relation utilisateurs does not exist" }, new Headers(), "fr")).toBe(
       "Une erreur est survenue. Réessayez dans quelques instants.",
     );
   });
@@ -102,6 +102,48 @@ describe("messageErreurGoogle", () => {
     ["state_mismatch", "La connexion avec Google n'a pas abouti. Réessayez."],
     ["<script>", "La connexion avec Google n'a pas abouti. Réessayez."],
   ])("%s → %s", (code, attendu) => {
-    expect(messageErreurGoogle(code)).toBe(attendu);
+    expect(messageErreurGoogle(code, "fr")).toBe(attendu);
   });
 });
+
+describe("messages d'erreur en anglais (US-10)", () => {
+  it.each([
+    [400, { code: "PASSWORD_TOO_SHORT" }, "The password must be at least 12 characters long."],
+    [400, { code: "PASSWORD_TOO_LONG" }, "The password must be at most 128 characters long."],
+    [400, { code: "INVALID_EMAIL" }, "This email address is not valid."],
+    [422, { code: "USER_ALREADY_EXISTS" }, "An account already exists with this email address."],
+    [401, { code: "INVALID_EMAIL_OR_PASSWORD" }, "Incorrect email or password."],
+    [400, { code: "INVALID_PASSWORD" }, "Incorrect password."],
+    [400, { code: "PASSWORD_REQUIRED" }, "Enter your password to confirm."],
+    [400, { code: "INVALID_TOKEN" }, "This link is not valid or has already been used. Request a new one."],
+    [401, { code: "TOKEN_EXPIRED" }, "This link has expired. Request a new one."],
+    [404, { code: "USER_NOT_FOUND" }, "This account no longer exists."],
+    [400, { code: "EMAIL_ALREADY_VERIFIED" }, "Your address is already confirmed."],
+    [
+      400,
+      { code: "RECENT_SIGN_IN_REQUIRED" },
+      "To confirm, sign in again with Google, then delete your account within 10 minutes.",
+    ],
+    [500, {}, "Something went wrong. Please try again in a few moments."],
+  ])("statut %i, %o → %s", (statut, corps, attendu) => {
+    expect(messageErreur(statut, corps, new Headers(), "en")).toBe(attendu);
+  });
+
+  it("trop de tentatives, au singulier et au pluriel", () => {
+    expect(messageErreur(429, {}, new Headers({ "x-retry-after": "61" }), "en")).toBe("Too many attempts. Try again in 2 minutes.");
+    expect(messageErreur(429, {}, new Headers({ "x-retry-after": "5" }), "en")).toBe("Too many attempts. Try again in 1 minute.");
+  });
+
+  it.each([
+    [
+      "account_not_linked",
+      "An account already exists with this address, but it is not confirmed. Sign in with your password and confirm your address: you can then use Google.",
+    ],
+    ["access_denied", "Google sign-in cancelled."],
+    ["depart_impossible", "Google sign-in could not start. Please try again in a few moments."],
+    ["state_mismatch", "Google sign-in did not complete. Please try again."],
+  ])("Google : %s → %s", (code, attendu) => {
+    expect(messageErreurGoogle(code, "en")).toBe(attendu);
+  });
+});
+
