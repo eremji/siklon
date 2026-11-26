@@ -37,6 +37,10 @@ export const ILES_TEXTES = traductions(
         n === 1
           ? `Prévision indisponible pour ${noms} : sa menace ne peut pas être évaluée.`
           : `Prévisions indisponibles pour ${noms} : leur menace ne peut pas être évaluée.`,
+      positionsAnciennes: (noms: string, n: number) =>
+        n === 1
+          ? `La mise à jour des positions prévues du NHC a échoué pour ${noms} : son estimation est calculée sur la dernière donnée connue.`
+          : `La mise à jour des positions prévues du NHC a échoué pour ${noms} : leurs estimations sont calculées sur la dernière donnée connue.`,
       illisibles: (n: number) =>
         n === 1
           ? "1 système n'a pas pu être lu : sa menace ne peut pas être évaluée."
@@ -81,6 +85,10 @@ export const ILES_TEXTES = traductions(
         n === 1
           ? `Forecast unavailable for ${noms}: its threat cannot be assessed.`
           : `Forecasts unavailable for ${noms}: their threat cannot be assessed.`,
+      positionsAnciennes: (noms: string, n: number) =>
+        n === 1
+          ? `The NHC forecast positions update failed for ${noms}: its estimate uses the last known data.`
+          : `The NHC forecast positions update failed for ${noms}: their estimates use the last known data.`,
       illisibles: (n: number) =>
         n === 1
           ? "1 system could not be read: its threat cannot be assessed."

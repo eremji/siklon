@@ -4,7 +4,7 @@
 import "server-only";
 import { chargerAlertesNhc } from "@/lib/nhc/alertes";
 import { watchesEnCache } from "@/lib/nhc/cache";
-import { fluxNhcEnDirect, positionsNhc } from "@/lib/nhc/lecture";
+import { fluxNhcEnDirect, positionsNhcEnDirect } from "@/lib/nhc/lecture";
 import { fixtureDemandee as fixtureNhcDemandee, watchesFixture } from "@/lib/nhc/source";
 import { etatFixture, fixtureDemandee as fixtureVigilanceDemandee } from "@/lib/vigilance/fixtures";
 import { SOURCES_METEO_FRANCE } from "@/lib/vigilance/source";
@@ -16,7 +16,7 @@ export function sourcesAlertes(env: Record<string, string | undefined>): Sources
   const fixtureVigilance = fixtureVigilanceDemandee(env, undefined);
   return {
     flux: () => fluxNhcEnDirect(fixtureNhc),
-    positions: (systemes) => positionsNhc(fixtureNhc, systemes),
+    positions: (systemes) => positionsNhcEnDirect(fixtureNhc, systemes),
     vigilance: async (fichier) =>
       fixtureVigilance ? etatFixture(fixtureVigilance) : chargerVigilance(fichier, SOURCES_METEO_FRANCE),
     alertesNhc: (_ile, emprise, flux) =>

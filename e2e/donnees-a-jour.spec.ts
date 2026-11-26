@@ -159,3 +159,43 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(violations).toEqual([]);
   });
 }
+
+// Livraison 3b : positions prévues tirées de la dernière donnée connue (fixture « ancien »).
+const AVERTISSEMENT_POSITIONS =
+  "La mise à jour des positions prévues du NHC a échoué pour Kyle : son estimation est calculée sur la dernière donnée connue.";
+
+test("la page d'une île garde l'estimation sur les dernières positions connues et nomme le système concerné", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await fixtureNhc(context, baseURL, "ancien");
+  await page.goto("/iles/guadeloupe");
+
+  await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_POSITIONS })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Systèmes qui menacent Guadeloupe" }).getByRole("listitem")).toHaveCount(1);
+
+  await page.goto("/en/iles/guadeloupe");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "The NHC forecast positions update failed for Kyle: its estimate uses the last known data." }),
+  ).toBeVisible();
+});
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`l'avertissement des positions respecte WCAG AA en thème ${colorScheme === "light" ? "clair" : "sombre"}`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await fixtureNhc(context, baseURL, "ancien");
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/iles/guadeloupe");
+    await expect(page.getByRole("alert").filter({ hasText: AVERTISSEMENT_POSITIONS })).toBeVisible();
+
+    const { violations } = await new AxeBuilder({ page })
+      .include("[role=alert]")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(violations).toEqual([]);
+  });
+}

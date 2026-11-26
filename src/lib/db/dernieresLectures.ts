@@ -6,9 +6,13 @@ import type { Executeur } from "./historique";
 
 /**
  * Source lue : le flux CurrentStorms.json du NHC, le bulletin de vigilance Météo-France d'un fichier,
- * ou les watches/warnings NHC d'une île (identifiant d'URL).
+ * les watches/warnings NHC d'une île (identifiant d'URL), ou les positions prévues d'un système (identifiant NHC).
  */
-export type SourceLue = "nhc-systemes" | `vigilance:${FichierVigilance}` | `alertes-nhc:${string}`;
+export type SourceLue =
+  | "nhc-systemes"
+  | `vigilance:${FichierVigilance}`
+  | `alertes-nhc:${string}`
+  | `positions:${string}`;
 
 export interface Lecture {
   /** Réponse brute de la source, à relire avec le même lecteur que la réponse en direct. */
