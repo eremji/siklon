@@ -1,0 +1,36 @@
+name: Surveillance du journal
+
+# Toutes les 15 minutes, indépendamment de pg_cron (#164) : lit /api/sante du site et ouvre une issue
+# « Surveillance : le journal des lectures n'est plus alimenté » si la vérification de chaque minute
+# n'écrit plus le journal (ou si le site ne répond pas), puis la ferme au retour à la normale.
+# GitHub envoie l'issue par e-mail aux personnes qui suivent le dépôt.
+# Configuration : variable de dépôt SIKLON_URL (adresse du site, non secrète). Aucun secret.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: surveillance-journal
+  cancel-in-progress: false
+
+jobs:
+  journal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Node seul suffit (aucune dépendance) : pas de npm ci.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - env:
+          SIKLON_URL: ${{ vars.SIKLON_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node --import ./scripts/resoudre-ts.mjs scripts/surveiller-journal.mts
