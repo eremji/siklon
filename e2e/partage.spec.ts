@@ -60,6 +60,7 @@ test("le bouton Partager de la fiche ouvre le partage du téléphone avec le mes
     {
       title: "Ouragan Kyle · Siklon",
       text:
+        "Partagé le 10 septembre à 13 h 00 (heure des Antilles françaises). " +
         "Ouragan Kyle (cat. 4) : vents maximaux de 220 km/h, se déplace vers l'ouest-nord-ouest à 19 km/h. " +
         "Source : NHC, avis n° 14 du 10 septembre à 11 h 00 (heure des Antilles françaises).",
       url: `${origine(baseURL)}/systemes/al112026`,
@@ -79,7 +80,7 @@ test("quand la mise à jour du NHC échoue, le partage de la fiche garde la donn
   await page.getByRole("button", { name: "Partager cette alerte" }).click();
 
   const [texte] = await textes();
-  expect(texte).toMatch(/^Ouragan Kyle \(cat\. 4\) : vents maximaux de 220 km\/h/);
+  expect(texte).toMatch(/^Partagé le [^.]+\. Ouragan Kyle \(cat\. 4\) : vents maximaux de 220 km\/h/);
   expect(texte).toMatch(
     /Dernière donnée NHC lue le .+ à \d{2} h \d{2} \(heure des Antilles françaises\) : la mise à jour a échoué\./,
   );
@@ -148,7 +149,8 @@ test.describe("page d'une île (US-21)", () => {
       {
         title: "Guadeloupe · Siklon",
         text:
-          "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h. " +
+          "Partagé le 10 septembre à 15 h 00 (heure locale). " +
+          "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h. " +
           "Guadeloupe : Vigilance rouge · Protégez-vous. " +
           "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
         url: `${origine(baseURL)}/iles/guadeloupe`,
@@ -171,7 +173,9 @@ test.describe("page d'une île (US-21)", () => {
 
     // Les positions gardées de Kyle sont celles de son avis n° 14 (15 h UTC) : la plus ancienne donnée NHC.
     const [texte] = await textes();
-    expect(texte).toMatch(/^Ouragan Kyle \(cat\. 4\) : passage estimé à environ 180 km de Pointe-à-Pitre/);
+    expect(texte).toMatch(
+      /^Partagé le 10 septembre à 15 h 00 \(heure locale\)\. Ouragan Kyle \(cat\. 4\) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h/,
+    );
     expect(texte).toMatch(/\(heure locale\)\. Dernière donnée NHC lue le 10 septembre à 11 h 00 \(heure locale\) : la mise à jour a échoué\.$/);
   });
 

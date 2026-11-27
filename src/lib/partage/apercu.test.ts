@@ -33,12 +33,13 @@ describe("apercuIle (US-21)", () => {
       titre: "Guadeloupe",
       niveau: { libelle: "Vigilance rouge · Protégez-vous", origine: null, couleurs: COULEURS_VIGILANCE.rouge },
       lignes: [
-        { fort: "Ouragan Kyle (cat. 4)", detail: "Passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h" },
+        { fort: "Ouragan Kyle (cat. 4)", detail: "Passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h" },
       ],
       sources:
         "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
       avertissement: null,
       echec: null,
+      date: "Situation au 10 septembre à 15 h 00 (heure locale)",
       mention: "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
     });
   });
@@ -51,7 +52,7 @@ describe("apercuIle (US-21)", () => {
       couleurs: COULEURS_VIGILANCE.rouge,
     });
     expect(apercu.lignes).toEqual([
-      { fort: "Hurricane Kyle (cat. 4)", detail: "Estimated closest approach about 180 km from Pointe-à-Pitre in about 12 hours" },
+      { fort: "Hurricane Kyle (cat. 4)", detail: "Estimated closest approach about 180 km from Pointe-à-Pitre on 11 September around 3 am, in about 12 hours" },
     ]);
   });
 
@@ -91,7 +92,7 @@ describe("apercuIle (US-21)", () => {
   it("dit quand l'heure estimée du passage est atteinte, et signale un avis de plus de 6 h", () => {
     const tard = new Date("2026-09-11T09:00:00.000Z");
     const apercu = apercuIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", tard);
-    expect(apercu.lignes[0].detail).toBe("Passage estimé à environ 180 km de Pointe-à-Pitre, heure estimée déjà atteinte");
+    expect(apercu.lignes[0].detail).toBe("Passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, heure estimée déjà atteinte");
     expect(apercu.avertissement).toBe("Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de 6 h.");
   });
   it("garde la menace d'une mise à jour NHC en échec et l'écrit avec l'heure locale de la dernière lecture (US-11)", () => {
@@ -99,6 +100,11 @@ describe("apercuIle (US-21)", () => {
     expect(ancien.lignes[0].fort).toBe("Ouragan Kyle (cat. 4)");
     expect(ancien.echec).toBe("Dernière donnée NHC lue le 10 septembre à 14 h 00 (heure locale) : la mise à jour a échoué.");
     expect(apercuIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", MAINTENANT).echec).toBeNull();
+  });
+  it("date l'image et donne l'heure estimée du passage, pour un aperçu revu plus tard", () => {
+    const apercu = apercuIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", MAINTENANT);
+    expect(apercu.date).toBe("Situation au 10 septembre à 15 h 00 (heure locale)");
+    expect(apercu.lignes[0].detail).toMatch(/^Passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h$/);
   });
 });
 
@@ -111,6 +117,7 @@ describe("apercuSysteme (US-21)", () => {
       sources: "Source : NHC, avis n° 14 du 10 septembre à 11 h 00 (heure des Antilles françaises).",
       avertissement: null,
       echec: null,
+      date: "Situation au 10 septembre à 15 h 00 (heure des Antilles françaises)",
       mention: "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
     });
   });
@@ -131,5 +138,10 @@ describe("apercuSysteme (US-21)", () => {
     expect(apercuSysteme(kyle, "en", MAINTENANT, "2026-09-10T16:00:00.000Z").echec).toBe(
       "Last NHC data read 10 September at 12:00 pm (Atlantic Standard Time, UTC−4): the update failed.",
     );
+  });
+
+  it("date l'image", () => {
+    expect(apercuSysteme(kyle, "fr", MAINTENANT).date).toBe("Situation au 10 septembre à 15 h 00 (heure des Antilles françaises)");
+    expect(apercuSysteme(kyle, "en", MAINTENANT).date).toBe("As of 10 September at 3:00 pm (Atlantic Standard Time, UTC−4)");
   });
 });

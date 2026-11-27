@@ -44,7 +44,7 @@ function Logo({ hauteur }: { hauteur: number }) {
 }
 
 export function DessinApercu({ apercu }: { apercu: Apercu }) {
-  const { titre, niveau, lignes, sources, avertissement, echec, mention } = apercu;
+  const { titre, niveau, lignes, sources, avertissement, echec, date, mention } = apercu;
   return (
     <div
       style={{
@@ -53,16 +53,20 @@ export function DessinApercu({ apercu }: { apercu: Apercu }) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "44px 60px 36px",
+        padding: "40px 60px 32px",
         background: C.fond,
         color: C.texte,
         fontFamily: POLICE_APERCU,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
-          <div style={{ display: "flex", fontSize: 76, fontWeight: 700, lineHeight: 1 }}>{titre}</div>
-          <Logo hauteur={48} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
+            <div style={{ display: "flex", fontSize: 76, fontWeight: 700, lineHeight: 1 }}>{titre}</div>
+            <Logo hauteur={48} />
+          </div>
+          {/* Heure de la situation : un aperçu revu plus tard ne doit pas passer pour actuel. */}
+          <div style={{ display: "flex", fontSize: 24, color: C.secondaire }}>{date}</div>
         </div>
         {niveau && (
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
