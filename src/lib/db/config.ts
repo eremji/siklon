@@ -59,3 +59,30 @@ export function configurationConnexion(
     ssl: { ca, rejectUnauthorized: true },
   };
 }
+
+export interface OptionsPool {
+  max: number;
+  connectionTimeoutMillis: number;
+  idleTimeoutMillis: number;
+}
+
+// 3 connexions par instance Vercel : le pooler Supabase partage les siennes entre toutes les instances.
+const MAX_POOL_PAR_DEFAUT = 3;
+const MAX_POOL_LIMITE = 50;
+
+/**
+ * Options des pools Postgres. DATABASE_POOL_MAX agrandit le pool d'un serveur qui reçoit beaucoup de
+ * requêtes à la fois depuis une seule instance (serveur des tests e2e) ; elle n'est pas définie sur
+ * Vercel, où la taille reste celle par défaut.
+ */
+export function optionsPool(env: Record<string, string | undefined>): OptionsPool {
+  const valeur = env.DATABASE_POOL_MAX;
+  let max = MAX_POOL_PAR_DEFAUT;
+  if (valeur !== undefined && valeur !== "") {
+    max = /^\d+$/.test(valeur) ? Number(valeur) : Number.NaN;
+    if (!(max >= 1 && max <= MAX_POOL_LIMITE)) {
+      throw new ConfigurationBaseError(`DATABASE_POOL_MAX doit être un entier entre 1 et ${MAX_POOL_LIMITE}`);
+    }
+  }
+  return { max, connectionTimeoutMillis: 5_000, idleTimeoutMillis: 10_000 };
+}

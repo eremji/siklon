@@ -339,6 +339,7 @@ Les tests et le code utilisent ces noms ; aucune valeur en dur ailleurs.
 | `MOYENNE_OURAGANS_MAJEURS` | 3 | Même source ; catégorie 3 et plus. |
 | `INTERVALLE_MAX_LECTURE_NHC_MIN` | 15 | Écart maximal entre deux lectures du flux NHC `CurrentStorms.json` (US-11). Au-delà sans lecture réussie d'une source, la vérification de chaque minute le signale au journal. |
 | `INTERVALLE_CONTROLE_VIGILANCE_S` | 60 | Le fichier de contrôle de la vigilance Météo-France est relu chaque minute (US-11). |
+| `RETARD_MAX_JOURNAL_MIN` | 30 | Âge maximal du journal des lectures `dernieres_lectures`, toutes sources confondues (#164). Au-delà, la route publique `/api/sante` répond « en retard » (503, sans autre détail) et le surveillant GitHub Actions (`.github/workflows/surveillance.yml`, toutes les 15 minutes, indépendant de pg_cron) ouvre une issue, fermée au retour à la normale. Deux fois `INTERVALLE_MAX_LECTURE_NHC_MIN`, pour ne pas alerter sur une source lente ou un déploiement. |
 | `DUREE_APRES_PASSAGE_JOURS` | 7 (à confirmer) | Durée du mode « Après le passage » (US-22). Proposition, à valider avant de coder. |
 
 Toutes les distances sont des distances orthodromiques (sur la sphère)
