@@ -82,6 +82,18 @@ describe("partageIle (US-21)", () => {
       /\(heure locale\)\. Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de 6 h\.$/,
     );
   });
+  it("garde la menace d'une mise à jour NHC en échec, avec l'heure locale de la dernière lecture réussie (US-11)", () => {
+    const luLe = "2026-09-10T18:00:00.000Z";
+    const ancien = (langue: "fr" | "en") =>
+      partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), langue, MAINTENANT, luLe).texte;
+    expect(ancien("fr")).toBe(
+      "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h. " +
+        "Guadeloupe : Vigilance rouge · Protégez-vous. " +
+        "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale). " +
+        "Dernière donnée NHC lue le 10 septembre à 14 h 00 (heure locale) : la mise à jour a échoué.",
+    );
+    expect(ancien("en")).toMatch(/\(local time\)\. Last NHC data read 10 September at 2:00 pm \(local time\): the update failed\.$/);
+  });
 });
 
 describe("ileMenacee (US-21)", () => {

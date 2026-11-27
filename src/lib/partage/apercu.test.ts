@@ -38,6 +38,7 @@ describe("apercuIle (US-21)", () => {
       sources:
         "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
       avertissement: null,
+      echec: null,
       mention: "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
     });
   });
@@ -93,6 +94,12 @@ describe("apercuIle (US-21)", () => {
     expect(apercu.lignes[0].detail).toBe("Passage estimé à environ 180 km de Pointe-à-Pitre, heure estimée déjà atteinte");
     expect(apercu.avertissement).toBe("Données possiblement obsolètes : aucun nouvel avis du NHC depuis plus de 6 h.");
   });
+  it("garde la menace d'une mise à jour NHC en échec et l'écrit avec l'heure locale de la dernière lecture (US-11)", () => {
+    const ancien = apercuIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", MAINTENANT, "2026-09-10T18:00:00.000Z");
+    expect(ancien.lignes[0].fort).toBe("Ouragan Kyle (cat. 4)");
+    expect(ancien.echec).toBe("Dernière donnée NHC lue le 10 septembre à 14 h 00 (heure locale) : la mise à jour a échoué.");
+    expect(apercuIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", MAINTENANT).echec).toBeNull();
+  });
 });
 
 describe("apercuSysteme (US-21)", () => {
@@ -103,6 +110,7 @@ describe("apercuSysteme (US-21)", () => {
       lignes: [{ fort: "Vents maximaux de 220 km/h", detail: "Se déplace vers l'ouest-nord-ouest à 19 km/h" }],
       sources: "Source : NHC, avis n° 14 du 10 septembre à 11 h 00 (heure des Antilles françaises).",
       avertissement: null,
+      echec: null,
       mention: "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
     });
   });
@@ -117,5 +125,11 @@ describe("apercuSysteme (US-21)", () => {
     const apercu = apercuSysteme({ ...kyle, deplacement: undefined }, "fr", new Date("2026-09-10T21:01:00.000Z"));
     expect(apercu.lignes).toEqual([{ fort: "Vents maximaux de 220 km/h", detail: "" }]);
     expect(apercu.avertissement).toMatch(/^Données possiblement obsolètes/);
+  });
+
+  it("écrit une mise à jour NHC en échec avec l'heure de la dernière lecture réussie (US-11)", () => {
+    expect(apercuSysteme(kyle, "en", MAINTENANT, "2026-09-10T16:00:00.000Z").echec).toBe(
+      "Last NHC data read 10 September at 12:00 pm (Atlantic Standard Time, UTC−4): the update failed.",
+    );
   });
 });

@@ -28,10 +28,15 @@ describe("couleurs de l'image d'aperçu (US-21)", () => {
     expect(ratioContraste(neutre, texte)).toBeGreaterThanOrEqual(AA_TEXTE);
   });
 
+  it("écrit la mise à jour NHC en échec en --text sur --danger-soft, lisible (AA)", () => {
+    expect(COULEURS_APERCU.echec).toEqual({ fond: JETONS_CLAIR["danger-soft"], texte: JETONS_CLAIR.text });
+    expect(ratioContraste(COULEURS_APERCU.echec.fond, COULEURS_APERCU.echec.texte)).toBeGreaterThanOrEqual(AA_TEXTE);
+  });
+
   it("ne prend que des jetons de DESIGN.md (thème clair)", () => {
     const jetons = new Set<string>(Object.values(JETONS_CLAIR));
     const toutes = [
-      ...Object.values(COULEURS_APERCU),
+      ...Object.values(COULEURS_APERCU).flatMap((c) => (typeof c === "string" ? [c] : [c.fond, c.texte])),
       ...Object.values(COULEURS_VIGILANCE).flatMap((c) => (c ? [c.fond, c.texte] : [])),
       ...Object.values(COULEURS_NHC).flatMap((c) => [c.fond, c.texte]),
     ];

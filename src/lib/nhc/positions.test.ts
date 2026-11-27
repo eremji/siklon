@@ -225,7 +225,7 @@ describe("chargerToutesPositions : dernières positions connues (US-11)", () => 
 
   afterEach(() => vi.restoreAllMocks());
 
-  it("rend les dernières positions connues d'un système dont la lecture échoue, avec l'heure de l'échec", async () => {
+  it("rend les dernières positions connues d'un système dont la lecture échoue, avec leur heure et celle de l'échec", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const source = vi.fn(async (emplacement: string) => {
       if (emplacement === "AT1") throw new Error("HTTP 503");
@@ -237,7 +237,7 @@ describe("chargerToutesPositions : dernières positions connues (US-11)", () => 
 
     expect(secours).toHaveBeenCalledOnce();
     expect(secours).toHaveBeenCalledWith("al112026");
-    expect(toutes).toEqual({ al112026: { ...kyle, echecLe: "2026-09-10T20:00:00.000Z" } });
+    expect(toutes).toEqual({ al112026: { ...kyle, luLe: "2026-09-10T18:00:00.000Z", echecLe: "2026-09-10T20:00:00.000Z" } });
   });
 
   it("ne la lit pas pour des positions lues ou simplement pas publiées", async () => {

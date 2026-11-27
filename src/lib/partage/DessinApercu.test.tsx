@@ -10,6 +10,7 @@ const APERCU: Apercu = {
   lignes: [{ fort: "Ouragan Kyle (cat. 4)", detail: "Passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h" }],
   sources: "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
   avertissement: null,
+  echec: null,
   mention: "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
 };
 
@@ -76,5 +77,20 @@ describe("DessinApercu (US-21)", () => {
     render(<DessinApercu apercu={{ ...APERCU, lignes: [ligne(1), ligne(2), ligne(3)] }} />);
     expect(screen.getByText("Système 2")).toBeInTheDocument();
     expect(screen.queryByText("Système 3")).not.toBeInTheDocument();
+  });
+
+  it("écrit une mise à jour NHC en échec en gras sur le fond --danger-soft, lisible en petit (US-11)", () => {
+    const echec = "Dernière donnée NHC lue le 10 septembre à 14 h 00 (heure locale) : la mise à jour a échoué.";
+    render(<DessinApercu apercu={{ ...APERCU, echec }} />);
+    const bandeau = screen.getByText(echec);
+    expect(couleurDe(bandeau)).toBe(rgb(COULEURS_APERCU.echec.fond));
+    expect(bandeau.style.color).toBe(rgb(COULEURS_APERCU.echec.texte));
+    expect(bandeau.style.fontWeight).toBe("700");
+    expect(Number.parseInt(bandeau.style.fontSize, 10)).toBeGreaterThanOrEqual(26);
+  });
+
+  it("n'écrit rien de tel quand la donnée NHC est à jour", () => {
+    render(<DessinApercu apercu={APERCU} />);
+    expect(screen.queryByText(/la mise à jour a échoué/)).not.toBeInTheDocument();
   });
 });

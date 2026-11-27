@@ -3,6 +3,7 @@
 // de la page et à l'image d'aperçu du lien, qui montrent donc le même bulletin.
 import "server-only";
 import type { Ile } from "@/lib/iles";
+import { derniereDonneeGardee } from "@/lib/nhc/fraicheur";
 import { alertesNhc, fluxNhc, positionsNhc } from "@/lib/nhc/lecture";
 import { type Menace, evaluerMenaces } from "@/lib/nhc/menace";
 import { COOKIE_FIXTURE as COOKIE_NHC, type NomFixture as FixtureNhc, fixtureDemandee as fixtureNhc } from "@/lib/nhc/source";
@@ -38,13 +39,22 @@ export async function chargerAlerteIle(ile: Ile, fixtures: Fixtures): Promise<Al
   return { source: "meteo-france", etat };
 }
 
-/** Systèmes qui menacent l'île (US-03) et son niveau d'alerte officiel (US-06). */
+/**
+ * Systèmes qui menacent l'île (US-03) et son niveau d'alerte officiel (US-06). `nhcAncien` : heure de la
+ * plus ancienne dernière lecture NHC gardée après une mise à jour en échec (US-11), ou null.
+ */
 export async function chargerPartageIle(
   ile: Ile,
   fixtures: Fixtures,
-): Promise<{ menaces: Menace<SystemeActif>[]; alerte: AlerteIle }> {
+): Promise<{ menaces: Menace<SystemeActif>[]; alerte: AlerteIle; nhcAncien: string | null }> {
   const flux = await fluxNhc(fixtures.nhc);
   const systemes = flux.etat === "ok" ? flux.systemes : [];
   const [positions, alerte] = await Promise.all([positionsNhc(fixtures.nhc, systemes), chargerAlerteIle(ile, fixtures)]);
-  return { menaces: evaluerMenaces(ile, systemes, positions).menaces, alerte };
+  const { menaces } = evaluerMenaces(ile, systemes, positions);
+  const nhcAncien = derniereDonneeGardee([
+    flux,
+    ...menaces.map(({ systeme }) => positions[systeme.id]),
+    alerte.source === "nhc" ? alerte.etat : undefined,
+  ]);
+  return { menaces, alerte, nhcAncien };
 }

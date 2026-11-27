@@ -25,14 +25,23 @@ export function deplacement({ deplacement }: SystemeActif, langue: Langue): stri
   return textes.deplacement(directionDeplacement(deplacement.directionDeg, langue), mphVersKmh(deplacement.vitesseMph));
 }
 
-/** Message partagé depuis la fiche d'un système actif (US-02). */
-export function partageSysteme(systeme: SystemeActif, langue: Langue, maintenant: Date): ContenuPartage {
+/**
+ * Message partagé depuis la fiche d'un système actif (US-02). `nhcAncien` est l'heure de la dernière
+ * lecture réussie quand la mise à jour du NHC a échoué (US-11, `derniereDonneeGardee`).
+ */
+export function partageSysteme(
+  systeme: SystemeActif,
+  langue: Langue,
+  maintenant: Date,
+  nhcAncien: string | null = null,
+): ContenuPartage {
   const textes = PARTAGE[langue];
   const { avis } = systeme;
   const phrases = [
     textes.systeme(nomComplet(systeme, langue), ktVersKmh(systeme.ventKt), deplacement(systeme, langue)),
     textes.sourceNhc(avis.numero, formaterHeureAntilles(avis.emisLe, langue), libelleHeureAntilles(langue)),
   ];
+  if (nhcAncien) phrases.push(textes.echecNhc(formaterHeureAntilles(nhcAncien, langue), libelleHeureAntilles(langue)));
   if (estObsolete(avis.emisLe, maintenant)) phrases.push(SYSTEMES[langue].obsolescence(SEUIL_OBSOLESCENCE_H));
   return {
     titre: textes.titre(`${libelleType(systeme.classification, langue)} ${systeme.nom}`),

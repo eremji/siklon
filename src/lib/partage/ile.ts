@@ -65,12 +65,20 @@ export function sourcesIle(ile: Ile, menaces: Menace<SystemeActif>[], alerte: Al
   return sources.length > 0 ? textes.sources(sources, textes.heureLocale) : null;
 }
 
+/** Mise à jour NHC en échec (US-11) : heure locale de la dernière lecture réussie, ou null. */
+export function echecNhcIle(ile: Ile, nhcAncien: string | null, langue: Langue): string | null {
+  const textes = PARTAGE[langue];
+  return nhcAncien && textes.echecNhc(formaterJourHeure(new Date(nhcAncien), ile.fuseau, langue), textes.heureLocale);
+}
+
+/** `nhcAncien` : heure de la dernière lecture NHC réussie quand une mise à jour a échoué (`derniereDonneeGardee`). */
 export function partageIle(
   ile: Ile,
   menaces: Menace<SystemeActif>[],
   alerte: AlerteIle,
   langue: Langue,
   maintenant: Date,
+  nhcAncien: string | null = null,
 ): ContenuPartage {
   const textes = PARTAGE[langue];
   const nom = nomIle(ile, langue);
@@ -88,6 +96,8 @@ export function partageIle(
 
   const sources = sourcesIle(ile, menaces, alerte, langue);
   if (sources) phrases.push(sources);
+  const echec = echecNhcIle(ile, nhcAncien, langue);
+  if (echec) phrases.push(echec);
 
   if (menaces.some(({ avis }) => estObsolete(avis.emisLe, maintenant))) {
     phrases.push(SYSTEMES[langue].obsolescence(SEUIL_OBSOLESCENCE_H));
