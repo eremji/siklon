@@ -1,8 +1,9 @@
 // Contenu de l'image d'aperçu d'un lien partagé (US-21) : les mêmes données officielles que le message,
 // avec la couleur du niveau d'alerte seulement pour une alerte réelle (DESIGN.md).
+import { formaterJourHeure } from "@/lib/dates";
 import { type Ile, nomIle, nomVille } from "@/lib/iles";
 import type { Langue } from "@/lib/langues";
-import { formaterDistance } from "@/lib/menace/formatage";
+import { formaterDistance, formaterHeurePassage } from "@/lib/menace/formatage";
 import { TYPES_ALERTE } from "@/lib/nhc/alertes";
 import { SEUIL_OBSOLESCENCE_H, estObsolete, formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur";
 import type { Menace } from "@/lib/nhc/menace";
@@ -26,6 +27,8 @@ export interface Apercu {
   avertissement: string | null;
   /** Mise à jour NHC en échec (US-11), avec l'heure de la dernière lecture réussie ; null si à jour. */
   echec: string | null;
+  /** Heure de la situation dessinée : un aperçu revu plus tard ne doit pas passer pour actuel. */
+  date: string;
   mention: string;
 }
 
@@ -74,6 +77,7 @@ export function apercuIle(
           detail: PARTAGE[langue].apercuPassage(
             formaterDistance(passage.distanceKm, langue),
             nomVille(ile, langue),
+            formaterHeurePassage(passage.heure, ile.fuseau, langue),
             delaiPassage(passage.heure, maintenant, langue),
           ),
         }))
@@ -85,6 +89,7 @@ export function apercuIle(
     sources: sourcesIle(ile, menaces, alerte, langue),
     avertissement: avertissement(menaces.map(({ avis }) => avis), langue, maintenant),
     echec: echecNhcIle(ile, nhcAncien, langue),
+    date: PARTAGE[langue].situation(formaterJourHeure(maintenant, ile.fuseau, langue), PARTAGE[langue].heureLocale),
     mention: COMMUN[langue].mention,
   };
 }
@@ -106,6 +111,7 @@ export function apercuSysteme(
     sources: textes.sourceNhc(avis.numero, formaterHeureAntilles(avis.emisLe, langue), libelleHeureAntilles(langue)),
     avertissement: avertissement([avis], langue, maintenant),
     echec: nhcAncien && textes.echecNhc(formaterHeureAntilles(nhcAncien, langue), libelleHeureAntilles(langue)),
+    date: textes.situation(formaterHeureAntilles(maintenant.toISOString(), langue), libelleHeureAntilles(langue)),
     mention: COMMUN[langue].mention,
   };
 }

@@ -11,6 +11,7 @@ const APERCU: Apercu = {
   sources: "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
   avertissement: null,
   echec: null,
+  date: "Situation au 10 septembre à 15 h 00 (heure locale)",
   mention: "Siklon ne remplace pas les consignes officielles. Suivez les autorités locales.",
 };
 
@@ -92,5 +93,10 @@ describe("DessinApercu (US-21)", () => {
   it("n'écrit rien de tel quand la donnée NHC est à jour", () => {
     render(<DessinApercu apercu={APERCU} />);
     expect(screen.queryByText(/la mise à jour a échoué/)).not.toBeInTheDocument();
+  });
+
+  it("écrit la date de la situation sous le logo", () => {
+    render(<DessinApercu apercu={APERCU} />);
+    expect(screen.getByText("Situation au 10 septembre à 15 h 00 (heure locale)")).toBeInTheDocument();
   });
 });

@@ -4,7 +4,7 @@
 import { formaterJourHeure } from "@/lib/dates";
 import { type Ile, nomIle, nomVille } from "@/lib/iles";
 import type { Langue } from "@/lib/langues";
-import { formaterDelai, formaterDistance } from "@/lib/menace/formatage";
+import { formaterDelai, formaterDistance, formaterHeurePassage } from "@/lib/menace/formatage";
 import { type EtatAlertesNhc, TYPES_ALERTE } from "@/lib/nhc/alertes";
 import { SEUIL_OBSOLESCENCE_H, estObsolete } from "@/lib/nhc/fraicheur";
 import type { Menace } from "@/lib/nhc/menace";
@@ -83,14 +83,20 @@ export function partageIle(
   const textes = PARTAGE[langue];
   const nom = nomIle(ile, langue);
 
-  const phrases = menaces.map(({ systeme, passage }) =>
-    textes.menace(
-      nomComplet(systeme, langue),
-      formaterDistance(passage.distanceKm, langue),
-      nomVille(ile, langue),
-      delaiPassage(passage.heure, maintenant, langue),
+  // Daté et à l'heure absolue : un message relu plus tard ne doit pas passer pour actuel.
+  const heure = (date: Date) => formaterJourHeure(date, ile.fuseau, langue);
+  const phrases = [
+    textes.partage(heure(maintenant), textes.heureLocale),
+    ...menaces.map(({ systeme, passage }) =>
+      textes.menace(
+        nomComplet(systeme, langue),
+        formaterDistance(passage.distanceKm, langue),
+        nomVille(ile, langue),
+        formaterHeurePassage(passage.heure, ile.fuseau, langue),
+        delaiPassage(passage.heure, maintenant, langue),
+      ),
     ),
-  );
+  ];
   const niveau = phraseAlerte(nom, alerte, langue);
   if (niveau) phrases.push(niveau);
 
