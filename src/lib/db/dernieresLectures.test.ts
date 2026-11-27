@@ -4,7 +4,7 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { baseMigree } from "../test/poolPglite";
-import { enregistrerLecture, lireDerniereLecture } from "./dernieresLectures";
+import { enregistrerLecture, lireDerniereEcriture, lireDerniereLecture } from "./dernieresLectures";
 
 const DEMARRAGE_PGLITE_MS = 30_000;
 
@@ -32,6 +32,7 @@ const FLUX = { activeStorms: [{ id: "al112026", name: "Kyle" }] };
 describe("dernière lecture réussie d'une source", () => {
   it("n'existe pas tant qu'aucune lecture n'a réussi", async () => {
     expect(await enTantQue("siklon_lecture", () => lireDerniereLecture(db, "nhc-systemes"))).toBeNull();
+    expect(await enTantQue("siklon_lecture", () => lireDerniereEcriture(db))).toBeNull();
   });
 
   it("est écrite par la vérification et relue par le site, avec son heure de lecture", async () => {
@@ -79,5 +80,15 @@ describe("dernière lecture réussie d'une source", () => {
     });
     expect(await enTantQue("siklon_lecture", () => lireDerniereLecture(db, "vigilance:CDPV85TFFF"))).toBeNull();
     expect((await enTantQue("siklon_lecture", () => lireDerniereLecture(db, "nhc-systemes")))?.contenu).not.toEqual(jaune);
+  });
+});
+
+describe("dernière écriture du journal (#164)", () => {
+  it("est la lecture la plus récente, toutes sources confondues, relue par le site", async () => {
+    await enTantQue("siklon_comptes", () =>
+      enregistrerLecture(db, "positions:al112026", { positions: [] }, "2026-09-10T15:05:00.000Z"),
+    );
+
+    expect(await enTantQue("siklon_lecture", () => lireDerniereEcriture(db))).toBe("2026-09-10T15:05:00.000Z");
   });
 });

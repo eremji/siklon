@@ -30,3 +30,6 @@ export const INTERVALLE_MAX_LECTURE_NHC_MIN = 15;
 
 /** Le fichier de contrôle de la vigilance Météo-France est relu chaque minute (US-11). */
 export const INTERVALLE_CONTROLE_VIGILANCE_S = 60;
+
+/** Âge maximal du journal des lectures (#164) ; au-delà, la vérification planifiée est tenue pour arrêtée. */
+export const RETARD_MAX_JOURNAL_MIN = 30;

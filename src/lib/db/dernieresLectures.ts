@@ -37,3 +37,13 @@ export async function lireDerniereLecture(db: Executeur, source: SourceLue): Pro
   const [ligne] = rows as { contenu: unknown; lu_le: Date }[];
   return ligne ? { contenu: ligne.contenu, luLe: new Date(ligne.lu_le).toISOString() } : null;
 }
+
+/**
+ * Heure de la lecture la plus récente, toutes sources confondues (#164), ou `null` si le journal est vide :
+ * tant que la vérification de chaque minute tourne, elle avance avec elle.
+ */
+export async function lireDerniereEcriture(db: Executeur): Promise<string | null> {
+  const { rows } = await db.query("select max(lu_le) as lu_le from public.dernieres_lectures");
+  const [ligne] = rows as { lu_le: Date | null }[];
+  return ligne?.lu_le ? new Date(ligne.lu_le).toISOString() : null;
+}
