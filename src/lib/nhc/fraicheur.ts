@@ -11,6 +11,16 @@ export function estObsolete(emisLe: string, maintenant: Date): boolean {
   return maintenant.getTime() - Date.parse(emisLe) > SEUIL_OBSOLESCENCE_H * MS_PAR_HEURE;
 }
 
+/**
+ * Règle d'US-11 : une donnée NHC est ancienne quand sa mise à jour a échoué et qu'on montre la dernière
+ * lecture réussie (`echecLe` présent). Rend l'heure de la plus ancienne de ces lectures, ou null.
+ */
+export function derniereDonneeGardee(sources: ({ luLe?: string; echecLe?: string } | undefined)[]): string | null {
+  const heures = sources.flatMap((source) => (source?.echecLe && source.luLe ? [source.luLe] : []));
+  if (heures.length === 0) return null;
+  return heures.reduce((ancienne, heure) => (Date.parse(heure) < Date.parse(ancienne) ? heure : ancienne));
+}
+
 export function avisLePlusRecent(heures: string[]): string | null {
   if (heures.length === 0) return null;
   return heures.reduce((recent, heure) => (Date.parse(heure) > Date.parse(recent) ? heure : recent));

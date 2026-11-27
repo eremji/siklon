@@ -56,7 +56,7 @@ const ECHEC_POSITIONS_FIXTURE = "2026-09-10T18:00:00.000Z";
 export function positionsFixture(nom: NomFixture): Record<string, PositionsPrevues> {
   if (!avecKyle(nom)) return {};
   const kyle = lirePositionsPrevues(pointsKyle, "AT1")!;
-  return { al112026: nom === "ancien" ? { ...kyle, echecLe: ECHEC_POSITIONS_FIXTURE } : kyle };
+  return { al112026: nom === "ancien" ? { ...kyle, luLe: kyle.avis.emisLe, echecLe: ECHEC_POSITIONS_FIXTURE } : kyle };
 }
 
 // Avec « actifs », Kyle (AT1) et Thirteen (AT3) ont des watches/warnings publiés (US-06b),

@@ -53,4 +53,17 @@ describe("partageSysteme (US-21)", () => {
     );
     expect(partageSysteme(kyle, "fr", MAINTENANT).texte).not.toContain("obsolètes");
   });
+
+  it("garde la donnée d'une mise à jour NHC en échec, avec l'heure de la dernière lecture réussie (US-11)", () => {
+    const luLe = "2026-09-10T16:00:00.000Z";
+    expect(partageSysteme(kyle, "fr", MAINTENANT, luLe).texte).toBe(
+      "Ouragan Kyle (cat. 4) : vents maximaux de 220 km/h, se déplace vers l'ouest-nord-ouest à 19 km/h. " +
+        "Source : NHC, avis n° 14 du 10 septembre à 11 h 00 (heure des Antilles françaises). " +
+        "Dernière donnée NHC lue le 10 septembre à 12 h 00 (heure des Antilles françaises) : la mise à jour a échoué.",
+    );
+    expect(partageSysteme(kyle, "en", MAINTENANT, luLe).texte).toMatch(
+      /\(Atlantic Standard Time, UTC−4\)\. Last NHC data read 10 September at 12:00 pm \(Atlantic Standard Time, UTC−4\): the update failed\.$/,
+    );
+    expect(partageSysteme(kyle, "fr", MAINTENANT, null).texte).not.toContain("échoué");
+  });
 });

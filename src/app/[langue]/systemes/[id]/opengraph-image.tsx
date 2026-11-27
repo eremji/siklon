@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { ImageResponse } from "next/og";
 import { connection } from "next/server";
 import { LANGUE_PAR_DEFAUT, estLangue } from "@/lib/langues";
+import { derniereDonneeGardee } from "@/lib/nhc/fraicheur";
 import { fluxNhc } from "@/lib/nhc/lecture";
 import { COOKIE_FIXTURE, fixtureDemandee } from "@/lib/nhc/source";
 import { apercuSysteme } from "@/lib/partage/apercu";
@@ -26,7 +27,7 @@ export default async function Image({ params }: { params: Promise<Parametres> })
   const flux = await fluxNhc(fixtureDemandee(process.env, (await cookies()).get(COOKIE_FIXTURE)?.value));
   const systeme = flux.etat === "ok" ? flux.systemes.find((candidat) => candidat.id === id) : undefined;
   if (!systeme) return new Response(null, { status: 404 });
-  return new ImageResponse(<DessinApercu apercu={apercuSysteme(systeme, langue, new Date())} />, {
+  return new ImageResponse(<DessinApercu apercu={apercuSysteme(systeme, langue, new Date(), derniereDonneeGardee([flux]))} />, {
     ...TAILLE_APERCU,
     fonts: POLICES_APERCU,
     headers: { "cache-control": CACHE_APERCU },

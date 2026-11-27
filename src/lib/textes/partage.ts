@@ -22,6 +22,7 @@ export const PARTAGE = traductions(
     avisNhc: (numeros: string[]) => `NHC, ${numeros.join(" et ")}`,
     avis: (numero: string, heure: string) => `avis n° ${numero} du ${heure}`,
     meteoFrance: (heure: string) => `Météo-France, mise à jour du ${heure}`,
+    echecNhc: (heure: string, fuseau: string) => `Dernière donnée NHC lue le ${heure} (${fuseau}) : la mise à jour a échoué.`,
     heureLocale: "heure locale",
     apercuPassage: (distance: string, ville: string, delai: string | null) =>
       `Passage estimé à ${distance} de ${ville}${delai ? ` ${delai}` : ", heure estimée déjà atteinte"}`,
@@ -53,6 +54,7 @@ export const PARTAGE = traductions(
     avisNhc: (numeros: string[]) => `NHC, ${numeros.join(" and ")}`,
     avis: (numero: string, heure: string) => `advisory ${numero} issued ${heure}`,
     meteoFrance: (heure: string) => `Météo-France, updated ${heure}`,
+    echecNhc: (heure: string, fuseau: string) => `Last NHC data read ${heure} (${fuseau}): the update failed.`,
     heureLocale: "local time",
     apercuPassage: (distance: string, ville: string, delai: string | null) =>
       `Estimated closest approach ${distance} from ${ville}${delai ? ` ${delai}` : ", estimated time already reached"}`,

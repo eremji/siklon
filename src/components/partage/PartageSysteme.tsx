@@ -6,7 +6,7 @@ import type { SystemeActif } from "@/lib/nhc/systemes";
 import { partageSysteme } from "@/lib/partage/texte";
 import { BoutonPartager } from "./BoutonPartager";
 
-export function PartageSysteme({ systeme }: { systeme: SystemeActif }) {
+export function PartageSysteme({ systeme, nhcAncien }: { systeme: SystemeActif; nhcAncien: string | null }) {
   const langue = useLangue();
-  return <BoutonPartager chemin={`/systemes/${systeme.id}`} contenu={() => partageSysteme(systeme, langue, new Date())} />;
+  return <BoutonPartager chemin={`/systemes/${systeme.id}`} contenu={() => partageSysteme(systeme, langue, new Date(), nhcAncien)} />;
 }
