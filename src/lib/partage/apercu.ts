@@ -14,7 +14,7 @@ import { SYSTEMES } from "@/lib/textes/systemes";
 import { ktVersKmh } from "@/lib/unites";
 import { infoNiveau } from "@/lib/vigilance/niveaux";
 import { COULEURS_NHC, COULEURS_VIGILANCE, type CouleursAlerte } from "./couleurs";
-import { type AlerteIle, delaiPassage, sourcesIle } from "./ile";
+import { type AlerteIle, delaiPassage, echecNhcIle, sourcesIle } from "./ile";
 import { deplacement, nomComplet } from "./texte";
 
 export interface Apercu {
@@ -24,6 +24,8 @@ export interface Apercu {
   lignes: { fort: string; detail: string }[];
   sources: string | null;
   avertissement: string | null;
+  /** Mise à jour NHC en échec (US-11), avec l'heure de la dernière lecture réussie ; null si à jour. */
+  echec: string | null;
   mention: string;
 }
 
@@ -62,6 +64,7 @@ export function apercuIle(
   alerte: AlerteIle,
   langue: Langue,
   maintenant: Date,
+  nhcAncien: string | null = null,
 ): Apercu {
   const nom = nomIle(ile, langue);
   const lignes =
@@ -81,12 +84,18 @@ export function apercuIle(
     lignes,
     sources: sourcesIle(ile, menaces, alerte, langue),
     avertissement: avertissement(menaces.map(({ avis }) => avis), langue, maintenant),
+    echec: echecNhcIle(ile, nhcAncien, langue),
     mention: COMMUN[langue].mention,
   };
 }
 
 /** Aperçu du lien vers la fiche d'un système actif (US-02) : aucune couleur de vigilance. */
-export function apercuSysteme(systeme: SystemeActif, langue: Langue, maintenant: Date): Apercu {
+export function apercuSysteme(
+  systeme: SystemeActif,
+  langue: Langue,
+  maintenant: Date,
+  nhcAncien: string | null = null,
+): Apercu {
   const textes = PARTAGE[langue];
   const { avis } = systeme;
   const mouvement = deplacement(systeme, langue);
@@ -96,6 +105,7 @@ export function apercuSysteme(systeme: SystemeActif, langue: Langue, maintenant:
     lignes: [{ fort: textes.apercuVents(ktVersKmh(systeme.ventKt)), detail: mouvement ? majuscule(mouvement) : "" }],
     sources: textes.sourceNhc(avis.numero, formaterHeureAntilles(avis.emisLe, langue), libelleHeureAntilles(langue)),
     avertissement: avertissement([avis], langue, maintenant),
+    echec: nhcAncien && textes.echecNhc(formaterHeureAntilles(nhcAncien, langue), libelleHeureAntilles(langue)),
     mention: COMMUN[langue].mention,
   };
 }

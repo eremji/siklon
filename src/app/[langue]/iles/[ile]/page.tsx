@@ -47,9 +47,9 @@ async function Menaces({ ile, langue }: { ile: Ile; langue: Langue }) {
 // surveillance ou une alerte officielle en cours. Mêmes lectures que l'image d'aperçu du lien.
 async function Partage({ ile }: { ile: Ile }) {
   await connection();
-  const { menaces, alerte } = await chargerPartageIle(ile, fixturesDemandees(await cookies()));
+  const { menaces, alerte, nhcAncien } = await chargerPartageIle(ile, fixturesDemandees(await cookies()));
   if (!ileMenacee(menaces, alerte)) return null;
-  return <PartageIle slug={ile.slug} menaces={menaces} alerte={alerte} />;
+  return <PartageIle slug={ile.slug} menaces={menaces} alerte={alerte} nhcAncien={nhcAncien} />;
 }
 
 // L'identifiant d'île vient de l'URL : il est lu sous Suspense pour garder une coquille commune.

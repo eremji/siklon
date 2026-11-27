@@ -2,7 +2,7 @@ import { Lien } from "@/components/langue/Lien";
 import { LienNhc } from "@/components/LienNhc";
 import type { EtatFlux } from "@/lib/nhc/client";
 import type { Langue } from "@/lib/langues";
-import { formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur";
+import { derniereDonneeGardee, formaterHeureAntilles, libelleHeureAntilles } from "@/lib/nhc/fraicheur";
 import { SYSTEMES } from "@/lib/textes/systemes";
 import { EchecMiseAJourNhc } from "./EchecMiseAJourNhc";
 import { FicheSysteme } from "./FicheSysteme";
@@ -28,7 +28,7 @@ export function FicheSystemeActif({ langue, flux, id }: { langue: Langue; flux: 
     return (
       <>
         {echec}
-        <FicheSysteme langue={langue} systeme={systeme} />
+        <FicheSysteme langue={langue} systeme={systeme} nhcAncien={derniereDonneeGardee([flux])} />
       </>
     );
   }

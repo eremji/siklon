@@ -55,7 +55,16 @@ function deplacementOrigine({ deplacement }: SystemeActif, langue: Langue): stri
 }
 
 /** Fiche d'un système actif (US-02) : intensité, déplacement et avis NHC d'origine. */
-export function FicheSysteme({ langue, systeme }: { langue: Langue; systeme: SystemeActif }) {
+export function FicheSysteme({
+  langue,
+  systeme,
+  nhcAncien = null,
+}: {
+  langue: Langue;
+  systeme: SystemeActif;
+  /** Heure de la dernière lecture NHC réussie quand la mise à jour a échoué (US-11) : dite au partage. */
+  nhcAncien?: string | null;
+}) {
   const { avis } = systeme;
   const { fiche, source } = SYSTEMES[langue];
   return (
@@ -85,7 +94,7 @@ export function FicheSysteme({ langue, systeme }: { langue: Langue; systeme: Sys
         </dl>
       </section>
 
-      <PartageSysteme systeme={systeme} />
+      <PartageSysteme systeme={systeme} nhcAncien={nhcAncien} />
 
       <details className="group rounded-2xl bg-surface px-4">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-base font-bold text-accent">

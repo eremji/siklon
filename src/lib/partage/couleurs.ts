@@ -18,6 +18,8 @@ export const COULEURS_APERCU = {
   neutre: J.soft,
   /** Couleur des bras « orange » d'origine du logo et du « o » (DESIGN.md, « Logo et icône »). */
   accent: J.accent,
+  /** Mise à jour NHC en échec (US-11) : comme l'avertissement des pages, texte sur --danger-soft. */
+  echec: { fond: J["danger-soft"], texte: J.text },
 } as const;
 
 export const COULEURS_VIGILANCE: Record<Niveau, CouleursAlerte | null> = {

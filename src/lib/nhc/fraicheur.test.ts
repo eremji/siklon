@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { SEUIL_OBSOLESCENCE_H, avisLePlusRecent, estObsolete, formaterHeureAntilles, libelleHeureAntilles } from "./fraicheur";
+import {
+  SEUIL_OBSOLESCENCE_H,
+  avisLePlusRecent,
+  derniereDonneeGardee,
+  estObsolete,
+  formaterHeureAntilles,
+  libelleHeureAntilles,
+} from "./fraicheur";
 
 const emisLe = "2026-09-10T15:00:00.000Z";
 
@@ -25,6 +32,21 @@ describe("formaterHeureAntilles", () => {
 
   it("change de jour quand il le faut", () => {
     expect(formaterHeureAntilles("2026-09-11T02:30:00.000Z", "fr")).toBe("10 septembre à 22 h 30");
+  });
+});
+
+describe("derniereDonneeGardee (US-11)", () => {
+  const fraiche = { luLe: "2026-09-10T19:00:00.000Z" };
+  const gardee = (luLe: string) => ({ luLe, echecLe: "2026-09-10T19:00:00.000Z" });
+
+  it("vaut null quand chaque donnée NHC vient d'une lecture réussie", () => {
+    expect(derniereDonneeGardee([fraiche, undefined])).toBeNull();
+  });
+
+  it("rend l'heure de la plus ancienne donnée gardée après une mise à jour en échec", () => {
+    expect(derniereDonneeGardee([fraiche, gardee("2026-09-10T18:00:00.000Z"), gardee("2026-09-10T17:30:00.000Z")])).toBe(
+      "2026-09-10T17:30:00.000Z",
+    );
   });
 });
 

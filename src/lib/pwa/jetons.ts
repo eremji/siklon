@@ -22,6 +22,7 @@ export const JETONS_CLAIR = {
   "nhc-twa": "#93C5FD",
   "on-vig-clair": "#10292E",
   "on-vig-fonce": "#FFFFFF",
+  "danger-soft": "#FDECEC",
 } as const;
 
 /** Thème sombre. */

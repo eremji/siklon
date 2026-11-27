@@ -174,7 +174,7 @@ describe("positionsNhc : positions prévues des systèmes actifs, par le cache p
     const lues = await positionsNhc(null, systemes, maintenant);
 
     expect(lireDerniereLecture).toHaveBeenCalledWith(baseLecture, "positions:al112026");
-    expect(lues).toEqual({ al112026: { ...gardees, echecLe: "2026-09-10T16:00:00.000Z" } });
+    expect(lues).toEqual({ al112026: { ...gardees, luLe: "2026-09-10T10:00:00.000Z", echecLe: "2026-09-10T16:00:00.000Z" } });
   });
 
   it("en direct (vérification des alertes), ne rend jamais des positions anciennes", async () => {

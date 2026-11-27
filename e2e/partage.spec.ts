@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type BrowserContext, expect, test } from "@playwright/test";
+import { type BrowserContext, type Page, expect, test } from "@playwright/test";
 
 // Partager une alerte (US-21). Les flux viennent des fixtures locales, jamais du réseau.
 test.beforeEach(async ({ page }) => {
@@ -11,6 +11,26 @@ async function fixtureNhc(context: BrowserContext, baseURL: string | undefined) 
 }
 
 const origine = (baseURL: string | undefined) => new URL(baseURL ?? "http://localhost:3000").origin;
+
+/** Partage du téléphone simulé ; rend les textes partagés. */
+async function partageSimule(page: Page) {
+  await page.addInitScript(() => {
+    const appels: ShareData[] = [];
+    Object.assign(window, { appelsPartage: appels });
+    Object.defineProperty(Navigator.prototype, "share", {
+      configurable: true,
+      value: async (donnees: ShareData) => {
+        appels.push(donnees);
+      },
+    });
+  });
+  return () => page.evaluate(() => (window as unknown as { appelsPartage: ShareData[] }).appelsPartage.map(({ text }) => text));
+}
+
+// US-11 : « ancien », le NHC ne répond plus ; la page montre le flux lu une heure plus tôt et les positions gardées.
+async function nhcAncien(context: BrowserContext, baseURL: string | undefined) {
+  await context.addCookies([{ name: "siklon-fixture-nhc", value: "ancien", url: baseURL ?? "http://localhost:3000" }]);
+}
 
 test("le bouton Partager de la fiche ouvre le partage du téléphone avec le message officiel et un lien sans langue", async ({
   page,
@@ -45,6 +65,24 @@ test("le bouton Partager de la fiche ouvre le partage du téléphone avec le mes
       url: `${origine(baseURL)}/systemes/al112026`,
     },
   ]);
+});
+
+test("quand la mise à jour du NHC échoue, le partage de la fiche garde la donnée et le dit avec son heure (US-11)", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await nhcAncien(context, baseURL);
+  const textes = await partageSimule(page);
+  await page.goto("/systemes/al112026");
+
+  await page.getByRole("button", { name: "Partager cette alerte" }).click();
+
+  const [texte] = await textes();
+  expect(texte).toMatch(/^Ouragan Kyle \(cat\. 4\) : vents maximaux de 220 km\/h/);
+  expect(texte).toMatch(
+    /Dernière donnée NHC lue le .+ à \d{2} h \d{2} \(heure des Antilles françaises\) : la mise à jour a échoué\./,
+  );
 });
 
 test("sans partage natif, le bouton copie le lien et le confirme à l'écran", async ({ page, context, baseURL }) => {
@@ -116,6 +154,25 @@ test.describe("page d'une île (US-21)", () => {
         url: `${origine(baseURL)}/iles/guadeloupe`,
       },
     ]);
+  });
+
+  test("quand la mise à jour du NHC échoue, le partage de l'île garde la menace et le dit avec son heure (US-11)", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await nhcAncien(context, baseURL);
+    await vigilance(context, baseURL, "rouge");
+    await page.clock.setFixedTime(new Date("2026-09-10T19:00:00.000Z"));
+    const textes = await partageSimule(page);
+    await page.goto("/iles/guadeloupe");
+
+    await page.getByRole("button", { name: "Partager cette alerte" }).click();
+
+    // Les positions gardées de Kyle sont celles de son avis n° 14 (15 h UTC) : la plus ancienne donnée NHC.
+    const [texte] = await textes();
+    expect(texte).toMatch(/^Ouragan Kyle \(cat\. 4\) : passage estimé à environ 180 km de Pointe-à-Pitre/);
+    expect(texte).toMatch(/\(heure locale\)\. Dernière donnée NHC lue le 10 septembre à 11 h 00 \(heure locale\) : la mise à jour a échoué\.$/);
   });
 
   test("sans système menaçant ni alerte, la page d'une île n'a pas de bouton Partager", async ({ page, context, baseURL }) => {

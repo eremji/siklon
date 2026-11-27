@@ -18,8 +18,10 @@ export interface PositionPrevue {
 export interface PositionsPrevues {
   avis: { numero: string; emisLe: string };
   positions: PositionPrevue[];
-  /** Heure de la mise à jour qui a échoué, quand ce sont les dernières positions connues (US-11). */
+  /** Heure de la mise à jour qui a échoué, quand ce sont les dernières positions connues (US-11)… */
   echecLe?: string;
+  /** …et heure de leur lecture réussie. */
+  luLe?: string;
 }
 
 export class PositionsInvalidesError extends Error {
@@ -220,7 +222,9 @@ async function dernieresPositions(
   if (!secours) return null;
   try {
     const lecture = await secours(systemeId);
-    return lecture ? { ...lirePositionsGardees(lecture.contenu), echecLe: maintenant().toISOString() } : null;
+    return lecture
+      ? { ...lirePositionsGardees(lecture.contenu), luLe: lecture.luLe, echecLe: maintenant().toISOString() }
+      : null;
   } catch (erreur) {
     console.warn("[nhc] dernières positions prévues illisibles", { systemeId, raison: raisonEchec(erreur) });
     return null;

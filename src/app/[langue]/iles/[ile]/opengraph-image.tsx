@@ -25,8 +25,8 @@ export default async function Image({ params }: { params: Promise<Parametres> })
   const ile = trouverIle(slug);
   if (!ile) return new Response(null, { status: 404 });
   const langue = estLangue(brute) ? brute : LANGUE_PAR_DEFAUT;
-  const { menaces, alerte } = await chargerPartageIle(ile, fixturesDemandees(await cookies()));
-  return new ImageResponse(<DessinApercu apercu={apercuIle(ile, menaces, alerte, langue, new Date())} />, {
+  const { menaces, alerte, nhcAncien } = await chargerPartageIle(ile, fixturesDemandees(await cookies()));
+  return new ImageResponse(<DessinApercu apercu={apercuIle(ile, menaces, alerte, langue, new Date(), nhcAncien)} />, {
     ...TAILLE_APERCU,
     fonts: POLICES_APERCU,
     headers: { "cache-control": CACHE_APERCU },

@@ -44,7 +44,7 @@ function Logo({ hauteur }: { hauteur: number }) {
 }
 
 export function DessinApercu({ apercu }: { apercu: Apercu }) {
-  const { titre, niveau, lignes, sources, avertissement, mention } = apercu;
+  const { titre, niveau, lignes, sources, avertissement, echec, mention } = apercu;
   return (
     <div
       style={{
@@ -92,6 +92,22 @@ export function DessinApercu({ apercu }: { apercu: Apercu }) {
         ))}
         {avertissement && (
           <div style={{ display: "flex", fontSize: 26, fontWeight: 700, lineHeight: 1.25 }}>{avertissement}</div>
+        )}
+        {echec && (
+          <div
+            style={{
+              display: "flex",
+              fontSize: 28,
+              fontWeight: 700,
+              lineHeight: 1.25,
+              padding: "12px 20px",
+              borderRadius: 16,
+              backgroundColor: C.echec.fond,
+              color: C.echec.texte,
+            }}
+          >
+            {echec}
+          </div>
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
