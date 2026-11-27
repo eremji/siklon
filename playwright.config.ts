@@ -28,6 +28,9 @@ export default defineConfig({
       DATABASE_URL_COMPTES: process.env.E2E_DATABASE_URL_COMPTES ?? "postgresql://localhost:5432/siklon_e2e",
       BETTER_AUTH_SECRET: process.env.E2E_BETTER_AUTH_SECRET ?? "secret-des-tests-e2e-uniquement-0123456789",
       BETTER_AUTH_URL: baseURL,
+      // Un seul serveur reçoit les requêtes de tous les workers : 3 connexions par pool (taille de
+      // production, faite pour le pooler Supabase) saturent avec beaucoup de workers. Base locale seulement.
+      DATABASE_POOL_MAX: "10",
       // Les emails sont écrits dans un dossier local, jamais envoyés (ignoré sur Vercel).
       EMAILS_DOSSIER: DOSSIER_EMAILS,
       // Clé publique VAPID jetable (sa clé privée n'a pas été gardée) : le service push du navigateur
