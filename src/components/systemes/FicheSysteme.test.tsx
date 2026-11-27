@@ -111,7 +111,7 @@ describe("FicheSysteme", () => {
 
     expect(share).toHaveBeenCalledWith({
       title: "Ouragan Kyle · Siklon",
-      text: expect.stringMatching(/^Ouragan Kyle \(cat\. 4\) : vents maximaux de 220 km\/h, .* avis n° 14 du 10 septembre à 11 h 00/),
+      text: expect.stringMatching(/^Partagé le 10 septembre à 13 h 00 [^.]+\. Ouragan Kyle \(cat\. 4\) : vents maximaux de 220 km\/h, .* avis n° 14 du 10 septembre à 11 h 00/),
       url: `${window.location.origin}/systemes/al112026`,
     });
     vi.useRealTimers();

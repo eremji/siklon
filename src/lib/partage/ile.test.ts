@@ -29,7 +29,8 @@ describe("partageIle (US-21)", () => {
     expect(partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", MAINTENANT)).toEqual({
       titre: "Guadeloupe · Siklon",
       texte:
-        "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h. " +
+        "Partagé le 10 septembre à 15 h 00 (heure locale). " +
+        "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h. " +
         "Guadeloupe : Vigilance rouge · Protégez-vous. " +
         "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
     });
@@ -39,7 +40,8 @@ describe("partageIle (US-21)", () => {
     expect(partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "en", MAINTENANT)).toEqual({
       titre: "Guadeloupe · Siklon",
       texte:
-        "Hurricane Kyle (cat. 4): estimated closest approach about 180 km from Pointe-à-Pitre in about 12 hours. " +
+        "Shared 10 September at 3:00 pm (local time). " +
+        "Hurricane Kyle (cat. 4): estimated closest approach about 180 km from Pointe-à-Pitre on 11 September around 3 am, in about 12 hours. " +
         "Guadeloupe: Red vigilance · Protect yourself (Vigilance rouge · Protégez-vous). " +
         "Sources: NHC, advisory 14 issued 10 September at 11:00 am; Météo-France, updated 9 November at 5:42 am (local time).",
     });
@@ -47,13 +49,14 @@ describe("partageIle (US-21)", () => {
 
   it("partage une vigilance sans système menaçant, avec Météo-France pour seule source", () => {
     expect(partageIle(ile("martinique"), [], vigilance("jaune"), "fr", MAINTENANT).texte).toBe(
-      "Martinique : Vigilance jaune · Soyez attentifs. Source : Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
+      "Partagé le 10 septembre à 15 h 00 (heure locale). Martinique : Vigilance jaune · Soyez attentifs. Source : Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale).",
     );
   });
 
   it("n'écrit pas de niveau quand la vigilance est indisponible", () => {
     expect(partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("indisponible"), "fr", MAINTENANT).texte).toBe(
-      "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h. " +
+      "Partagé le 10 septembre à 15 h 00 (heure locale). " +
+      "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h. " +
         "Source : NHC, avis n° 14 du 10 septembre à 11 h 00 (heure locale).",
     );
   });
@@ -72,7 +75,7 @@ describe("partageIle (US-21)", () => {
   it("dit quand l'heure estimée du passage est déjà atteinte", () => {
     const tard = new Date("2026-09-11T09:00:00.000Z");
     expect(partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), "fr", tard).texte).toMatch(
-      /^Ouragan Kyle \(cat\. 4\) : passage estimé à environ 180 km de Pointe-à-Pitre, heure estimée déjà atteinte\./,
+      /^Partagé le [^.]+\. Ouragan Kyle \(cat\. 4\) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, heure estimée déjà atteinte\./,
     );
   });
 
@@ -87,12 +90,23 @@ describe("partageIle (US-21)", () => {
     const ancien = (langue: "fr" | "en") =>
       partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), langue, MAINTENANT, luLe).texte;
     expect(ancien("fr")).toBe(
-      "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre dans environ 12 h. " +
+      "Partagé le 10 septembre à 15 h 00 (heure locale). " +
+      "Ouragan Kyle (cat. 4) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h. " +
         "Guadeloupe : Vigilance rouge · Protégez-vous. " +
         "Sources : NHC, avis n° 14 du 10 septembre à 11 h 00 ; Météo-France, mise à jour du 9 novembre à 05 h 42 (heure locale). " +
         "Dernière donnée NHC lue le 10 septembre à 14 h 00 (heure locale) : la mise à jour a échoué.",
     );
     expect(ancien("en")).toMatch(/\(local time\)\. Last NHC data read 10 September at 2:00 pm \(local time\): the update failed\.$/);
+  });
+  it("date le partage et donne l'heure estimée du passage, pas seulement un délai", () => {
+    const texte = (langue: "fr" | "en") =>
+      partageIle(ile("guadeloupe"), menaces("guadeloupe"), vigilance("rouge"), langue, MAINTENANT).texte;
+    expect(texte("fr")).toMatch(
+      /^Partagé le 10 septembre à 15 h 00 \(heure locale\)\. Ouragan Kyle \(cat\. 4\) : passage estimé à environ 180 km de Pointe-à-Pitre le 11 septembre vers 3 h, dans environ 12 h\. /,
+    );
+    expect(texte("en")).toMatch(
+      /^Shared 10 September at 3:00 pm \(local time\)\. Hurricane Kyle \(cat\. 4\): estimated closest approach about 180 km from Pointe-à-Pitre on 11 September around 3 am, in about 12 hours\. /,
+    );
   });
 });
 

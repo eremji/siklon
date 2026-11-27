@@ -37,7 +37,9 @@ export function partageSysteme(
 ): ContenuPartage {
   const textes = PARTAGE[langue];
   const { avis } = systeme;
+  // Daté : un message relu plus tard ne doit pas passer pour actuel.
   const phrases = [
+    textes.partage(formaterHeureAntilles(maintenant.toISOString(), langue), libelleHeureAntilles(langue)),
     textes.systeme(nomComplet(systeme, langue), ktVersKmh(systeme.ventKt), deplacement(systeme, langue)),
     textes.sourceNhc(avis.numero, formaterHeureAntilles(avis.emisLe, langue), libelleHeureAntilles(langue)),
   ];
